@@ -1,0 +1,15 @@
+{
+  "name": "chiron-agent",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "An AI agent client that buys open-weight model inference per call through Assay on Arbitrum Sepolia, paying only against receipts signed by a registered, unexpired, allowlisted-measurement enclave key.",
+  "scripts": {
+    "refuse": "node --env-file-if-exists=.env src/index.ts refuse",
+    "pay": "node --env-file-if-exists=.env src/index.ts pay",
+    "test": "node --env-file-if-exists=.env --test test/*.test.ts"
+  },
+  "dependencies": {
+    "viem": "^2.56.9"
+  }
+}
