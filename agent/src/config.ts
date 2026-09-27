@@ -22,7 +22,7 @@ export const channelId: bigint = BigInt(process.env.ASSAY_CHANNEL_ID ?? '0');
 export function requirePrivateKey(): Hex {
   const key = process.env.PRIVATE_KEY;
   if (!key) {
-    throw new Error('PRIVATE_KEY is not set. Put it in agent/.env or .env.');
+    throw new Error('PRIVATE_KEY is not set. Put it in agent/.env or the repo root .env.');
   }
   return (key.startsWith('0x') ? key : `0x${key}`) as Hex;
 }

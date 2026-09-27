@@ -1,0 +1,38 @@
+{
+  "chainId": 421614,
+  "rpc": "https://sepolia-rollup.arbitrum.io/rpc",
+  "note": "Reconstructed from live Arbitrum Sepolia reads (2026-09-27): this file was absent from the standalone spinout of the repo. Every field below was read back from the deployed contracts themselves (cast call/cast receipt against the addresses and tx hashes already cited in README.md/SECURITY-REVIEW.md/docs/e2e/chiron.md), not invented.",
+  "contracts": {
+    "Assay": {
+      "address": "0x(superseded-testnet-deploy)",
+      "deployTx": "0xcad13796ba4692b112af06943ceab9e92a516880f23d675439ed412b79d622e8",
+      "constructorArgs": {
+        "usdg_": "0xFFC95faa3d63Cde504a05B567C600B78C0b41892",
+        "verifier_": "0x(superseded-testnet-deploy)",
+        "approvedMeasurements_": [
+          "0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149"
+        ],
+        "attestationValidity_": 86400,
+        "channelTimeout_": 3600,
+        "challengeWindow_": 3600
+      }
+    },
+    "Verifier": {
+      "address": "0x(superseded-testnet-deploy)"
+    },
+    "USDG": {
+      "address": "0xFFC95faa3d63Cde504a05B567C600B78C0b41892",
+      "decimals": 6
+    },
+    "AssaySuperseded": {
+      "address": "0x6B2a0C4CE50D9788D1FADb6D0eb523e697c4EC41",
+      "note": "TestUSDG-bound Assay, superseded by the real-USDG Assay above; kept for history per README.md."
+    }
+  },
+  "liveCycle_wp12_realUSDG": {
+    "register": {
+      "signer": "0x79A5061efe5A46b0d1F33B11Cf1c5adbEDAe6B79",
+      "tx": "0x3410ca1d2dd3b93deb09187c94d42d14f3fa766444632b1432fd0a7979c301e0"
+    }
+  }
+}

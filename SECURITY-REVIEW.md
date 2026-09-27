@@ -1,4 +1,4 @@
-# Assay security review (2026-09-26)
+# Chiron security review (2026-09-26)
 
 Scope: `contracts/src/Assay.sol`, `verifier/src/lib.rs`, live deployment in `contracts/deployments/421614.json`. Red tests: `contracts/test/AttackReview.t.sol`, `verifier/tests/attack_review.rs`. Each red test asserts the safe behaviour, so it fails today and passes after the fix.
 

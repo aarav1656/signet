@@ -1,4 +1,4 @@
-//! Assay spike: verify one real Phala `GET /v1/aci/attestation` bundle's Intel TDX
+//! Chiron spike: verify one real Phala `GET /v1/aci/attestation` bundle's Intel TDX
 //! quote chain of trust in a Stylus contract, one transaction.
 //!
 //! Real bundle structure (fetched 2026-09-26, see ../attestation_raw_*.json): TDX

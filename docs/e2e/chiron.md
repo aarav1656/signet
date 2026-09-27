@@ -1,4 +1,4 @@
-# Assay end-to-end test, Arbitrum Sepolia (421614)
+# Chiron end-to-end test, Arbitrum Sepolia (421614)
 
 ## Real Paxos USDG redeploy (2026-09-27)
 
@@ -65,7 +65,7 @@ passed, plus the new `AssayRealUSDGForkTest`, 13 passed).
 
 ## Agent client (agent/, 2026-09-27)
 
-A small TypeScript/viem client, `agent/`, that buys inference through Assay
+A small TypeScript/viem client, `agent/`, that buys inference through Chiron
 and pays only against a receipt an attested enclave key signed. TypeScript with viem, matching
 the web app (`web/package.json`, viem 2.56.9) and reusing its ABI and generated addresses by
 relative import (`web/src/abi/Assay.generated.ts`, `web/src/lib/addresses.generated.ts`) and
