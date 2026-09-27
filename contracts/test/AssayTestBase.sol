@@ -1,0 +1,128 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {Test} from "forge-std/Test.sol";
+import {Assay} from "../src/Assay.sol";
+import {TestUSDG} from "../src/TestUSDG.sol";
+import {MockVerifier} from "./mocks/MockVerifier.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
+abstract contract AssayTestBase is Test {
+    bytes32 internal constant APPROVED_MEASUREMENT = keccak256("phala-gateway-image-v1");
+    bytes32 internal constant OTHER_MEASUREMENT = keccak256("some-other-image");
+
+    uint64 internal constant ATTESTATION_VALIDITY = 1 days;
+    uint64 internal constant CHANNEL_TIMEOUT = 1 hours;
+    uint64 internal constant CHALLENGE_WINDOW = 1 hours;
+
+    Assay internal assay;
+    TestUSDG internal usdg;
+    MockVerifier internal verifier;
+
+    address internal provider = makeAddr("provider");
+
+    // The channel's agent: signs payerSig with its own key, always available to it.
+    uint256 internal agentPk = 0xA6E47;
+    address internal agent;
+
+    // The attested enclave signer registered via register(): signs enclaveSig,
+    // exactly Phala's legacy personal_sign over "<requestHash>:<responseHash>".
+    uint256 internal signerPk = 0xA11CE;
+    address internal signerAddr;
+
+    function setUp() public virtual {
+        usdg = new TestUSDG();
+        verifier = new MockVerifier();
+        agent = vm.addr(agentPk);
+        signerAddr = vm.addr(signerPk);
+
+        bytes32[] memory approved = new bytes32[](1);
+        approved[0] = APPROVED_MEASUREMENT;
+        assay =
+            new Assay(address(usdg), address(verifier), approved, ATTESTATION_VALIDITY, CHANNEL_TIMEOUT, CHALLENGE_WINDOW);
+
+        usdg.mint(agent, 1_000_000e6);
+    }
+
+    function _register(address signer_, bytes32 measurement_) internal returns (bytes32) {
+        return _registerQuote(hex"1234", signer_, measurement_);
+    }
+
+    /// Same as `_register`, but with an explicit quote so a test can re-register
+    /// with a distinct (fresh) quote instead of hitting the QuoteAlreadyUsed guard.
+    function _registerQuote(bytes memory quote, address signer_, bytes32 measurement_) internal returns (bytes32) {
+        verifier.setNext(signer_, measurement_);
+        (, bytes32 m) = assay.register(quote);
+        return m;
+    }
+
+    function _openChannel(uint128 amount) internal returns (uint256 channelId) {
+        vm.startPrank(agent);
+        usdg.approve(address(assay), amount);
+        channelId = assay.openChannel(provider, amount);
+        vm.stopPrank();
+    }
+
+    /// EIP-712 Voucher{channelId,cumulativeAmount,requestHash,responseHash}, signed
+    /// by whoever holds `pk`. The contract requires this to recover to the
+    /// channel's agent (payer authorization, not attestation evidence).
+    function _signVoucher(
+        uint256 pk,
+        uint256 channelId,
+        uint256 cumulativeAmount,
+        bytes32 requestHash,
+        bytes32 responseHash
+    ) internal view returns (bytes memory) {
+        bytes32 typeHash =
+            keccak256("Voucher(uint256 channelId,uint256 cumulativeAmount,bytes32 requestHash,bytes32 responseHash)");
+        bytes32 structHash = keccak256(abi.encode(typeHash, channelId, cumulativeAmount, requestHash, responseHash));
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes("Assay")),
+                keccak256(bytes("1")),
+                block.chainid,
+                address(assay)
+            )
+        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
+        return abi.encodePacked(r, s, v);
+    }
+
+    /// `bytes32` as 64 lowercase ASCII hex chars, no `0x` -- identical to
+    /// Assay.sol's own private `_hex64`, and to Rust's `hex::encode`.
+    function _hex64(bytes32 x) internal pure returns (bytes memory out) {
+        bytes memory withPrefix = bytes(Strings.toHexString(uint256(x), 32));
+        out = new bytes(64);
+        for (uint256 i = 0; i < 64; i++) {
+            out[i] = withPrefix[i + 2];
+        }
+    }
+
+    /// Phala's exact legacy receipt-signing digest (Dstack-TEE/private-ai-gateway,
+    /// src/dstack.rs `sign_legacy_message` + `ethereum_personal_message_hash`,
+    /// src/aggregator/service/helpers.rs `legacy_signature_text`): personal_sign
+    /// over ASCII "<requestHash>:<responseHash>", both lowercase hex, no `0x`.
+    function _enclaveDigest(bytes32 requestHash, bytes32 responseHash) internal pure returns (bytes32) {
+        bytes memory text = bytes.concat(_hex64(requestHash), ":", _hex64(responseHash));
+        return MessageHashUtils.toEthSignedMessageHash(text);
+    }
+
+    function _signEnclave(uint256 pk, bytes32 requestHash, bytes32 responseHash) internal returns (bytes memory) {
+        bytes32 digest = _enclaveDigest(requestHash, responseHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
+        return abi.encodePacked(r, s, v);
+    }
+
+    /// Convenience: a matched pair signed by the channel's agent and the
+    /// registered enclave signer, the ordinary two-signature redeem() call.
+    function _redeemArgs(uint256 channelId, uint256 cumulativeAmount, bytes32 requestHash, bytes32 responseHash)
+        internal
+        returns (bytes memory payerSig, bytes memory enclaveSig)
+    {
+        payerSig = _signVoucher(agentPk, channelId, cumulativeAmount, requestHash, responseHash);
+        enclaveSig = _signEnclave(signerPk, requestHash, responseHash);
+    }
+}
