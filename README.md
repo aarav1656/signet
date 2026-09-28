@@ -1,159 +1,155 @@
 # Chiron
 
 Named for the one trustworthy centaur: the attested provider among substitutes.
-Chiron (contract `Assay`): `contracts/src/Assay.sol`.
 
-Chiron is a payment channel for AI agents paying a provider whose serving image was proven, on Arbitrum, by an Intel TDX remote attestation quote.
+Chiron is a USDG payment channel on Arbitrum for AI agents that buy inference per call. The agent's money moves only against proof checked onchain: a Stylus contract verifies the provider gateway's Intel TDX attestation, and a second Stylus contract verifies the gateway's signed receipt for each response. A channel pinned to a model pays only when the receipt says that model was served. If the gateway routed the call to a different model, the payment reverts.
 
-## Deployed
+The contract is `Assay` (`contracts/src/Assay.sol`).
 
-Network: Arbitrum Sepolia (421614). Explorer: https://sepolia.arbiscan.io
+## Live on Arbitrum Sepolia
 
-| Contract | Network | Address | Explorer |
-|---|---|---|---|
-| Assay | Arbitrum Sepolia | `0x(superseded-testnet-deploy)` | [tx](https://sepolia.arbiscan.io/tx/0xcad13796ba4692b112af06943ceab9e92a516880f23d675439ed412b79d622e8) |
-| Stylus Verifier | Arbitrum Sepolia | `0x(superseded-testnet-deploy)` | [tx](https://sepolia.arbiscan.io/tx/0x7c78014ce0392a0cbc454561f93a01ecdffc896a2da8967cc61330f2c4b8e6aa) |
-| USDG (Paxos Global Dollar, real, not deployed by this repo) | Arbitrum Sepolia | `0xFFC95faa3d63Cde504a05B567C600B78C0b41892` | [contract](https://sepolia.arbiscan.io/address/0xFFC95faa3d63Cde504a05B567C600B78C0b41892) |
+Chain 421614, deployed 2026-09-28 from `0x2aD12a72362704367e99a344cFf5affDDF7f5DEF`. Every address below was read back with `cast call` after deployment; `contracts/deployments/421614.json` holds the full record.
 
-Superseded: the prior Assay `0x6B2a0C4CE50D9788D1FADb6D0eb523e697c4EC41` bound `usdg()` to TestUSDG, an open-mint testnet fixture (`0x46C42eCD4FFDD0060b2FF4c9F6814D6762868b6D`), which a real deploy command could produce by mistake (see `SECURITY-REVIEW.md`). It is kept in `contracts/deployments/421614.json` for history; every subsequent money path uses the address above instead, which returns the real USDG address from `cast call <new> "usdg()(address)"`.
-
-Live on testnet against real USDG: `register()` accepted a fresh Phala quote for signer `0x79a5...6b79` ([tx](https://sepolia.arbiscan.io/tx/0x3410ca1d2dd3b93deb09187c94d42d14f3fa766444632b1432fd0a7979c301e0)), then `openChannelWithPermit` opened channel 0 with a 2.000000 USDG deposit signed over the real `Global Dollar`/`1` permit domain ([tx](https://sepolia.arbiscan.io/tx/0x2f5f14672dd085bcceb9e35af405bd7d396eeb716cf24fe1e8777c99dfaaac07)); `balanceOf(assay)` reads back exactly 2000000. See `docs/e2e/chiron.md` for every post-condition read.
-
-Not live yet: the positive paid redeem needs a Phala API key (unset, never requested). It is proven in tests instead: `contracts/test/Assay.t.sol`'s `test_enclaveDigest_matchesPhalaLegacyFormat_andRecovers` and `contracts/test/AssayAttacks.t.sol`.
-
-An agent locks USDG into a channel. `redeem()` requires two independent signatures over the same `(channelId, cumulativeAmount, requestHash, responseHash)`: a `payerSig`, the channel's own agent authorizing spend (EIP-712), and an `enclaveSig`, Phala's own `personal_sign` receipt over the request/response pair, required to recover to a currently registered, unexpired, allowlisted-measurement signer. Authorization and provenance are separate signatures because only one party can ever produce each; no admin, no owner, no upgrade path.
-
-## Who pays
-
-The agent funds the channel (USDG, via `permit` or `approve` depending on what the deployed token supports). The provider is paid out of that deposit as it redeems vouchers. Nobody else moves funds. Closing is two-phase: `requestClose(channelId)` opens an immutable `challengeWindow` (1 hour on testnet) during which the provider can still redeem its latest voucher; only after the window elapses does `finalizeClose(channelId)` refund whatever remains to the agent. The timeout that gates `requestClose` counts from the channel's last redeem (or `openedAt`, if it was never redeemed), not from `openedAt` alone, so an agent cannot time out a provider that is actively being paid. `redeem()` reverts once `finalizeClose` has run.
-
-The deposit is a spend cap: `redeem()` requires `cumulativeAmount` to stay within `deposit`, so the agent's maximum possible loss to a single provider is fixed the moment it deposits, not a number the provider can inflate after the fact. That cap is not yet bound to one specific measurement chosen at channel-open time: `redeem()` only requires the `enclaveSig` signer's *currently* registered measurement to be on the allowlist, so if a provider re-registers a different, still-allowlisted image after a channel opens, `redeem()` still pays against the new image, not the one the agent funded against. Pinning `measurement` on `Channel` at open and requiring it match at redeem is tracked as hardening work, not shipped yet.
-
-## What agents on other providers hit today
-
-No attestation, no onchain cap: providers can silently swap models, and an agent has no receipt to check against. Three dated, first-party reports of the general shape of this problem, none reproduced end-to-end against Assay itself, and none the same failure Assay's measurement allowlist is scoped to catch (a swapped *serving image*, not a swapped *model inside an unchanged image*, see "What Intel TDX attestation proves, and what it does not" below):
-
-| Report | What happened |
-|---|---|
-| [NousResearch/hermes-agent#12201](https://github.com/NousResearch/hermes-agent/pull/12201) | RedPill returns four different, undocumented attestation-envelope shapes; a strict client has to sniff which one it got, and a real substitution was observed: request `DeepSeek-V3.1`, get `Qwen3.5-122B`. |
-| [OpenRouterTeam/ai-sdk-provider#499](https://github.com/OpenRouterTeam/ai-sdk-provider#499) | A silent provider flip broke prompt caching mid-session and turned a $0.005 turn into $0.04, an 8x cost jump with no error surfaced to the caller. |
-| [nearai/inference-proxy#129](https://github.com/nearai/inference-proxy/issues/129) | NEAR's own Intel Trust Authority attestation path, live-checked by a third party, returned a valid signature with `attester_tcb_status: OutOfDate` and 10 open advisory IDs, zero policy claims: even a more resourced attestation integration has not closed the TCB-freshness gap Assay discloses below. |
-
-## Security review fixes (SECURITY-REVIEW.md)
-
-| Finding | Fix | Status |
+| Contract | Address | What it is |
 |---|---|---|
-| H-1 unilateral close skips payment for delivered work | Two-phase `requestClose`/`finalizeClose` with an immutable challenge window; timeout counts from last activity, not `openedAt`; `redeem()` after `finalizeClose` reverts | Fixed, tested, live |
-| H-2 no freshness check on attestation quotes | Contract-issued nonce `keccak256(chainid, address(this), provider, registerNonce[provider])`; `register()` requires `report_data[32:64] == nonce`, `report_data[20:32] == 0`, and advances `registerNonce` only after the check passes; PCK leaf/intermediate cert `notBefore`/`notAfter` checked against `block.timestamp` in the verifier | Partially fixed: a stale or replayed quote is rejected (tested, live on-chain, replaying a byte-identical old quote reverts `QuoteAlreadyUsed()`), but the nonce itself is fully predictable ahead of time from public state (`chainid`, this contract's address, `provider`, and the current `registerNonce[provider]`), so a provider can fetch and stockpile quotes against future nonces before it needs them. Binding the nonce to an unpredictable, contract-unrevealed value (a recent Arbitrum block hash) is tracked as hardening work, not shipped yet. |
-| M-1 verifier accepts TDATTRIBUTES with DEBUG set | Verifier rejects any quote whose TDATTRIBUTES bit 0 (DEBUG, per the Intel TDX Module Base Architecture Specification's TDATTRIBUTES definition) is set, and requires the `[20:32]` report_data padding to be zero | Fixed, tested (`test_debug_attribute_set_reverts`) |
-| L-1 a receipt could be replayed across channels | Global `consumed` mapping keyed on `keccak256(provider, requestHash, responseHash)` | Fixed, tested |
-| L-2 `openChannelWithPermit` reverts if a permit is front-run | `try/catch` around the permit call; proceeds if allowance is already sufficient | Fixed, tested |
-| L-3 Stylus program reactivation | Documented below: reactivation after an ArbOS upgrade invalidates cached programs is a permissionless call anyone can make; no privileged role needed | Documented |
-| L-4 unchecked length arithmetic in the verifier | `checked_end()`/checked arithmetic replacing raw `off + len` on all attacker-controlled length fields | Fixed, tested |
+| Assay | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://sepolia.arbiscan.io/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | The payment channel. Source verified on Sourcify (exact match, creation and runtime). |
+| Verifier | [`0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c`](https://sepolia.arbiscan.io/address/0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c) | Stylus (Rust). Verifies an Intel TDX DCAP quote chain and returns the gateway's signer and image measurement. |
+| ReceiptVerifier | [`0x9af7d9c3b27c4a8a11fb879041b931c38b712380`](https://sepolia.arbiscan.io/address/0x9af7d9c3b27c4a8a11fb879041b931c38b712380) | Stylus (Rust). Verifies one Ed25519-signed Phala inference receipt and returns the requested model, served model, request hash and response hash. |
+| USDG | [`0xFFC95faa3d63Cde504a05B567C600B78C0b41892`](https://sepolia.arbiscan.io/address/0xFFC95faa3d63Cde504a05B567C600B78C0b41892) | Paxos Global Dollar on Arbitrum Sepolia. Not deployed by this repo. |
 
-### Issuer risk
+Live transactions on this deployment:
 
-Assay pools every channel's deposit in one contract address and pays out of real Paxos USDG, a regulated, admin-controlled stablecoin: Paxos can pause the token, freeze any single address, or wipe a frozen address's balance entirely, and none of that is under Assay.sol's control. This project's own security review accepted three such risks for this testnet deploy, each now asserted as a passing `test_issuerRisk_*` test in `contracts/test/AssayRealUSDGFork.t.sol` (a fork of Arbitrum Sepolia against the real USDG proxy) rather than only described in prose:
+| Step | Transaction | Result read back |
+|---|---|---|
+| Register Phala's gateway signer from a fresh TDX quote bound to Assay's own nonce | [`0xaf4218b9...0d59`](https://sepolia.arbiscan.io/tx/0xaf4218b965aea5b0086a45f12680920411935548698bbebfbe2f085b3bb80d59), block 313675089 | `signers(0x79A5...6B79)` = measurement `0xfd34...0149` |
+| Register Phala's Ed25519 receipt key from a second fresh quote | [`0xdff86c7c...ef1f`](https://sepolia.arbiscan.io/tx/0xdff86c7c326ffa23738ec12fc9e7a7c3c930453298c28d7ce26322888a13ef1f), block 313675112 | `receiptSigners(0x110f...aa0a)` = same measurement |
+| Open channel 0, pinned to `meta-llama/llama-3.3-70b-instruct` | [`0x61fffc01...bd2`](https://sepolia.arbiscan.io/tx/0x61fffc011aeee16cce4a8075f606bb58d6b05038a7b8d6921460a26db5cacbd2), block 313676162 | deposit 2.000000 USDG |
+| Open channel 1, legacy signature path | [`0xb06dae37...2652`](https://sepolia.arbiscan.io/tx/0xb06dae3711bce5b151ea7fb6af0b30a94d37186cd00bb4b06cd7e9460bfd2652), block 313676207 | deposit 2.000000 USDG |
 
-- **A pause spanning the challenge window can move an honest provider's earned money to the agent (M-1).** `redeem()` reverts while USDG is paused; if the pause outlasts the window, the agent's `finalizeClose` lands first and the provider's now-late, still-validly-signed voucher reverts `ChannelClosedErr()` instead of paying.
-- **Freezing the Assay contract itself strands every open channel, and a later wipe burns all pooled escrow at once (M-2).** `redeem()` reverts `AddressFrozen()` once the contract address is frozen; `wipeFrozenAddress` zeroes its balance for every agent and provider at the same time.
-- **A frozen agent's refund has no alternate recipient (L-1).** `finalizeClose` reverts `AddressFrozen()` and the refund sits in Assay until Paxos unfreezes. This is compliance-correct rather than a bug: a `refundTo(address)` escape hatch would let a sanctioned party redirect funds around a freeze, so none was added; the money is held, not lost (proven by `test_demo_M1_unfreezeRestoresRefund`, which shows the full refund arriving after unfreeze).
+The agent wallet (`0x2aD1...5DEF`) pays and the provider wallet (`0x93e8...EE5A`) is paid; the two are different addresses. `docs/e2e/chiron.md` lists every command and post-condition.
 
-None of these are fixable from Assay.sol alone: they are inherent to any pooled escrow of a token whose issuer holds pause/freeze/wipe roles. Accepted for a testnet deploy of a few USDG; before any mainnet or higher-value deploy, separate crediting from transferring (`redeem` should credit `owed[provider]` rather than transfer directly, so a pause only delays a `withdraw()` instead of changing who is owed).
+## The problem
 
-Real-USDG deploy path review (Deploy.s.sol's `USDG_ADDRESS` override, the three issuer risks above with live fork evidence): `docs/security/assay-usdg-review.md`.
+An agent that pays a model API per call cannot see what actually served the call. A provider can substitute a cheaper or quantized model and keep charging the advertised price.
 
-**L-3 detail:** Stylus caches compiled programs and can invalidate that cache on an ArbOS upgrade (`ProgramNotActivated`). Reactivating a previously-deployed, unchanged Verifier is a call to `ArbWasm.activateProgram(address)` (address `0x0000000000000000000000000000000000000071`), which is **not access-controlled**: any address can pay the (small) activation data fee and call it for this Verifier's address, since the bytecode itself never changes. No owner key, no deployer-only path, and no action is required from Assay.sol, whose `verifier_` reference is immutable and keeps working once the program is reactivated.
+| Source | What it shows |
+|---|---|
+| [Cai, Shi, Zhao, Song, "Are You Getting What You Pay For? Auditing Model Substitution in LLM APIs", arXiv 2504.04715](https://arxiv.org/abs/2504.04715) | Software-only detection of a substituted model is unreliable: output-statistics tests fail against subtle substitutions, and log-probability checks break on normal inference nondeterminism. The authors propose trusted execution environments as the practical fix. |
+| [MoonshotAI/K2-Vendor-Verifier](https://github.com/MoonshotAI/K2-Vendor-Verifier) | The model's own publisher measures significant tool-call accuracy differences between API vendors serving the same open-weight model. |
+| [OpenRouterTeam/ai-sdk-provider#499](https://github.com/OpenRouterTeam/ai-sdk-provider/issues/499) | A silent provider flip mid-session: a flipped request cost about $0.04 against about $0.005 for a cache hit, and no error reached the caller. |
 
-## What Intel TDX attestation proves, and what it does not
+Phala's confidential gateway already runs in a TEE, publishes a TDX attestation, and signs a receipt for every response that names the model the upstream served. What was missing is a payment that depends on them: checking a receipt in a client library after paying does not stop the payment. Chiron makes the check and the payment the same transaction.
 
-**Proves:** a TDX quote fetched from Phala's legacy `GET /v1/attestation/report?nonce=...` endpoint chains to Intel's DCAP root (PCK cert chain, QE report signature, top-level quote signature, all P-256). The verifier's `measurement` is `keccak256(mr_seam || td_attributes || xfam || MRTD || mr_config_id || RTMR0 || RTMR1 || RTMR2 || RTMR3)`, nine TD report fields, not just MRTD/RTMR0-3, so `register()` on `Assay.sol` will only accept a signer whose quote matches an allowlisted hash of all nine. RTMR3 carries the compose-hash of the deployed docker-compose.yaml (per docs.phala.com/phala-cloud/attestation/verify-your-application), so in the common case a changed measurement tracks a changed serving image; this repo has confirmed that binding against Phala's docs, not against Phala's own source. The registered `signer` is `report_data[0:20]`, a real secp256k1/Ethereum address the gateway signs per-response receipts with (`signing_address`). Its byte layout was confirmed against `github.com/Dstack-TEE/private-ai-gateway` main HEAD `6061f601f7294bd6686e670ad10222e0b87ef8f0` and a live fetch, byte for byte, but the gateway instance actually queried self-reports a different `repo_commit`, `8d0a666a2418898a8c823a9af49a634edd122a64` (`docs/security/assay-usdg-review.md`), so that confirmation is against the published source tree, not proven identical to the exact running build. Either way it is not the Quoting Enclave's ephemeral attestation key, which never leaves Intel's hardware and cannot sign anything a provider would issue. The canonical `/v1/aci/attestation` endpoint's report_data instead commits to a nonce+keyset-digest hash and carries no raw address, so `register()` must use a legacy-endpoint quote.
+## How it works
 
-**Does not prove:** that the pinned image, once booted, actually loads the model weights a seller advertises. There is no separate "model weight hash" field in this attestation distinct from the compose-hash; whether an image binds a specific weight file depends on how that image was built, and the quote does not distinguish baked-in weights from an unpinned runtime download. There is no NVIDIA GPU evidence anywhere in this endpoint's response and no P-384 anywhere in the quote (an earlier draft of this product claimed both; both were wrong, see `spikes/assay-verify/FINDINGS.md`). The verifier checks the PCK leaf and intermediate certificate validity dates against `block.timestamp`, but it does **not** check TCB status, QE identity, or the PCK CRL, because those require Intel's live PCCS collateral (a network fetch or an oracle feeding it onchain), which this contract does not have. A cert chain that is cryptographically valid and unexpired but whose TCB level has since been marked out-of-date (a microcode/firmware vulnerability disclosed after issuance) is not rejected. This is a real gap, not a checkbox: closing it needs either an onchain PCCS collateral oracle or an offchain relayer that refuses to submit quotes against a stale TCB, and neither exists here yet.
+**1. Register the gateway's keys.** Anyone can call `register(quote, refBlock)`. Assay issues the nonce the quote must commit to:
 
-## Measured gas
-
-`verify(bytes,bytes32)` against a real fetched quote, on the current Verifier (with the H-2 nonce/cert-date checks and M-1 DEBUG-bit check added): 2,332,833 gas (`cast estimate` against `0x(superseded-testnet-deploy)` on Arbitrum Sepolia, see `contracts/deployments/421614.json`). The apt Solidity comparison is Automata Network's audited `automata-dcap-attestation` (same PCK chain plus QE-report plus ISV-signature job), at roughly 4 to 5 million gas onchain. That puts the Stylus verifier at roughly 1.7x to 2.1x cheaper, not the order-of-magnitude difference an earlier, wrong Solidity baseline (AWS Nitro validation, a different mechanism entirely) would have implied.
-
-## The split-signature design
-
-`redeem(channelId, cumulativeAmount, requestHash, responseHash, payerSig, enclaveSig)` checks two signatures that prove two different things, because only one party can ever produce each:
-
-- `payerSig`: an EIP-712 `Voucher{channelId,cumulativeAmount,requestHash,responseHash}` signed by the channel's own agent. The agent always holds this key, so this authorizes spend up to `cumulativeAmount` for this exact exchange. It is not attestation evidence, and does not claim to be.
-- `enclaveSig`: Phala's own legacy per-response receipt signature, a `personal_sign` (EIP-191) over the exact ASCII text `"<requestHash>:<responseHash>"`, both hashes as 64 lowercase hex characters with no `0x`, built onchain from the two `bytes32` values to match `Dstack-TEE/private-ai-gateway`'s `legacy_signature_text` (`src/aggregator/service/helpers.rs`) and `sign_legacy_message`/`ethereum_personal_message_hash` (`src/dstack.rs`) byte for byte. Recovering it must land on a currently registered, unexpired, allowlisted-measurement signer: that is the provenance check, independent of who is paying.
-
-Both must verify, `cumulativeAmount` must increase and stay within the deposit, and `responseHash` must differ from the last one redeemed on this channel (`lastResponseHash`, blocking a replay of one real receipt under a bumped amount). No complete real Phala-signed `(address, message, signature)` fixture exists in Phala's docs or public repo to hardcode: their own regression test (`tests/http.rs`, `legacy_ecdsa_signature_uses_the_e2ee_signing_address`) signs the literal text `"hello"` with a key generated fresh at test time, not an exported constant. `contracts/test/Assay.t.sol`'s `test_enclaveDigest_matchesPhalaLegacyFormat_andRecovers` instead reproduces Phala's exact algorithm and proves recovery, rather than replaying a value that does not exist to replay.
-
-## Model-swap refusal
-
-A provider whose enclave was attested but whose aggregator silently routes to a cheaper model than the one requested (the failure mode `verifier/`'s measurement allowlist does not catch, see "What Intel TDX attestation proves, and what it does not" above) is a separate, second contract's job: `receipt-verifier/` (Stylus, Ed25519), reached through `IReceiptVerifier.verifyReceipt(pubkey, receiptBytes, signature) -> (ok, requestedModelHash, servedModelHash, responseHash)` (`receipt-verifier/solidity/IReceiptVerifier.sol`).
-
-**Binding the Ed25519 receipt key to the attested enclave.** `registerReceiptKey(quote, keysetBytes, refBlock, pubkey)` (`contracts/src/Assay.sol:270-285`) calls `IAssayVerifier.verifyKeyset`, implemented in `verifier/src/lib.rs:821` (`verify_keyset`). Phala's canonical `/v1/aci/attestation` endpoint's TD report does not sign the Ed25519 pubkey directly; it commits to a digest of the whole `workload_keyset` document (which contains `receipt_signing_keys[]`, including the pubkey) via `report_data`. `crates/aci-protocol/src/identity.rs`'s `REPORT_DATA_PURPOSE` (`"aci.report_data.v1"`) defines the committed statement as the JCS-shaped `{"keyset_digest":"sha256:<hex64>","nonce":"<hex64>","purpose":"aci.report_data.v1"}`, and `report_data_slot` is `sha256(statement) || zero(32)`, placed verbatim in the TD report's 64-byte `report_data` field. `verify_keyset` recomputes that exact statement from the caller-supplied `keysetBytes` and `nonce`, hashes it, and requires the result to equal `report_data[0..32]` (`verifier/src/lib.rs:837-847`), with `report_data[32..64]` required to be zero. Only after that digest check passes does it read `pubkey` out of `keysetBytes`'s own `receipt_signing_keys[]` array (`algo == "ed25519"` required) and return the attested `measurement`. This is a report-data-commitment binding, not an ECDSA-signs-Ed25519-pubkey scheme; `verifier/`'s own `test_real_aci_bundle_verifies_keyset` (`cargo test --lib`) recomputes this against a real fetched `/v1/aci/attestation` response and asserts the digest matches that response's own `report_data` byte for byte. `Assay.registerReceiptKey` then requires the returned `measurement` be on the allowlist before storing `receiptSigners[pubkey] = (measurement, expiry)` (mirroring `register()`'s `signers` mapping, but keyed on the Ed25519 pubkey instead of a recovered ECDSA address).
-
-**The redeem path.** `openChannel`/`openChannelWithPermit` take a `requestedModelHash` (`keccak256(abi.encodePacked(modelId))`) pinned onto the channel at open (`Assay.sol:295-328`; pass `bytes32(0)` for a channel that will only ever use the legacy path). `redeemWithReceipt(channelId, cumulativeAmount, requestHash, responseHash, payerSig, pubkey, receiptBytes, signature)` (`Assay.sol:437-484`) checks, in order: the same `payerSig` EIP-712 authorization `redeem()` already required (voucher shape unchanged); `receiptVerifier.verifyReceipt(...)` returns `ok`, else revert `ReceiptInvalid`; `servedModelHash != requestedModelHash` (the channel's pinned value) reverts `ModelMismatch` -- this is the actual refusal, since `servedModelHash` is read from bytes the TEE itself signed, not from anything the provider claims off-chain; `requestedModelHash != requestedModelHash` (the receipt's own requested-model field against the channel's pinned value) reverts `ModelMismatch` too, a second, structurally independent check ("defence in depth" in the source comment); the receipt's own `responseHash` must equal the voucher's `responseHash`, else `ResponseHashMismatch`; and `pubkey` must be registered to a `measurement` that equals the channel's pinned `measurement`, else `MeasurementMismatch`, mirroring `redeem()`'s enclave-signer check. The legacy ECDSA path (`redeem()`, `enclaveSig`) is untouched and kept as a clearly separate function for channels that never pin a model; `redeemWithReceipt` is the preferred path once a channel does.
-
-**Tests.** `receipt-verifier` cannot run inside `forge` (it is Stylus/WASM); Solidity tests instead run against `MockReceiptVerifier` (`contracts/test/mocks/MockReceiptVerifier.sol`), a test double keyed on exact `(requestedModelHash, servedModelHash, responseHash)` values exported by the Rust crate's own tests to `fixtures/receipt_vectors.json` (`receipt-verifier/tests/export_fixture.rs`, `verify_receipt_core`, real Ed25519 verify and real JSON field extraction, not hand-computed) -- the "test fixture keyed by exact receipt hashes generated by the Rust crate's vectors" path, not a pure-Solidity Ed25519 library: none is vendored in this repo (`contracts/lib` has only openzeppelin-contracts and forge-std), and this repo's own convention (`MockVerifier.sol`) is already "mock the Stylus contract's crypto, test `Assay.sol`'s own logic against controlled outputs." `contracts/test/AssayReceipt.t.sol` (`AssayReceiptTest`, 9/9 passing): `test_redeemWithReceipt_honestReceipt_pays`, `test_redeemWithReceipt_modelSwap_revertsModelMismatch`, `test_redeemWithReceipt_requestedHashMismatch_revertsModelMismatch`, `test_redeemWithReceipt_tamperedResponseHash_reverts`, `test_redeemWithReceipt_unregisteredPubkey_reverts`, `test_redeemWithReceipt_pubkeyRegisteredToDifferentMeasurement_reverts`, `test_redeemWithReceipt_replay_reverts`, `test_replaySharedAcrossPaths_reverts`, `test_redeemWithReceipt_cumulativeDeltaInvariantHolds` -- every case this feature needs, plus the escrow-conservation invariant. Full `forge test`: 50 passed, 0 failed, 1 skipped (51 total, the skip is the real-USDG fork suite's `setUp()`, gated on an unset `CHIRON_FUNDED_TEST_ACCOUNT`, unrelated to this feature). `forge coverage --ir-minimum` restricted to the non-fuzz/non-invariant suites (33 tests): `Assay.sol` 96.48% lines (137/142), 100% functions (15/15), 39.22% branches (20/51) -- the branch figure undercounts this feature specifically since it excludes the fuzz/invariant campaigns that also exercise `redeemWithReceipt`'s branches, a scope choice made to fit the evidence-gathering time budget, not a claim about the feature's own branch coverage. `receipt-verifier`: `cargo test` (all targets) 17 passed, 0 failed. `verifier`: `cargo test --lib` 19 passed, 0 failed (unaffected by this work, reconfirmed).
-
-Both `ModelMismatch` checks were mutation-proved by disabling each independently and re-running its targeted test: commenting out the `servedModelHash` check turned `test_redeemWithReceipt_modelSwap_revertsModelMismatch` from pass to `[FAIL: next call did not revert as expected]`, restoring it returned it to `[PASS]`; the same cycle on the `requestedModelHash` "defence in depth" check turned `test_redeemWithReceipt_requestedHashMismatch_revertsModelMismatch` (a test specifically constructed so only the second check can catch the mutant, since it pins the channel to the swap case's *served* hash) from pass to the same failure and back. Neither check is vacuous.
-
-**Agent (`agent/`).** `agent/src/digest.ts`'s `modelHash(modelId)` computes `keccak256(utf8(modelId))`, confirmed byte-identical to the Rust-generated fixture (`modelHash("requested-model")` -> `0x497a85cd...`, `modelHash("served-model")` -> `0x8f033fe3...`, both equal `fixtures/receipt_vectors.json`'s own values). `agent/src/phala.ts` adds a client for the newer canonical ACI receipt path (`spec/aci.md`, `Dstack-TEE/private-ai-gateway` @ `fea9d0ed37b1807edb418f2a8c2b4151c6d1fdb0`, fetched from the repo directly since neither `receipt-verifier/src/lib.rs` nor its README cite the exact HTTP paths, only "GET/POST"): `GET /v1/aci/attestation?nonce=...` resolves a receipt's `key_id` to its Ed25519 pubkey via the established keyset's `receipt_signing_keys[]`; `GET /v1/aci/receipts/{id}` (credential-bound to the same bearer key as the original request) fetches the signed receipt document. A hand-written JCS (RFC 8785) canonicalizer -- sorted keys, compact separators, integers only, sufficient for this one document type per `receipt-verifier`'s own reasoning that every member is ASCII and every number an integer -- reproduces `aci_protocol::receipt::receipt_signing_input`'s output client-side, then `@noble/curves`'s `ed25519.verify` checks the signature before anything is ever signed or spent. `agent/test/receipt.test.ts` (13 tests) cross-checks all of this against the same `fixtures/receipt_vectors.json`: the canonicalizer's output round-trips byte-for-byte to the Rust-generated signing input for both the honest and model-swap vectors, `ed25519.verify` accepts the genuine signature and rejects both a tampered signature and the wrong pubkey (mutation-proved: flipping a signature byte or substituting the pubkey demonstrably flips `ok` from `true` to `false`), and the model-swap vector's `requestedModel !== servedModel` while the honest vector's are equal -- proving the client-side refusal condition genuinely distinguishes the two cases. The key-sort mutation-proof specifically: since the fixture's own JSON text already arrives with alphabetically-sorted keys (it was generated by the Rust crate's own canonicalizer), a round-trip test against the fixture alone stays green even with `.sort()` disabled; a second test builds the same document with keys inserted in reverse order and was confirmed to go red with `.sort()` disabled, then green restored, closing that gap. `agent/src/index.ts`'s new `pay-receipt` CLI mode (`npm run pay-receipt`) performs the full flow -- request completion carrying the configured model, fetch the receipt, verify it locally, cross-check both `request.received`/`response.returned` body hashes against the exact bytes sent and received, refuse (`process.exit(1)`, no signature, no transaction) on any local-check failure including `servedModel !== requestedModel`, and only then sign the EIP-712 voucher and call `redeemWithReceipt()` -- mirroring the existing `pay` command's structure and its `PHALA_API_KEY`-gated refusal.
-
-**Web (`web/`).** `Channel.tsx` shows the channel's pinned `requestedModelHash` and, for any channel that has one, a table of every `RedeemedWithReceipt` event the channel has emitted (`requestedModelHash`, `servedModelHash`, amount, block), read via `getContractEvents` in its own isolated query so a public RPC's `getLogs` range cap degrading gracefully never breaks the main channel-state read.
-
-**What is proven:** the Ed25519-to-attestation binding mechanism (report-data digest commitment, cited above against `verifier/`'s own source and its passing `test_real_aci_bundle_verifies_keyset`); `redeemWithReceipt`'s model-swap and defence-in-depth checks, both individually mutation-proved red-then-green; the full Solidity test suite (50/51, 1 expected skip) and Rust suites (17/17, 19/19); the agent's local JCS canonicalizer and Ed25519 verification against real Rust-generated byte vectors, including a genuine (non-vacuous) mutation-proof cycle on key sorting.
-
-**What is not proven:** no live Phala ACI receipt has ever been fetched or redeemed end to end -- `pay-receipt` is gated on `PHALA_API_KEY` exactly like the existing `pay` command, and that key is unset in this environment (never requested, never read from anywhere but that env var name). Separately, and specific to this feature: the currently-deployed Assay (`0x(superseded-testnet-deploy)`, see "Deployed" above) is the pre-existing 9-field-`Channel` bytecode; this task explicitly does not deploy, so `registerReceiptKey`/`redeemWithReceipt`/the extended `channels()` getter exist only in this repo's source and freshly-regenerated ABI, not in the live contract. This was confirmed empirically, not assumed: running `agent/`'s `pay-receipt` against the live address throws `PositionOutOfBoundsError` decoding `channels()`'s return data with the new 10-field ABI against the old contract's 9-field encoded output, and the web `Channel.tsx` page's `requestedModelHash` display would fail the same way against the live address until Assay is redeployed with this task's interface changes. Also unresolved, and out of scope for this task: `verifier/`'s own WASM-size figure is inconsistently documented across sources (24 KiB claimed vs. 96 KB in a stale `spikes/assay-verify/FINDINGS.md` vs. an empirically-passing 37.9 KB) -- flagged here rather than silently left for a reader to trip over, but not investigated further as part of this work.
-
-## What works
-
-- The Stylus verifier (`verifier/`) checks a real Intel TDX quote's chain of trust in one transaction, binds it to a contract-issued nonce, rejects DEBUG-mode quotes, checks PCK cert validity dates, and extracts both a real signer address (`report_data[0:20]`, not a key fingerprint) and an image measurement. 7 Rust unit tests and 3 Rust integration tests pass (`cargo test --lib`, `cargo test --test attack_review`), including one that runs a real fetched legacy-endpoint bundle through the exact `verify()` call path and asserts the extracted signer equals that fetch's own `signing_address`, one that flips the DEBUG bit and asserts the exact `DebugAttributeSet` rejection (not just "some error"), one with a wrong nonce, one with an expired cert, and others that flip a signature or report-data bit. Two mutation tests were run and restored: removing the nonce-equality check turned `test_wrong_nonce_reverts` from a false accept back to green once restored (the check was proven able to fail), and removing the `DebugAttributeSet` check made that test fail for the wrong reason (`SignatureInvalid`, since flipping a real quote's byte also breaks its ISV signature), which is exactly why that test asserts the specific error string rather than a bare `is_err()`.
-- `Assay.sol`'s two-phase, split-signature payment channel logic is fully covered: `forge test` runs 5 suites, 27 passed, 0 failed, 1 skipped (28 total). The 4 unconditional suites (unit, attack, attack-review, fuzz) all pass; the 5th, the real-USDG fork suite (`AssayRealUSDGFork.t.sol`, 13 tests), skips its `setUp()` unless `CHIRON_FUNDED_TEST_ACCOUNT` is set, in which case all 40 tests pass. Coverage includes the H-1 challenge-window test (a pending voucher still redeems mid-challenge, `finalizeClose` pays only the remainder, `redeem` after `finalizeClose` reverts), the H-2 stale-quote replay test, the two L-1 cross-request and cross-channel receipt-replay tests, and the L-2 permit-front-run fallthrough test. Mutation tests on both H-1 (letting `redeem` ignore the challenge window) and H-2 (dropping the nonce check) were run and confirmed red, then restored to green.
-- Live on Arbitrum Sepolia (421614, see `contracts/deployments/421614.json` and the Deployed table above): the deployed Verifier and current real-USDG Assay (`challengeWindow = 3600`) carry all of the fixes above. `register()` was run with a quote fetched **using the contract's own `nextRegisterNonce(deployer)`** and succeeded onchain ([tx](https://sepolia.arbiscan.io/tx/0x3410ca1d2dd3b93deb09187c94d42d14f3fa766444632b1432fd0a7979c301e0)), storing the real `signing_address` (`0x79a5...6b79`) and measurement `0xfd34ca...0149`. A channel was opened for real with `openChannelWithPermit` ([tx](https://sepolia.arbiscan.io/tx/0x2f5f14672dd085bcceb9e35af405bd7d396eeb716cf24fe1e8777c99dfaaac07)), deposit `2000000` (2.000000 USDG), confirmed by `channels(0).deposit` and by USDG `balanceOf(assay)` both reading back `2000000`. Two deliberate failures were mined and confirmed live against the prior, now-superseded TestUSDG-bound Assay (`0x6B2a...EC41`, same code, see `docs/e2e/chiron.md`'s "Prior run" section): (1) re-registering an already-used quote reverts `QuoteAlreadyUsed()` (a real, mined, failing transaction, `status 0`); (2) a `redeem()` with a valid `payerSig` but an `enclaveSig` from a freshly generated, never-registered key was diagnosed and simulated (`eth_call`) to revert `SignerNotRegistered()`. Neither has yet been re-run as a mined transaction against the current real-USDG Assay; the agent client's `npm run refuse` (`agent/`, see `docs/e2e/chiron.md`) proves the unregistered-signer check live against this exact contract instead, by refusing to pay a freshly derived, unregistered key it checks with a live `signers()` read.
-
-## What does not work
-
-The positive redemption path, a real Phala `enclaveSig` succeeding against a real `payerSig` on live Arbitrum Sepolia, is still not demonstrated. The one user-supplied item blocking it is **`PHALA_API_KEY`**: getting an actual enclave signature requires a completion via `POST /v1/chat/completions`, then `GET /v1/signature/{chat_id}`, and the completions endpoint returns `401 "This model requires an API key"` with no key (checked live). It was never asked for in chat or read from anywhere but that env var name; it is unset in this environment. Set it to unlock the real call chain: completion, chat_id, signature fetch, `redeem()`. The redemption logic itself, including the exact Phala text format, is proven at the unit-test level (`contracts/test/Assay.t.sol`, `AssayAttacks.t.sol`) with a `MockVerifier` binding `register()` to a key the test controls; `Assay.sol`'s `redeem()` logic does not depend on how the verifier derived that signer. Also still not checked, onchain or off: TCB status, QE identity, and PCK CRL revocation (needs Intel PCCS collateral, see above).
-
-## Run instructions
-
-Verifier tests (Rust):
 ```
-cd verifier && cargo test --lib
+nonce = keccak256(chainid, assay, caller, registerNonce[caller], arbBlockHash(refBlock))
 ```
 
-Contract tests (Solidity, unit + attack + fuzz):
+The block hash comes from Arbitrum's ArbSys precompile, which answers only for the last 256 L2 blocks (about 66 seconds on Arbitrum Sepolia), so a quote cannot be fetched ahead of time and banked. `Verifier.verify(quote, nonce)` checks the quote's PCK certificate chain, QE report and quote signature (all P-256) against Intel's root, the certificate validity dates against `block.timestamp`, rejects the TDX DEBUG attribute, and requires `report_data` to carry the nonce. It returns the gateway's signing address and a measurement over nine TD report fields (`mr_seam`, `td_attributes`, `xfam`, `MRTD`, `mr_config_id`, `RTMR0` to `RTMR3`). Assay stores the signer only if that measurement is on the allowlist fixed at construction.
+
+`registerReceiptKey(quote, keysetBytes, refBlock, pubkey)` does the same for the Ed25519 key that signs receipts. Phala's ACI attestation does not sign that key directly: its `report_data` commits to `sha256` of a statement containing the digest of the whole workload keyset. `Verifier.verifyKeyset` recomputes that statement from the supplied keyset bytes and the nonce, requires it to equal `report_data[0..32]`, and only then reads the key out of the keyset's `receipt_signing_keys`.
+
+`cd agent && npm run register` does both inside one ArbSys window and checks the stored result afterwards.
+
+**2. Open a channel.** The agent deposits USDG (`openChannel` after `approve`, or `openChannelWithPermit` in one transaction) and pins two things: the image measurement it trusts and, optionally, a model id hash. The deposit is the most the provider can ever take.
+
+- A channel pinned to a model is **receipt-only**. `redeem()` on it reverts `ModelMismatch`, because the legacy signature carries no model evidence.
+- A channel with a zero model hash is **legacy-only**, paid against Phala's per-response ECDSA signature.
+
+**3. Pay per call.** For every call the agent signs an EIP-712 voucher over `(channelId, cumulativeAmount, requestHash, responseHash)`. The provider redeems the highest voucher and Assay pays only the difference from what it already paid.
+
+`redeemWithReceipt` pays only if all of these hold:
+
+- the voucher is signed by the channel's agent (its own ECDSA key, or ERC-1271 if the agent is a contract);
+- `ReceiptVerifier.verifyReceipt` accepts the Ed25519 signature over the receipt's exact JCS bytes;
+- the receipt's **served** model hash and requested model hash both equal the channel's pinned model;
+- the receipt's `request.received` and `response.returned` body hashes equal the voucher's `requestHash` and `responseHash`;
+- the receipt key is registered, unexpired, and registered under the measurement this channel pinned.
+
+The served model is read from bytes the gateway's TEE signed, not from anything the provider submits separately. A gateway that routed the call to another model produces a receipt that can never pay this channel.
+
+**4. Close.** The agent calls `requestClose` once the channel has been idle for `channelTimeout` (1 hour here). The provider can still redeem during the `challengeWindow` (1 hour), and `finalizeClose` then refunds the rest to the agent. No owner, no upgrade path, no pause, no admin setter.
+
+## What the agent does before it signs anything
+
+`npm run pay-receipt` requests a completion with a fresh nonce in the body, fetches the signed receipt, and checks it locally before creating a voucher. It canonicalizes the receipt itself (RFC 8785), verifies the Ed25519 signature against the key from a fresh attestation, and compares both body hashes with the exact bytes it sent and received. If the served model differs from the requested one, it prints `REFUSING TO PAY` and exits without signing. The onchain check is the guarantee; the local check means an honest agent never spends gas on a call it already knows is bad.
+
+## What the attestation proves
+
+It proves the gateway's key lives in a TDX guest whose nine-field measurement is on Assay's allowlist, under a certificate chain that ends at Intel's root and was valid at the block that checked it. RTMR3 carries the hash of the deployed compose file, so a changed serving image shows up as a changed measurement.
+
+The receipt proves which model the gateway says the upstream served for this one request and response. Phala records that in the receipt's `upstream.verified` event from the live response. The measurement does not say which weights a model provider loaded behind that; the receipt carries the upstream's own model label.
+
+Assay checks certificate dates but does not read Intel's TCB status, QE identity or PCK revocation list. Those need Intel's live collateral, which a contract cannot fetch. The allowlist carries a single measurement so that a TCB decision is made once, by whoever deploys, rather than inferred per quote.
+
+## Security
+
+Four review rounds; the record is in `SECURITY-REVIEW.md` and `docs/security/assay-usdg-review.md`. The last two ran against the code deployed here, and each finding came with a test that failed on the unfixed code:
+
+| Finding | Fix |
+|---|---|
+| A model-pinned channel could still be paid through the legacy path | A pinned channel is receipt-only; `redeem()` reverts `ModelMismatch` |
+| An out-of-window `refBlock` produced a zero hash, so the register nonce became a constant a quote could be stockpiled for | ArbSys revert or a zero hash reverts `StaleRefBlock` |
+| One receipt could back payments for different requests | The receipt verifier returns `request.received`'s hash and Assay requires it to equal the voucher's |
+| An agent whose EIP-7702 delegation changed after signing could void its vouchers | The agent's own ECDSA signature is always accepted; ERC-1271 is asked only if that fails |
+| The receipt verifier accepted a forged signature under a small-order public key | `verify_strict` |
+
+Each fix was checked by reverting it and confirming its test goes red, then restoring it. The final review's verdict before redeploy was DEPLOY.
+
+Assay holds real Paxos USDG, whose issuer can pause, freeze and wipe. The fork suite runs against the real USDG proxy and pins what that means: a pause that outlasts the challenge window lets the agent close first, and a frozen agent's refund waits in Assay until Paxos unfreezes (`test_demo_M1_unfreezeRestoresRefund` shows the full refund arriving afterwards). No `refundTo` escape was added, since it would let a frozen party route around the freeze.
+
+Tests on the deployed code:
+
+| Suite | Result |
+|---|---|
+| `forge test` (unit, attack, fuzz, hardening, re-review regressions) | 61 passed |
+| Invariant (escrow conservation) | 1 passed |
+| Fork suite against real Paxos USDG at a recent Arbitrum Sepolia block | 13 passed |
+| `receipt-verifier` `cargo test` | 18 passed |
+| `verifier` `cargo test` | 22 passed |
+| `agent` `npm test` | 17 passed |
+
+## Gas
+
+| Call | Gas | Source |
+|---|---|---|
+| `Verifier.verify` on a fresh Phala quote | 2,304,195 | `cast estimate`, block 313704492 |
+| `register` (verify + store) | 2,346,274 | tx `0xaf4218b9...0d59` |
+| `registerReceiptKey` (verify keyset + store) | 2,368,996 | tx `0xdff86c7c...ef1f` |
+| `openChannel` | 243,470 | tx `0x61fffc01...bd2` |
+
+Registration runs once per key rotation. The per-call path only runs the Ed25519 receipt check.
+
+## Run it
+
 ```
 cd contracts && forge test
+cd receipt-verifier && cargo test
+cd verifier && cargo test
+cd agent && npm test
 ```
 
-Redeploy the verifier (Stylus, needs `PRIVATE_KEY` in `contracts/.env`, loaded only in a subshell):
-```
-cd verifier
-( set -a; source contracts/.env; set +a; cargo stylus deploy --endpoint https://sepolia-rollup.arbitrum.io/rpc --private-key "$PRIVATE_KEY" --no-verify --max-fee-per-gas-gwei 1 )
-```
+Against the live deployment (keys in `.env`, loaded by the scripts, never printed): `PRIVATE_KEY` is the agent, `PROVIDER_PRIVATE_KEY` the provider, `PHALA_API_KEY` a Phala Confidential AI key.
 
-Deploy `Assay.sol` against an already-deployed USDG-shaped ERC-20 (`USDG_ADDRESS` is required; this script deploys no token of its own, e.g. real Paxos USDG on Arbitrum Sepolia, `0xFFC95faa3d63Cde504a05B567C600B78C0b41892`):
 ```
-cd contracts
-( set -a; source contracts/.env; set +a; \
-  VERIFIER=<verifier address> APPROVED_MEASUREMENT=<bytes32 measurement> \
-  USDG_ADDRESS=<already-deployed ERC-20 address> \
-  forge script script/Deploy.s.sol --rpc-url arbitrum_sepolia --broadcast --private-key "$PRIVATE_KEY" )
+cd agent
+npm run register                # provider registers the gateway signer and receipt key
+APPROVED_MEASUREMENT=0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149 npm run open   # receipt-only channel
+ASSAY_CHANNEL_ID=0 npm run pay-receipt
+npm run refuse                  # shows the agent refusing an unregistered gateway key
 ```
 
-## Contributors
+Web app: `cd web && npm install && npm run dev`. It reads every figure it shows from the chain with the block it was read at.
 
-Built by pranjalcodesinw3, AI-assisted (Claude Code wrote the Stylus verifier, the Solidity contracts, the test suites, and this README under direction; every claim above was checked against a live testnet transaction, a passing test, or a cited source before being written down).
+## Design choices
 
-## What we cut
+- **One provider, one image.** Assay verifies and pays one attested gateway. Routing between providers is a separate product and adds a trust decision this contract is built to avoid.
+- **No disputes.** Both signatures verify against state already onchain or the call reverts; there is nothing left to arbitrate.
+- **Registration is permissionless.** The key comes out of the quote itself, so whoever submits it cannot register anything the quote did not attest.
 
-- **A router or marketplace across multiple providers.** Assay verifies one provider's attestation and pays it; picking between providers is a different product, and no comparable product's first users asked for it ahead of a working single-provider path.
-- **Disputes or arbitration.** The two-signature design (`payerSig` + `enclaveSig`) is built so there is nothing to arbitrate: either both signatures verify against the state committed onchain, or `redeem()` reverts. Adding a dispute path would reintroduce the trust it removes.
-- **A provider reputation score.** Scoring requires a population of providers and history this testnet deployment does not have yet; shipping a number with one data point is worse than no number.
-- **Onchain TCB/PCK-CRL revocation checking.** Documented above as a real, disclosed gap (needs Intel's live PCCS collateral), not silently dropped.
+## Team
 
-## Roadmap
-
-- **Now (blocked on the user):** the positive redemption path, gated on `PHALA_API_KEY` being placed in `.env`. Everything downstream of that key is already coded and unit-tested.
-- **Next:** an onchain PCCS collateral oracle, or an offchain relayer that refuses to submit quotes against a stale TCB, to close the TCB-freshness gap NEAR's own inference-proxy issue #129 documents is still open industry-wide.
-- **Later:** a second registered measurement (multi-image allowlist) once a second real provider image exists to test against; no plan to build a router ahead of that.
+Built by pranjalcodesinw3, AI-assisted.
