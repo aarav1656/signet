@@ -70,3 +70,21 @@ M6's "surviving" result against `test_attack_replayedVoucher_paysOnce` is a real
 New Item 4(e) stateful invariant: `AssayInvariant.t.sol`, `AssayHandler` (bounded fuzz `open`/`redeem`/`close`) driven through Foundry's native `StdInvariant`. `invariant_escrowEqualsSumOfDepositMinusPaid` asserts `usdg.balanceOf(assay) == sum(deposit - paid)` over every channel, proven both by M9 above (a real accounting bug makes it fail) and by a clean run: `runs: 256, calls: 128000` with non-vacuous per-handler-function call counts (`open`, `redeem`, `close` each in the tens of thousands, `redeem` reverting only on its own bounded preconditions).
 
 Full re-run after all Item 4 changes: `forge test` -- 38 passed, 0 failed, 1 skipped (39 total; the 1 skip is the funded-account-gated `AssayRealUSDGFork` suite, unchanged from before).
+
+## Item 6 hardening (2026-09-28): ERC-1271 smart-account payers
+
+`Assay.sol:308` swapped the payer-side check from `ECDSA.recover(voucherDigest, payerSig) != c.agent` to `SignatureChecker.isValidSignatureNow(c.agent, voucherDigest, payerSig)` (OZ 5.7 `utils/cryptography/SignatureChecker.sol`). `SignatureChecker` tries `ECDSA.recover` first (identical behaviour for an EOA `c.agent`, including revert-on-`address(0)`), then falls back to a static call to `c.agent.isValidSignature(voucherDigest, payerSig)` when `c.agent` has code, so a contract wallet (Safe, ZeroDev Kernel, any ERC-1271 implementer) can now open and redeem a channel with a voucher signed through its own validation logic. The enclave-signer check (`ECDSA.recover(enclaveDigest, enclaveSig)`, unchanged) stays plain ECDSA: attestation provenance is still a raw Phala `personal_sign`/EIP-191 signature, not a contract signature, so that recovery path was deliberately left alone.
+
+Test fixture: `contracts/test/mocks/ERC1271Wallet.sol`, a minimal real (not mocked) 1-of-1-owner ERC-1271 wallet -- `isValidSignature` calls `ECDSA.tryRecover` and compares to a fixed `owner`, returning the magic value only on a real, valid ECDSA signature from that owner. `contracts/test/AssaySmartAccount.t.sol` (`AssaySmartAccountTest`, extends `AssayTestBase`) opens a channel whose `agent` is the wallet's address and covers three cases: `test_redeem_payerIsEOA_stillSucceeds` (no regression for the common case), `test_redeem_payerIsERC1271Wallet_ownerSignature_succeeds` (the wallet owner signs the voucher digest directly, `redeem` succeeds through the ERC-1271 fallback), `test_redeem_payerIsERC1271Wallet_wrongSigner_reverts` (a non-owner key signs, `isValidSignature` returns `0xffffffff`, `redeem` reverts `PayerNotAgent`).
+
+Mutation (same throwaway-copy methodology as Item 4, `/tmp/chiron-mut`): mutant `M10` comments out the `SignatureChecker.isValidSignatureNow` check at line 308 (always treats the payer as authorized).
+
+| # | Mutation | Line (fixed source) | Killed by | Result |
+|---|---|---|---|---|
+| M10 | `redeem`: drop the `SignatureChecker.isValidSignatureNow(c.agent, voucherDigest, payerSig)` check | 308 | `AttackReviewTest` (whole contract) | SURVIVES -- wrong target, that contract never exercises `PayerNotAgent` |
+| M10b | same mutation as M10 | 308 | `AssayAttacksTest::test_attack_payerSigFromNonAgent_reverts` | KILLED |
+| M11 | same mutation as M10 | 308 | `AssaySmartAccountTest::test_redeem_payerIsERC1271Wallet_wrongSigner_reverts` | KILLED |
+
+M10's "surviving" run against `AttackReviewTest` is the same class of finding as Item 4's M6: picking a test contract that doesn't carry the guard's coverage produces a false-negative mutation result. `test_attack_payerSigFromNonAgent_reverts` (EOA path) and `test_redeem_payerIsERC1271Wallet_wrongSigner_reverts` (ERC-1271 path) are the two tests that actually load-bear the `SignatureChecker` check; both kill the mutant, confirming the check is real and covers both signer types, not just the EOA fast path.
+
+Full re-run after Item 6: `forge test` -- 41 passed, 0 failed, 1 skipped (42 total; 8 suites, same 1 skip as Item 4).
