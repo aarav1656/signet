@@ -45,3 +45,28 @@ cargo test --test attack_review: 2 passed, 1 failed (red_h3_rejects_report_data_
 cargo test --lib: 4 passed
 ```
 Green suite without the red tests: `forge test --no-match-contract AttackReview`.
+
+## Item 4 hardening (2026-09-28): measurement pinning, dead-code removal, ArbSys nonce, mutation re-run
+
+Changes to `Assay.sol`: (a) `Channel.measurement` is set at `openChannel`/`openChannelWithPermit` time and `redeem` now requires `signers[enclaveSigner].measurement == c.measurement`, so a channel stays pinned to the image it was opened against even if a second image is later added to the allowlist. (b) `lastResponseHash` and the dead post-allowlist-check at the old `:265` are deleted; `consumedReceipt` (keyed `keccak256(provider, requestHash, responseHash)`) is the sole replay guard. (c) `register(quote, refBlock)` derives its nonce from `ArbSys.arbBlockHash(refBlock)` (precompile at `0x64`, `nitro-precompile-interfaces/ArbSys.sol`, BUSL-1.1: reverts unless `currentBlockNum-256 <= refBlock < currentBlockNum`), falling back to native `blockhash(refBlock)` when the precompile is absent or reverts (`_refBlockHash`, `Assay.sol`). (d) `Redeemed` now emits `requestHash` alongside `responseHash`. (e) new tests below, plus a `StdInvariant`/handler-based stateful invariant.
+
+Every mutant below was applied to a throwaway copy of the contract (`/tmp/chiron-mut`, `rsync`'d from `contracts/`, never the tracked source), run against the named test with `forge test --match-contract X [--match-test Y]`, then the copy was restored from the real fixed source and re-run green before moving to the next mutant. The real repo's `Assay.sol` was never edited by this process.
+
+| # | Mutation | Line (fixed source) | Killed by | Result |
+|---|---|---|---|---|
+| M1 | `requestClose`: drop `if (msg.sender != c.agent) revert NotAgent();` | 343 | `AssayHardeningTest::test_attack_requestClose_byNonAgent_reverts` | KILLED |
+| M2 | `finalizeClose`: drop `if (msg.sender != c.agent) revert NotAgent();` | 359 | `AssayHardeningTest::test_attack_finalizeClose_byNonAgent_reverts` | KILLED |
+| M3 | `requestClose`: drop `if (c.closeRequestedAt != 0) revert CloseAlreadyRequested();` | 345 | `AssayHardeningTest::test_attack_requestClose_twice_reverts` | KILLED |
+| M4 | `redeem`: drop `c.lastActivityAt = uint64(block.timestamp);` | 318 | `AssayHardeningTest::test_redeem_resetsLastActivityAt_delaysRequestCloseEligibility` (non-fork; distinguishes the write from `requestClose`'s `openedAt` fallback) | KILLED |
+| M5 | `redeem`: drop the `measurement` pin check | 311 | `AssayHardeningTest::test_redeem_measurementMismatch_reverts` | KILLED |
+| M6 | `redeem`: drop `if (consumedReceipt[receiptKey]) revert ReceiptAlreadyConsumed();` | 297 | `AssayAttacksTest::test_attack_replayedVoucher_paysOnce` | SURVIVES -- that test's second call already reverts on `AmountNotIncreasing` (same `cumulativeAmount` both times), so it never reaches the mutated line; this is a masking effect in that specific test, not an untested guard |
+| M6b | same mutation as M6 | 297 | `AttackReviewTest::test_M1_responseHashReplayABA_reverts` (replays with an increasing `cumulativeAmount`, so it genuinely reaches the check) | KILLED |
+| M7 | `register`: drop `if (usedQuote[quoteHash]) revert QuoteAlreadyUsed();` | 195 | `AttackReviewTest::test_H2_staleQuoteCannotReRegister` | KILLED |
+| M8 | `_refBlockHash`: `return blockhash(refBlock);` -> `return bytes32(0);` (drop the fallback) | 170 | `AssayHardeningTest::test_nextRegisterNonce_usesArbSysWhenPresent_fallsBackOnRevert` | KILLED |
+| M9 | `finalizeClose`: drop `c.deposit = c.paid;` (refund accounting) | 366 | `AssayInvariantTest::invariant_escrowEqualsSumOfDepositMinusPaid` | KILLED (`136233595 != 416010131717` after ~20 handler calls) |
+
+M6's "surviving" result against `test_attack_replayedVoucher_paysOnce` is a real, documented finding: that test is not the one carrying the `consumedReceipt` guard's coverage, `test_M1_responseHashReplayABA_reverts` is. Both a Low finding write-up and the mutation table need to point at the actually-load-bearing test, or a future refactor of `test_attack_replayedVoucher_paysOnce` could silently drop real coverage without any test going red.
+
+New Item 4(e) stateful invariant: `AssayInvariant.t.sol`, `AssayHandler` (bounded fuzz `open`/`redeem`/`close`) driven through Foundry's native `StdInvariant`. `invariant_escrowEqualsSumOfDepositMinusPaid` asserts `usdg.balanceOf(assay) == sum(deposit - paid)` over every channel, proven both by M9 above (a real accounting bug makes it fail) and by a clean run: `runs: 256, calls: 128000` with non-vacuous per-handler-function call counts (`open`, `redeem`, `close` each in the tens of thousands, `redeem` reverting only on its own bounded preconditions).
+
+Full re-run after all Item 4 changes: `forge test` -- 38 passed, 0 failed, 1 skipped (39 total; the 1 skip is the funded-account-gated `AssayRealUSDGFork` suite, unchanged from before).

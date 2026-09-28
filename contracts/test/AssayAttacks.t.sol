@@ -77,7 +77,10 @@ contract AssayAttacksTest is AssayTestBase {
 
     /// A responseHash cannot be redeemed twice under a bumped cumulative amount
     /// either: the same attested receipt cannot be billed for a second, larger
-    /// amount by resigning a new payerSig over it.
+    /// amount by resigning a new payerSig over it. Caught by consumedReceipt
+    /// (keyed on provider+requestHash+responseHash) now that the weaker,
+    /// same-channel-only lastResponseHash guard has been removed as dead code
+    /// subsumed by it (see SECURITY-REVIEW.md).
     function test_attack_sameResponseHashReplayedWithHigherAmount_reverts() public {
         _register(signerAddr, APPROVED_MEASUREMENT);
         uint256 channelId = _openChannel(1_000e6);
@@ -89,7 +92,7 @@ contract AssayAttacksTest is AssayTestBase {
 
         bytes memory payerSig2 = _signVoucher(agentPk, channelId, 300e6, keccak256("req-1"), keccak256("call-1"));
         vm.prank(provider);
-        vm.expectRevert(Assay.ResponseHashReplayed.selector);
+        vm.expectRevert(Assay.ReceiptAlreadyConsumed.selector);
         assay.redeem(channelId, 300e6, keccak256("req-1"), keccak256("call-1"), payerSig2, enclaveSig1);
         assertEq(usdg.balanceOf(provider), 200e6);
     }
@@ -135,7 +138,7 @@ contract AssayAttacksTest is AssayTestBase {
     function test_attack_measurementNotOnAllowlist_reverts() public {
         verifier.setNext(signerAddr, OTHER_MEASUREMENT);
         vm.expectRevert(Assay.MeasurementNotApproved.selector);
-        assay.register(hex"1234");
+        assay.register(hex"1234", 0);
 
         (bytes32 measurement,) = assay.signers(signerAddr);
         assertEq(measurement, bytes32(0));

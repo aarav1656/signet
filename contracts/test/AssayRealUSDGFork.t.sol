@@ -67,7 +67,7 @@ contract AssayRealUSDGForkTest is Test {
         vm.prank(FUNDED);
         USDG.transfer(agent, 1_000_000); // 1.000000 USDG
         verifier.setNext(vm.addr(signerPk), M);
-        assay.register(hex"01");
+        assay.register(hex"01", 0);
     }
 
     function _permitSig(uint256 value, uint256 deadline) internal view returns (uint8 v, bytes32 r, bytes32 s) {
@@ -78,7 +78,7 @@ contract AssayRealUSDGForkTest is Test {
     function _open(uint128 amt) internal returns (uint256 id) {
         (uint8 v, bytes32 r, bytes32 s) = _permitSig(amt, block.timestamp + 1 hours);
         vm.prank(agent);
-        id = assay.openChannelWithPermit(provider, amt, block.timestamp + 1 hours, v, r, s);
+        id = assay.openChannelWithPermit(provider, amt, M, block.timestamp + 1 hours, v, r, s);
     }
 
     function _hex64(bytes32 x) internal pure returns (bytes memory out) {
@@ -143,7 +143,7 @@ contract AssayRealUSDGForkTest is Test {
     function test_fork_openChannelWithPermit_realUSDG() public {
         uint256 n0 = USDG.nonces(agent);
         uint256 id = _open(1_000_000);
-        (,, uint128 dep,,,,,) = assay.channels(id);
+        (,, uint128 dep,,,,,,) = assay.channels(id);
         assertEq(dep, 1_000_000);
         assertEq(USDG.balanceOf(address(assay)), 1_000_000);
         assertEq(USDG.balanceOf(agent), 0);
@@ -156,7 +156,7 @@ contract AssayRealUSDGForkTest is Test {
         vm.prank(makeAddr("mev"));
         USDG.permit(agent, address(assay), 500_000, dl, v, r, s);
         vm.prank(agent);
-        assay.openChannelWithPermit(provider, 500_000, dl, v, r, s);
+        assay.openChannelWithPermit(provider, 500_000, M, dl, v, r, s);
         assertEq(USDG.balanceOf(address(assay)), 500_000);
     }
 
@@ -276,7 +276,7 @@ contract AssayRealUSDGForkTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(agentPk, keccak256(abi.encodePacked("\x19\x01", wrongDs, sh)));
         vm.prank(agent);
         vm.expectRevert(Assay.BadParams.selector);
-        assay.openChannelWithPermit(provider, 1_000_000, dl, v, r, s);
+        assay.openChannelWithPermit(provider, 1_000_000, M, dl, v, r, s);
     }
 
     /// A permit signed for more than `amount` also fails (value is part of the digest).
@@ -285,7 +285,7 @@ contract AssayRealUSDGForkTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = _permitSig(type(uint256).max, dl);
         vm.prank(agent);
         vm.expectRevert(Assay.BadParams.selector);
-        assay.openChannelWithPermit(provider, 1_000_000, dl, v, r, s);
+        assay.openChannelWithPermit(provider, 1_000_000, M, dl, v, r, s);
     }
 
     function test_demo_M1_unfreezeRestoresRefund() public {

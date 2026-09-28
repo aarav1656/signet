@@ -10,6 +10,10 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract AssayTestBase is Test {
     bytes32 internal constant APPROVED_MEASUREMENT = keccak256("phala-gateway-image-v1");
+    /// A second, distinct measurement also on the allowlist -- lets a test prove
+    /// redeem() requires the enclave signer's measurement to match the specific one
+    /// the channel was pinned to at open(), not merely "is on the allowlist".
+    bytes32 internal constant APPROVED_MEASUREMENT_2 = keccak256("phala-gateway-image-v1-rev2");
     bytes32 internal constant OTHER_MEASUREMENT = keccak256("some-other-image");
 
     uint64 internal constant ATTESTATION_VALIDITY = 1 days;
@@ -37,8 +41,9 @@ abstract contract AssayTestBase is Test {
         agent = vm.addr(agentPk);
         signerAddr = vm.addr(signerPk);
 
-        bytes32[] memory approved = new bytes32[](1);
+        bytes32[] memory approved = new bytes32[](2);
         approved[0] = APPROVED_MEASUREMENT;
+        approved[1] = APPROVED_MEASUREMENT_2;
         assay =
             new Assay(address(usdg), address(verifier), approved, ATTESTATION_VALIDITY, CHANNEL_TIMEOUT, CHALLENGE_WINDOW);
 
@@ -51,16 +56,23 @@ abstract contract AssayTestBase is Test {
 
     /// Same as `_register`, but with an explicit quote so a test can re-register
     /// with a distinct (fresh) quote instead of hitting the QuoteAlreadyUsed guard.
+    /// refBlock is 0: MockVerifier ignores the nonce entirely (see MockVerifier.sol),
+    /// so its exact value is irrelevant here; the real ArbSys-vs-blockhash nonce
+    /// derivation is exercised directly in AssayArbSysNonce.t.sol.
     function _registerQuote(bytes memory quote, address signer_, bytes32 measurement_) internal returns (bytes32) {
         verifier.setNext(signer_, measurement_);
-        (, bytes32 m) = assay.register(quote);
+        (, bytes32 m) = assay.register(quote, 0);
         return m;
     }
 
     function _openChannel(uint128 amount) internal returns (uint256 channelId) {
+        channelId = _openChannel(amount, APPROVED_MEASUREMENT);
+    }
+
+    function _openChannel(uint128 amount, bytes32 measurement_) internal returns (uint256 channelId) {
         vm.startPrank(agent);
         usdg.approve(address(assay), amount);
-        channelId = assay.openChannel(provider, amount);
+        channelId = assay.openChannel(provider, amount, measurement_);
         vm.stopPrank();
     }
 

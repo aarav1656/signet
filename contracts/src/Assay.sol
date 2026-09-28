@@ -53,6 +53,10 @@ contract Assay is ReentrancyGuard, EIP712 {
         uint64 lastActivityAt;
         uint64 closeRequestedAt;
         bool closed;
+        /// Pinned at open() to the enclave measurement this channel will pay against;
+        /// redeem() requires the recovered enclaveSigner's registered measurement to
+        /// match this exactly (see redeem()). Immutable for the channel's lifetime.
+        bytes32 measurement;
     }
 
     /// Authorizes the payer's spend, not the work itself: the agent's own key,
@@ -82,11 +86,6 @@ contract Assay is ReentrancyGuard, EIP712 {
     mapping(uint256 => Channel) public channels;
     uint256 public channelCount;
 
-    /// Last redeemed responseHash per channel; blocks replaying the same attested
-    /// receipt again under a bumped cumulativeAmount on the SAME channel. See
-    /// `consumedReceipt` for the cross-channel guard.
-    mapping(uint256 => bytes32) public lastResponseHash;
-
     /// keccak256(provider, requestHash, responseHash) -> paid. One real attested
     /// receipt can be paid at most once, ever, on any channel that provider holds
     /// (the enclave signature itself is not bound to a channel).
@@ -94,7 +93,14 @@ contract Assay is ReentrancyGuard, EIP712 {
 
     event Registered(address indexed signer, bytes32 measurement, uint64 expiry);
     event ChannelOpened(uint256 indexed channelId, address indexed agent, address indexed provider, uint256 deposit);
-    event Redeemed(uint256 indexed channelId, address indexed enclaveSigner, uint256 cumulativeAmount, uint256 paidNow, bytes32 responseHash);
+    event Redeemed(
+        uint256 indexed channelId,
+        address indexed enclaveSigner,
+        uint256 cumulativeAmount,
+        uint256 paidNow,
+        bytes32 requestHash,
+        bytes32 responseHash
+    );
     event CloseRequested(uint256 indexed channelId, uint64 requestedAt);
     event ChannelClosed(uint256 indexed channelId, uint256 refund);
 
@@ -110,8 +116,8 @@ contract Assay is ReentrancyGuard, EIP712 {
     error TimeoutNotElapsed();
     error TransferShort();
     error PayerNotAgent();
-    error ResponseHashReplayed();
     error ReceiptAlreadyConsumed();
+    error MeasurementMismatch();
     error QuoteAlreadyUsed();
     error CloseAlreadyRequested();
     error CloseNotRequested();
@@ -138,25 +144,56 @@ contract Assay is ReentrancyGuard, EIP712 {
         }
     }
 
+    /// Arbitrum's ArbSys precompile (Offchain Labs, nitro-precompile-interfaces
+    /// ArbSys.sol): arbBlockHash(arbBlockNum) returns the Arbitrum block hash for
+    /// arbBlockNum, reverting unless currentBlockNum-256 <= arbBlockNum <
+    /// currentBlockNum -- the same 256-block window and revert-on-out-of-range shape
+    /// as native EVM blockhash().
+    address private constant ARBSYS = 0x0000000000000000000000000000000000000064;
+    bytes4 private constant ARBSYS_ARBBLOCKHASH_SELECTOR = bytes4(keccak256("arbBlockHash(uint256)"));
+
+    /// A recent, hard-to-predict-before-it-exists block hash, bound into the
+    /// register() nonce so a quote cannot be pre-fetched for a future nonce value.
+    /// Tries ArbSys.arbBlockHash(refBlock) first (correct only on an Arbitrum
+    /// chain); staticcall so an out-of-window refBlock (ArbSys reverts) or a
+    /// non-Arbitrum chain (no contract at 0x64, so the call trivially "succeeds"
+    /// with empty returndata) falls through to native blockhash(refBlock) instead of
+    /// bricking register() -- same 256-block window, weaker only in that a stale
+    /// refBlock returns 0 here instead of reverting, exactly like blockhash() itself
+    /// does for any out-of-window block number.
+    function _refBlockHash(uint256 refBlock) private view returns (bytes32) {
+        (bool ok, bytes memory data) = ARBSYS.staticcall(abi.encodeWithSelector(ARBSYS_ARBBLOCKHASH_SELECTOR, refBlock));
+        if (ok && data.length == 32) {
+            bytes32 h = abi.decode(data, (bytes32));
+            if (h != bytes32(0)) return h;
+        }
+        return blockhash(refBlock);
+    }
+
     /// The nonce a quote fetched by `provider` must bind (report_data[32:64]) for
-    /// its next register() call to succeed. Callable by anyone, before fetching
-    /// the quote, so the caller knows what to ask Phala's attestation endpoint for.
-    function nextRegisterNonce(address provider) public view returns (bytes32) {
-        return keccak256(abi.encode(block.chainid, address(this), provider, registerNonce[provider]));
+    /// its next register() call to succeed, given `refBlock` as the recent-block
+    /// reference (see _refBlockHash). Callable by anyone, before fetching the
+    /// quote, so the caller knows what to ask Phala's attestation endpoint for.
+    function nextRegisterNonce(address provider, uint256 refBlock) public view returns (bytes32) {
+        return keccak256(
+            abi.encode(block.chainid, address(this), provider, registerNonce[provider], _refBlockHash(refBlock))
+        );
     }
 
     /// Verify a fresh quote and register (or re-register, extending expiry) its
     /// bound signer, iff the measurement it attests to is on the allowlist fixed at
-    /// construction. The quote must bind msg.sender's current nextRegisterNonce()
+    /// construction. The quote must bind msg.sender's current nextRegisterNonce(refBlock)
     /// in report_data (checked by the verifier) and must never have been submitted
     /// before (checked here); together these mean a captured or re-broadcast old
-    /// quote can never re-register anything. Anyone may call this for any
-    /// provider; the signer address is derived from the quote itself, so this
-    /// cannot register a key the quote did not attest to.
-    function register(bytes calldata quote) external nonReentrant returns (address signer, bytes32 measurement) {
+    /// quote can never re-register anything. `refBlock` should be a recent block
+    /// number (within ArbSys.arbBlockHash's 256-block window) the caller read
+    /// nextRegisterNonce against. Anyone may call this for any provider; the signer
+    /// address is derived from the quote itself, so this cannot register a key the
+    /// quote did not attest to.
+    function register(bytes calldata quote, uint256 refBlock) external nonReentrant returns (address signer, bytes32 measurement) {
         bytes32 quoteHash = keccak256(quote);
         if (usedQuote[quoteHash]) revert QuoteAlreadyUsed();
-        bytes32 nonce = nextRegisterNonce(msg.sender);
+        bytes32 nonce = nextRegisterNonce(msg.sender, refBlock);
         (signer, measurement) = verifier.verify(quote, nonce);
         if (!approvedMeasurement[measurement]) revert MeasurementNotApproved();
         usedQuote[quoteHash] = true;
@@ -166,9 +203,16 @@ contract Assay is ReentrancyGuard, EIP712 {
         emit Registered(signer, measurement, expiry);
     }
 
-    /// Open a channel funded by a prior `usdg.approve(address(this), amount)`.
-    function openChannel(address provider, uint128 amount) external nonReentrant returns (uint256 channelId) {
-        channelId = _openChannel(provider, amount);
+    /// Open a channel funded by a prior `usdg.approve(address(this), amount)`,
+    /// pinned to `measurement` (must be on the allowlist fixed at construction):
+    /// only a signer currently registered under exactly this measurement can
+    /// redeem against this channel (see redeem()).
+    function openChannel(address provider, uint128 amount, bytes32 measurement)
+        external
+        nonReentrant
+        returns (uint256 channelId)
+    {
+        channelId = _openChannel(provider, amount, measurement);
         _pull(msg.sender, amount);
     }
 
@@ -179,6 +223,7 @@ contract Assay is ReentrancyGuard, EIP712 {
     function openChannelWithPermit(
         address provider,
         uint128 amount,
+        bytes32 measurement,
         uint256 deadline,
         uint8 v,
         bytes32 r,
@@ -188,12 +233,13 @@ contract Assay is ReentrancyGuard, EIP712 {
         catch {
             if (usdg.allowance(msg.sender, address(this)) < amount) revert BadParams();
         }
-        channelId = _openChannel(provider, amount);
+        channelId = _openChannel(provider, amount, measurement);
         _pull(msg.sender, amount);
     }
 
-    function _openChannel(address provider, uint128 amount) private returns (uint256 channelId) {
+    function _openChannel(address provider, uint128 amount, bytes32 measurement) private returns (uint256 channelId) {
         if (provider == address(0) || amount == 0) revert BadParams();
+        if (!approvedMeasurement[measurement]) revert MeasurementNotApproved();
         channelId = channelCount++;
         channels[channelId] = Channel({
             agent: msg.sender,
@@ -203,7 +249,8 @@ contract Assay is ReentrancyGuard, EIP712 {
             openedAt: uint64(block.timestamp),
             lastActivityAt: 0,
             closeRequestedAt: 0,
-            closed: false
+            closed: false,
+            measurement: measurement
         });
         emit ChannelOpened(channelId, msg.sender, provider, amount);
     }
@@ -225,12 +272,12 @@ contract Assay is ReentrancyGuard, EIP712 {
     ///   the provenance check, independent of who is paying.
     ///
     /// Both must verify, cumulativeAmount must increase and stay within deposit,
-    /// responseHash must differ from the last one redeemed on this channel
-    /// (blocks replaying one real receipt under a bumped amount on this channel),
-    /// and (provider, requestHash, responseHash) must never have been paid on ANY
-    /// channel before (blocks replaying the same real receipt across channels).
-    /// Pays only the delta over what was already paid. Stays open through a
-    /// pending requestClose(); reverts once finalizeClose() has run.
+    /// the enclave signer's currently registered measurement must match the one
+    /// this channel was opened with (see openChannel()), and (provider,
+    /// requestHash, responseHash) must never have been paid on ANY channel before
+    /// (blocks replaying the same real receipt again on this channel, or across
+    /// channels). Pays only the delta over what was already paid. Stays open
+    /// through a pending requestClose(); reverts once finalizeClose() has run.
     function redeem(
         uint256 channelId,
         uint256 cumulativeAmount,
@@ -245,7 +292,6 @@ contract Assay is ReentrancyGuard, EIP712 {
         if (c.closed) revert ChannelClosedErr();
         if (cumulativeAmount <= c.paid) revert AmountNotIncreasing();
         if (cumulativeAmount > c.deposit) revert AmountExceedsDeposit();
-        if (responseHash == lastResponseHash[channelId]) revert ResponseHashReplayed();
 
         bytes32 receiptKey = keccak256(abi.encode(c.provider, requestHash, responseHash));
         if (consumedReceipt[receiptKey]) revert ReceiptAlreadyConsumed();
@@ -262,17 +308,16 @@ contract Assay is ReentrancyGuard, EIP712 {
 
         Signer storage s = signers[enclaveSigner];
         if (s.measurement == bytes32(0)) revert SignerNotRegistered();
-        if (!approvedMeasurement[s.measurement]) revert MeasurementNotApproved();
+        if (s.measurement != c.measurement) revert MeasurementMismatch();
         if (block.timestamp > s.expiry) revert AttestationExpired();
 
         uint256 delta = cumulativeAmount - c.paid;
         // forge-lint: disable-next-line(unsafe-typecast)
         c.paid = uint128(cumulativeAmount); // safe: cumulativeAmount <= c.deposit (uint128), checked above
-        lastResponseHash[channelId] = responseHash;
         consumedReceipt[receiptKey] = true;
         c.lastActivityAt = uint64(block.timestamp);
 
-        emit Redeemed(channelId, enclaveSigner, cumulativeAmount, delta, responseHash);
+        emit Redeemed(channelId, enclaveSigner, cumulativeAmount, delta, requestHash, responseHash);
         _push(c.provider, delta);
     }
 
