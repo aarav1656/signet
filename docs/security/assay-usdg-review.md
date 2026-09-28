@@ -115,3 +115,64 @@ RPC `https://sepolia-rollup.arbitrum.io/rpc`. `T = 0xFFC95faa3d63Cde504a05B567C6
 - The pause and freeze tests act through a role that the tests granted by pranking Paxos's `defaultAdmin` on the fork. They prove the token's behaviour, not the likelihood that Paxos pauses the testnet token.
 - No real Phala `enclaveSig` over a real completion has been redeemed at review time, because the Phala API key was still unplaced. The format match rests on a source read at a different commit than the running image.
 - The `test_issuerRisk_*` tests document accepted risk rather than proving a fix; M-1's suggested code fix (separate crediting from transferring) was not applied for this testnet deploy.
+
+## Re-review 2026-09-28 (before redeploy from a new owner wallet)
+
+Reviewer: JUDGE (opus/high), read-only. HEAD `6e35b45`. Scope: 480c525, b995d1b, bdf78f7, a7c9b5b, 4b15d4f, cec9664 and `receipt-verifier/` (daaa69e).
+
+Suites at HEAD: `forge test` 50 passed, 0 failed, 1 skipped. `verifier` `cargo test` 22 passed. `receipt-verifier` `cargo test` 17 passed. `agent` `npm test` 17 passed.
+
+Failing tests for this re-review live outside the repo: `/tmp/chiron-rr/contracts/test/ReReview.t.sol` (run from `/tmp/chiron-rr/contracts`: `forge test --match-contract ReReviewTest`) and `/tmp/chiron-rr/receipt-verifier/tests/weak_key.rs`. Each asserts the safe property. All 7 fail against unmodified HEAD source.
+
+### Verdict
+
+**FIX FIRST.** Assay and the receipt verifier are both immutable with no owner, so every fix below costs another redeploy if it lands after this one. RR-1, RR-2, RR-3 and RR-6 are one to three line changes. Each was applied to a scratch copy and its test went from red to green.
+
+### High
+
+**RR-1 The model pin is bypassed by the legacy path.** `Assay.sol:371-417` (`redeem`) never reads `c.requestedModelHash`. The provider picks the redeem path. The same enclave serves both paths under one measurement (`verifier/src/lib.rs:1099` asserts the ACI and legacy quotes hash to the same measurement). So a provider whose gateway served a swapped model redeems through `redeem()` with the legacy ECDSA signature Phala produces for every response. The claims at `Assay.sol:426-429` ("cannot get paid, regardless of what it claims off chain") and README "Model-swap refusal" hold only for a provider who chooses the receipt path. The repo's own `test_replaySharedAcrossPaths_reverts` (`contracts/test/AssayReceipt.t.sol:188`) runs a legacy `redeem()` on a model-pinned channel and expects it to succeed. The reference agent refuses a swap before it signs (`agent/src/index.ts:235-247`), so the loss needs an agent that trusts the chain instead. That is the agent this feature is built for.
+Test: `test_RR1_modelPinnedChannel_legacyRedeemMustRevert` fails ("next call did not revert").
+Fix: in `redeem()`, `if (c.requestedModelHash != bytes32(0)) revert ModelMismatch();`. Green on scratch. `test_replaySharedAcrossPaths_reverts` then needs rewriting: with the fix, each channel uses only one path.
+
+### Medium
+
+**RR-2 The H-2 stockpile is back through the zero-hash fallback.** `Assay.sol:216-223`. When `refBlock` is outside both windows, ArbSys reverts, native `blockhash` returns 0, and the nonce is `keccak256(chainid, this, caller, registerNonce, 0)`. That value can be computed and a quote fetched for it at any time. This is judging item B1.1 again. Live on Arbitrum Sepolia, block 313636375: `arbBlockHash(0)` and `arbBlockHash(N-300)` revert `InvalidBlockNumber`. At block 313636466 (eth_call of init code), EVM `block.number` = 11801135 (the L1 estimate), `blockhash(0)` = 0, `blockhash(L2 N-300)` = 0, `blockhash(L1 number-1)` is nonzero. So `refBlock = 0`, or any L2 number older than 256 L2 blocks, yields a constant nonce. A throwaway caller's counter stays 0 until it registers, so a quote banked today registers a year from now. Combined with M-3 (no TCB or CRL check), a quote from a platform that is later revoked stays registrable.
+Test: `test_RR2_zeroRefBlockHash_quoteStockpiledForAYear_mustNotRegister` fails.
+Fix: revert when the resolved hash is zero. Green on scratch. Stricter: on Arbitrum, drop the `blockhash` fallback. The L1-numbered fallback gives about a 51 minute window, where ArbSys gives 66 s.
+
+**RR-3 One ACI receipt pays more than once.** `Assay.sol:454`. The replay key is `(provider, requestHash, responseHash)`, but the receipt binds only `responseHash`. `IReceiptVerifier` (`contracts/src/IReceiptVerifier.sol:20-24`, `receipt-verifier/src/lib.rs:139-174`) never returns the receipt's `request.received` body hash, so `requestHash` is unchecked. The same signed receipt pays again under any new `requestHash` the agent signs. That contradicts `Assay.sol:431-434` ("a receipt cannot be paid twice"). Phala's receipt key (`dstack-kms-receipt-ed25519-v1`, `fixtures/keyset_bytes_aci1.json`) is shared by every Phala customer, so the request hash is the only link between a receipt and this agent's request. The agent already checks it off chain (`agent/src/index.ts:222-229`); the chain does not.
+Test: `test_RR3_sameReceiptPaysTwiceWithDifferentRequestHash_mustRevert` fails.
+Minimal fix: consume `keccak256(receiptBytes)` as well. Green on scratch. `test_redeemWithReceipt_cumulativeDeltaInvariantHolds` then needs distinct mock receipt bytes per call. Full fix: return `request.received`'s body hash from `verifyReceipt` and require it to equal `requestHash`.
+
+**RR-4 Voucher validity is revocable after service.** `Assay.sol:397, 460`. `SignatureChecker` is evaluated at redeem time. A smart-account agent that rotates its owner voids every voucher it issued. OZ 5.7 `isValidSignatureNow` also picks ECDSA or ERC-1271 by `signer.code.length`. It does not try one and then the other as `Assay.sol:392-396` says. So an EOA agent that later gains code (EIP-7702 delegation) also voids its own vouchers. Either way the provider cannot redeem, and the agent refunds itself at `finalizeClose`. A 1271 wallet can also burn all forwarded gas, which only costs the provider gas. `isValidSignature` runs under `staticcall` behind `nonReentrant`, so there is no reentrancy. The voucher digest binds `channelId` and the EIP-712 domain, so there is no replay across channels.
+Tests: `test_RR4_erc1271AgentRotatesOwner_providerMustStillBePaid` and `test_RR4b_eoaAgentGainsCodeAfterSigning_providerMustStillBePaid` fail with `PayerNotAgent()`.
+Fix options: pin an ECDSA voucher signer at `openChannel`, or disclose that providers must redeem every voucher immediately. Fix the comment either way. Whether 7702 is live on 421614 was not checked.
+
+### Low
+
+**RR-5 One measurement slot per key.** `Assay.sol:254, 283` overwrite, and `406, 471` compare. Phala's keys are KMS-derived and survive an image roll. With two approved measurements, anyone can fetch a quote from the other image and re-register the same key, and every channel pinned to the first image stops redeeming. The shipped `Deploy.s.sol:42-43` allowlists one measurement, so this deploy is not exposed.
+Test: `test_RR5_thirdPartyReRegisterUnderOtherMeasurement_mustNotBrickPinnedChannel` fails with `MeasurementMismatch()`.
+Fix if a second measurement is ever added: key registrations on `(key, measurement)`.
+
+**RR-6 The receipt verifier accepts forgeries under a small-order key.** `receipt-verifier/src/lib.rs:147` uses ed25519-dalek's permissive `verify`. With pubkey = identity and signature `R = identity, s = 0`, any attacker-written receipt verifies. Assay is safe only because the key must also be in `receiptSigners`, which requires an attested keyset. Any other consumer of the deployed verifier is exposed.
+Test: `/tmp/chiron-rr/receipt-verifier/tests/weak_key.rs` fails.
+Fix: `verify_strict`. Green on scratch, and all 17 existing receipt-verifier tests still pass.
+
+**RR-7 Keyset expiry is not carried into registration expiry.** `verifier/src/lib.rs:857-861` checks keyset `not_after` only at registration. `Assay.sol:282` sets expiry to `now + attestationValidity`, which can run past `not_after`. The live keyset's `not_after` is 1792250755 (2026-10-17). With 1 day validity the overhang is at most 1 day. No test: `verifyKeyset` does not return `not_after`, so the contract cannot see it.
+
+**RR-8 Registration liveness on the redeploy.** Measured on 421614 at block 313636375: 256 L2 blocks span 66 s. `web/src/pages/Verify.tsx:124,230` submits the latest `contractRefBlock`. That value is refetched every 15 s (`web/src/hooks/useAtBlock.ts:20`), not frozen when the quote was fetched, so a quote fetched in one poll fails `NonceMismatch` after the next. No client calls `registerReceiptKey` at all (grep over `agent/src` and `web/src`). After the redeploy, `redeemWithReceipt` stays unusable until someone assembles that call by hand inside the 66 s window. `register()` and `registerReceiptKey()` share `registerNonce`, so the two quotes must be fetched one after the other. Operational only, so no failing test.
+
+### Info
+
+- Receipt JSON extraction: checked and clean for the signed-bytes model. `find_member` reads only the top-level object, so a nested `model` or `model_id` cannot be mistaken for the real field. A string containing `"model":` is skipped whole. Values are compared raw, so an escaped model id fails closed. Duplicate keys cannot occur in Phala's JCS output. The chain reads the first `upstream.verified` event whose `result` is `verified`, which is the event Phala's own `set_upstream_verified_model_id` writes (`src/aci/receipt.rs:364-379` at `fea9d0ed`, fetched this session). The agent reads the first `upstream.verified` of any result (`agent/src/phala.ts:250`), so it is stricter than the chain. Signature malleability does not matter because nothing is keyed on the signature.
+- `model_id` in `upstream.verified` is the upstream's self-reported `model` string, or the routed model when the response carries none (same Phala source). The refusal therefore trusts the upstream's label. Whether real requested and served strings match byte for byte is unverified, because no live ACI receipt has been fetched. A format difference such as `deepseek/...` against `deepseek-ai/...` would refuse honest traffic.
+- The keyset binding is sound. The digest is checked before any field is read, `report_data[32..64]` must be zero (`verifier/src/lib.rs:833`), the nonce comes from `nextRegisterNonce(msg.sender, ...)`, and there are negative tests for a wrong nonce, tampered bytes, a key not in the keyset, and an expired keyset. A legacy quote cannot pass `verifyKeyset` (its nonce half is nonzero), and an ACI quote cannot pass `verify` (it would need 12 zero digest bytes).
+- One call in N, on the receipt path too. A cumulative voucher's receipt proves the model for the redeemed call only. README should say so under "Model-swap refusal".
+- Accounting: `redeemWithReceipt` repeats `redeem`'s delta, cap and `paid` code. The invariant handler (`contracts/test/AssayInvariant.t.sol`) never calls `redeemWithReceipt` or `openChannelWithPermit`, so the invariant run does not cover them. Checked by reading the code only.
+- Issuer risk is unchanged. `redeemWithReceipt` also pushes USDG in-line, so M-1 (pause over the challenge window) and M-2 (freeze or wipe) apply to both paths.
+
+### Blind spots
+
+- The Solidity tests use mocks for both Stylus contracts. The nonce-bound mock in RR-2 imitates `verifier/src/lib.rs:765`; it is not the real verifier.
+- RR-4b simulates EIP-7702 with `vm.etch`. Arbitrum Sepolia 7702 support was not checked live.
+- The scratch fixes prove that the tests can go green. They are not reviewed patches.
