@@ -14,7 +14,7 @@ import {
 import { usePublicClient, useSignTypedData, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { ASSAY, assayChain, explorer } from '../chain';
 import { assayAbi } from '../abi/Assay.generated';
-import { CHANNEL_TIMEOUT, USDG_ADDRESS } from '../lib/addresses.generated';
+import { APPROVED_MEASUREMENTS, CHANNEL_TIMEOUT, USDG_ADDRESS } from '../lib/addresses.generated';
 import { fmtCountdown, fmtStamp, fmtUsdg, short } from '../lib/format';
 import { Stamp } from '../components/Stamp';
 import { useAtBlock } from '../hooks/useAtBlock';
@@ -34,7 +34,7 @@ const ERROR_HELP: Record<string, string> = {
   AttestationExpired: 'enclaveSig failed: the recovered signer is registered but its attestation expired.',
   AmountNotIncreasing: 'Neither signature is at fault: cumulativeAmount must be above what was already paid.',
   AmountExceedsDeposit: 'Neither signature is at fault: cumulativeAmount is above the deposit.',
-  ResponseHashReplayed: 'Neither signature is at fault: this responseHash was already redeemed on this channel.',
+  MeasurementMismatch: 'enclaveSig failed: the recovered signer is registered under a different measurement than the one this channel was opened against.',
   TimeoutNotElapsed: 'Neither signature is at fault: the channel timeout has not elapsed since the last activity, so requestClose is not yet callable.',
   CloseAlreadyRequested: 'Close was already requested on this channel. Wait out the challenge window, then finalize.',
   CloseNotRequested: 'Neither signature is at fault: requestClose has not been called yet, so finalizeClose cannot run.',
@@ -129,14 +129,13 @@ export function Channel() {
     async (c, block) => {
       if (chanId === null) throw new Error('bad-id');
       const raw = await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channels', args: [chanId], blockNumber: block });
-      const [agent, provider, deposit, paid, openedAt, lastActivityAt, closeRequestedAt, closed] = raw as unknown as readonly [
-        string, string, bigint, bigint, bigint, bigint, bigint, boolean,
+      const [agent, provider, deposit, paid, openedAt, lastActivityAt, closeRequestedAt, closed, measurement] = raw as unknown as readonly [
+        string, string, bigint, bigint, bigint, bigint, bigint, boolean, string,
       ];
-      const ch = { agent, provider, deposit, paid, openedAt, lastActivityAt, closeRequestedAt, closed };
-      const lastResp = await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'lastResponseHash', args: [chanId], blockNumber: block });
+      const ch = { agent, provider, deposit, paid, openedAt, lastActivityAt, closeRequestedAt, closed, measurement };
       const timeout = await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channelTimeout', blockNumber: block });
       const challenge = await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'challengeWindow', blockNumber: block });
-      return { ch, lastResp: lastResp as string, timeout: timeout as bigint, challenge: challenge as bigint };
+      return { ch, timeout: timeout as bigint, challenge: challenge as bigint };
     },
     chanId !== null,
   );
@@ -202,7 +201,7 @@ export function Channel() {
         address: ASSAY,
         abi: assayAbi,
         functionName: 'openChannelWithPermit',
-        args: [provider as Hex, amountWei, deadline, Number(v), r, sSig],
+        args: [provider as Hex, amountWei, APPROVED_MEASUREMENTS[0], deadline, Number(v), r, sSig],
       });
     });
     setPermitBusy(false);
@@ -322,8 +321,8 @@ export function Channel() {
                   ? `${fmtStamp(ch.closeRequestedAt)} (finalize after ${fmtStamp(BigInt(finalizeAt))}, ${ch.closed ? 'finalized' : fmtCountdown(finalizeAt - Number(snapshot.data.timestamp))})`
                   : 'not requested'}
               </dd>
-              <dt>Last response hash</dt>
-              <dd className="mono">{snapshot.data.value.lastResp}</dd>
+              <dt>Measurement (pinned at open)</dt>
+              <dd className="mono">{ch.measurement}</dd>
             </dl>
           </div>
         )}
@@ -361,7 +360,7 @@ export function Channel() {
               Approve
             </button>
             <button className="btn" type="button" disabled={!chain.ready || writing || !isAddress(provider) || !amountOk}
-              onClick={() => run('Open channel', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'openChannel', args: [provider as Hex, amountWei as bigint] }))}>
+              onClick={() => run('Open channel', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'openChannel', args: [provider as Hex, amountWei as bigint, APPROVED_MEASUREMENTS[0]] }))}>
               Open channel
             </button>
             <button className="btn ghost" type="button" disabled={!chain.ready || writing || permitBusy || !isAddress(provider) || !amountOk}
@@ -576,10 +575,18 @@ function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; ag
       const lines: string[] = [];
       const channelId = BigInt(cid.trim());
       const chRaw = await publicClient.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channels', args: [channelId] });
-      const [chAgent, chProvider, chDeposit, chPaid, , , chCloseRequestedAt, chClosed] = chRaw as unknown as readonly [
-        string, string, bigint, bigint, bigint, bigint, bigint, boolean,
+      const [chAgent, chProvider, chDeposit, chPaid, , , chCloseRequestedAt, chClosed, chMeasurement] = chRaw as unknown as readonly [
+        string, string, bigint, bigint, bigint, bigint, bigint, boolean, string,
       ];
-      const ch = { agent: chAgent, provider: chProvider, deposit: chDeposit, paid: chPaid, closeRequestedAt: chCloseRequestedAt, closed: chClosed };
+      const ch = {
+        agent: chAgent,
+        provider: chProvider,
+        deposit: chDeposit,
+        paid: chPaid,
+        closeRequestedAt: chCloseRequestedAt,
+        closed: chClosed,
+        measurement: chMeasurement,
+      };
       if (ch.provider === '0x0000000000000000000000000000000000000000') {
         setReport('BadParams: this channel id was never opened.');
         setReportBad(true);
@@ -622,11 +629,12 @@ function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; ag
         const now = BigInt(Math.floor(Date.now() / 1000));
         if (s.measurement === '0x0000000000000000000000000000000000000000000000000000000000000000') {
           lines.push(`enclaveSig recovers to ${enclaveAddr}: never registered. redeem reverts SignerNotRegistered().`);
+        } else if (s.measurement.toLowerCase() !== ch.measurement.toLowerCase()) {
+          lines.push(`enclaveSig recovers to ${enclaveAddr}: registered under measurement ${s.measurement}, but this channel was opened against ${ch.measurement}. redeem reverts MeasurementMismatch().`);
+        } else if (now > s.expiry) {
+          lines.push(`enclaveSig recovers to ${enclaveAddr}: registered but expired at ${fmtStamp(s.expiry)}. redeem reverts AttestationExpired().`);
         } else {
-          const approved = (await publicClient.readContract({ address: ASSAY, abi: assayAbi, functionName: 'approvedMeasurement', args: [s.measurement as Hex] })) as boolean;
-          if (!approved) lines.push(`enclaveSig recovers to ${enclaveAddr}: registered under a measurement off the allowlist. redeem reverts MeasurementNotApproved().`);
-          else if (now > s.expiry) lines.push(`enclaveSig recovers to ${enclaveAddr}: registered but expired at ${fmtStamp(s.expiry)}. redeem reverts AttestationExpired().`);
-          else lines.push(`enclaveSig recovers to ${enclaveAddr}: registered, allowlisted, unexpired. Enclave check passes.`);
+          lines.push(`enclaveSig recovers to ${enclaveAddr}: registered, matches this channel's pinned measurement, unexpired. Enclave check passes.`);
         }
       } catch {
         lines.push('enclaveSig is malformed: recovery itself throws (ECDSAInvalidSignature).');

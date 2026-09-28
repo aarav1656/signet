@@ -119,13 +119,23 @@ export function Verify() {
   const nonceSnap = useAtBlock(
     ['assay-register-nonce', effectiveProvider.toLowerCase()],
     async (c, block) => {
-      const nonce = await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'nextRegisterNonce', args: [effectiveProvider as Hex], blockNumber: block });
-      return { nonce: nonce as Hex };
+      // refBlock must satisfy ArbSys.arbBlockHash's window (and blockhash's, on its
+      // fallback): a recent, already-mined block, not the pending current one.
+      const refBlock = block - 1n;
+      const nonce = await c.readContract({
+        address: ASSAY,
+        abi: assayAbi,
+        functionName: 'nextRegisterNonce',
+        args: [effectiveProvider as Hex, refBlock],
+        blockNumber: block,
+      });
+      return { nonce: nonce as Hex, refBlock };
     },
     providerOk,
   );
 
   const contractNonce = nonceSnap.data?.value.nonce;
+  const contractRefBlock = nonceSnap.data?.value.refBlock;
   const phalaUrl = contractNonce ? `https://inference.phala.com/v1/attestation/report?nonce=${normHex(contractNonce)}` : '';
 
   const { parsed, error: parseError } = text.trim() ? parseReport(text) : { parsed: undefined, error: undefined };
@@ -203,6 +213,11 @@ export function Verify() {
       setRegisterBad(true);
       return;
     }
+    if (contractRefBlock === undefined) {
+      setRegisterReport('Still reading nextRegisterNonce for this address; try again in a moment.');
+      setRegisterBad(true);
+      return;
+    }
     setRegisterBusy(true);
     setRegisterReport('');
     setRegisterBad(false);
@@ -212,7 +227,7 @@ export function Verify() {
         address: ASSAY,
         abi: assayAbi,
         functionName: 'register',
-        args: [hex as Hex],
+        args: [hex as Hex, contractRefBlock],
         account: chain.address,
       });
       setRegisterReport('Simulation passed from the connected account: register() would not revert with this quote.');
