@@ -15,6 +15,7 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  parseEventLogs,
   recoverAddress,
   type Hex,
 } from 'viem';
@@ -125,8 +126,9 @@ async function runRegister(): Promise<void> {
     if (measurement !== signer.measurement) throw new Error(`receiptSigners(${pubkey}) measurement ${measurement} != ${signer.measurement}`);
     console.log(`registerReceiptKey() tx=${tx} block=${rcpt.blockNumber}: receiptSigners(${key.keyId}=${pubkey}) measurement=${measurement} expiry=${expiry}`);
     // One quote registers one key (usedQuote); Phala's keyset has one ed25519 receipt key.
-    break;
+    return;
   }
+  throw new Error('the ACI keyset has no ed25519 receipt key; nothing was registered for redeemWithReceipt');
 }
 
 /// `open [legacy]`: the agent approves and opens a channel to the provider
@@ -142,7 +144,6 @@ async function runOpen(): Promise<void> {
 
   const approveTx = await agentWallet.writeContract({ address: usdg, abi: erc20Abi, functionName: 'approve', args: [assay, amount] });
   await publicClient.waitForTransactionReceipt({ hash: approveTx });
-  const id = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channelCount' });
   const tx = await agentWallet.writeContract({
     address: assay,
     abi: assayAbi,
@@ -151,6 +152,9 @@ async function runOpen(): Promise<void> {
   });
   const rcpt = await publicClient.waitForTransactionReceipt({ hash: tx });
   if (rcpt.status !== 'success') throw new Error(`openChannel() tx ${tx} reverted`);
+  const [opened] = parseEventLogs({ abi: assayAbi, eventName: 'ChannelOpened', logs: rcpt.logs });
+  if (!opened) throw new Error(`openChannel() tx ${tx} emitted no ChannelOpened`);
+  const id = opened.args.channelId;
   const ch = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channels', args: [id] });
   if (ch[0] !== agentAccount.address || ch[1] !== providerAccount.address || ch[2] !== amount) {
     throw new Error(`channels(${id}) does not match the open: ${ch.slice(0, 3).join(', ')}`);
@@ -185,10 +189,6 @@ async function runPay(): Promise<void> {
   const chBefore = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channels', args: [channelId] });
   const provider = chBefore[1];
   const paidBefore = chBefore[3];
-  if (chBefore[0] !== account.address || provider !== providerWallet.account.address) {
-    console.error(`REFUSING: channel ${channelId} is agent=${chBefore[0]} provider=${provider}; configured keys are agent=${account.address} provider=${providerWallet.account.address}.`);
-    process.exit(1);
-  }
   if (chBefore[0] !== account.address || provider !== providerWallet.account.address) {
     console.error(`REFUSING: channel ${channelId} is agent=${chBefore[0]} provider=${provider}; configured keys are agent=${account.address} provider=${providerWallet.account.address}.`);
     process.exit(1);
@@ -289,6 +289,10 @@ async function runPayReceipt(): Promise<void> {
   const chBefore = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channels', args: [channelId] });
   const provider = chBefore[1];
   const paidBefore = chBefore[3];
+  if (chBefore[0] !== account.address || provider !== providerWallet.account.address) {
+    console.error(`REFUSING: channel ${channelId} is agent=${chBefore[0]} provider=${provider}; configured keys are agent=${account.address} provider=${providerWallet.account.address}.`);
+    process.exit(1);
+  }
   const channelRequestedModelHash = chBefore[9] as Hex;
   const zeroHash: Hex = `0x${'0'.repeat(64)}`;
   if (channelRequestedModelHash === zeroHash) {

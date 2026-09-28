@@ -161,7 +161,9 @@ export function Verify() {
 
   // The live read refetches every 15 s; a quote binds the nonce of one refBlock, so the
   // nonce is pinned when its URL is taken and every later step uses that pinned pair.
-  const [pinned, setPinned] = useState<{ nonce: Hex; refBlock: bigint } | null>(null);
+  const [pin, setPinned] = useState<{ nonce: Hex; refBlock: bigint; provider: string } | null>(null);
+  // A pin belongs to one registering address; switching address drops it.
+  const pinned = pin && pin.provider === effectiveProvider.toLowerCase() ? pin : null;
   const contractNonce = pinned?.nonce ?? nonceSnap.data?.value.nonce;
   const contractRefBlock = pinned?.refBlock ?? nonceSnap.data?.value.refBlock;
   const phalaUrl = contractNonce ? `https://inference.phala.com/v1/attestation/report?nonce=${normHex(contractNonce)}` : '';
@@ -189,7 +191,7 @@ export function Verify() {
 
   function fillContractNonceUrl() {
     if (!phalaUrl || !contractNonce || contractRefBlock === undefined) return;
-    setPinned({ nonce: contractNonce, refBlock: contractRefBlock });
+    setPinned({ nonce: contractNonce, refBlock: contractRefBlock, provider: effectiveProvider.toLowerCase() });
     setUrl(phalaUrl);
   }
 
