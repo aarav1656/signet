@@ -118,8 +118,9 @@ channel, check an attestation.
 --fg:           #FFFFFF  (arbitrum-portal tokens.json body.color)
 --muted:        #9A9A9A  (arbitrum-portal tokens.json rootCustomProperties
                           --apkt-colors-neutrals500)
---dim:          #6C6C6C  (arbitrum-portal tokens.json rootCustomProperties
-                          --apkt-colors-neutrals600)
+--dim:          #8A8A8A  (derived: arbitrum-portal --apkt-colors-neutrals600
+                          #6C6C6C lifted until small text clears WCAG 4.5:1 on
+                          --bg-raise and --bg-sunken; #6C6C6C measured 3.7:1)
 --accent:       #325EE6  (arbitrum-portal tokens.json elements.button.backgroundColor,
                           rgb(50,94,230), the portal's own primary-CTA blue,
                           reused here as Chiron's action colour, not a brand mark)

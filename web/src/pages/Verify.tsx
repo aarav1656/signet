@@ -322,8 +322,7 @@ export function Verify() {
 
       <section className="section" aria-labelledby="v-nonce">
         <div className="section-head">
-          <span className="step">1</span>
-          <h2 id="v-nonce">Contract-issued nonce</h2>
+          <h2 id="v-nonce"><span className="step-n">1.</span> Contract-issued nonce</h2>
         </div>
         <p className="sub">
           <b>nextRegisterNonce</b> binds the next quote this address may register. Each accepted register advances
@@ -401,7 +400,7 @@ export function Verify() {
             <h3>No provider address yet</h3>
             <p>Enter the address that will call register(), or connect a wallet, to read its contract-issued nonce and build the exact fetch URL.</p>
             <button className="btn ghost" type="button" onClick={() => setProvider(demo.provider)}>
-              Read the nonce for the live provider {short(demo.provider)}
+              Use live provider {short(demo.provider)}
             </button>
           </div>
         )}
@@ -409,8 +408,7 @@ export function Verify() {
 
       <section className="section" aria-labelledby="v-in">
         <div className="section-head">
-          <span className="step">2</span>
-          <h2 id="v-in">Attestation report</h2>
+          <h2 id="v-in"><span className="step-n">2.</span> Attestation report</h2>
         </div>
         <div className="form">
           <div className="field">
@@ -490,8 +488,7 @@ export function Verify() {
       {parsed?.quoteHex && (
         <section className="section" aria-labelledby="v-dry">
           <div className="section-head">
-            <span className="step">3</span>
-          <h2 id="v-dry">Contract dry run</h2>
+            <h2 id="v-dry"><span className="step-n">3.</span> Contract dry run</h2>
           </div>
           <p className="sub">
             Calls <b>verify(bytes, bytes32)</b> on the Stylus verifier ({short(VERIFIER_ADDRESS)}) via eth_call with

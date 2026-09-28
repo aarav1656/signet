@@ -520,8 +520,7 @@ export function Channel() {
 
       <section className="section" aria-labelledby="c-close">
         <div className="section-head">
-          <span className="step">3</span>
-          <h2 id="c-close">Close channel</h2>
+          <h2 id="c-close"><span className="step-n">3.</span> Close channel</h2>
         </div>
         <p className="sub">
           Two steps, both agent only. First requestClose starts the challenge window once the timeout has passed
@@ -633,8 +632,7 @@ function VoucherPanel({ agent, channelIdDefault }: { agent?: string; channelIdDe
   return (
     <section className="section" aria-labelledby="c-voucher">
       <div className="section-head">
-        <span className="step">1</span>
-        <h2 id="c-voucher">Sign the agent voucher</h2>
+        <h2 id="c-voucher"><span className="step-n">1.</span> Sign the agent voucher</h2>
       </div>
       <p className="sub">
         The connected wallet signs EIP-712 <b>Voucher</b> (Assay, version 1, this chain, this contract). Sign with
@@ -867,8 +865,7 @@ function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; ag
   return (
     <section className="section" aria-labelledby="c-redeem">
       <div className="section-head">
-        <span className="step">2</span>
-        <h2 id="c-redeem">Redeem with both signatures</h2>
+        <h2 id="c-redeem"><span className="step-n">2.</span> Redeem with both signatures</h2>
       </div>
       <p className="sub">
         Diagnose recovers each signature locally and names the failing one. Simulate runs the exact call against

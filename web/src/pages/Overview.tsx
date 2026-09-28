@@ -338,7 +338,7 @@ function RefusalHero() {
           <ol className="checks">
             {checks.map((c, i) => (
               <li key={c.label} className={c.mark} style={{ ['--i' as string]: i }}>
-                <span className="ck" aria-label={c.mark === 'pass' ? 'passed' : c.mark === 'fail' ? 'failed' : 'not reached'} />
+                <span className="ck" role="img" aria-label={c.mark === 'pass' ? 'passed' : c.mark === 'fail' ? 'failed' : 'not reached'} />
                 <span className="ck-text">
                   {c.label}
                   <small>{c.detail}</small>
