@@ -367,7 +367,8 @@ function ChannelsSection() {
         c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channels', args: [BigInt(i)], blockNumber: block }),
       ),
     );
-    return { count, rows: rows.map((raw, i) => toChannel(i, raw)) };
+    const timeout = (await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channelTimeout', blockNumber: block })) as bigint;
+    return { count, timeout, rows: rows.map((raw, i) => toChannel(i, raw)) };
   });
   const llamaHash = keccak256(toHex(PINNED_MODEL_ID)).toLowerCase();
 
@@ -420,7 +421,20 @@ function ChannelsSection() {
           })}
         </div>
       )}
-      <p className="note">Deposits and payments in USDG, 6 decimals. {q.data?.value.rows.some((r) => r.closed) ? '' : 'Every channel is open.'}</p>
+      {q.data && (() => {
+        const now = Number(q.data.timestamp);
+        const rows = q.data.value.rows;
+        const closed = rows.filter((r) => r.closed).map((r) => r.id);
+        const idle = rows
+          .filter((r) => !r.closed && now > Number(r.lastActivityAt || r.openedAt) + Number(q.data.value.timeout))
+          .map((r) => r.id);
+        return (
+          <p className="note">
+            Deposits and payments in USDG, 6 decimals. {closed.length ? `Closed: ${closed.join(', ')}.` : 'None closed.'}{' '}
+            {idle.length ? `Past channelTimeout, so the agent may requestClose: ${idle.join(', ')}.` : 'None past channelTimeout.'}
+          </p>
+        );
+      })()}
     </section>
   );
 }

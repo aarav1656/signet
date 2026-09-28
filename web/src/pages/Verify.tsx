@@ -562,8 +562,8 @@ export function Verify() {
           Three steps in order. First read <b>nextRegisterNonce</b> for the address that will send the transaction
           (step 1). Then fetch the legacy endpoint with exactly that nonce (report_data[32:64] must equal it,
           report_data[20:32] must be zero). Then call <b>register(bytes quote)</b> from the same address: it calls
-          the verifier with that nonce, requires the derived measurement to be one of{' '}
-          {APPROVED_MEASUREMENTS.length} allowlisted value(s), rejects any quote hash already used
+          the verifier with that nonce, requires the derived measurement to be{' '}
+          {APPROVED_MEASUREMENTS.length === 1 ? 'the one allowlisted value' : `one of the ${APPROVED_MEASUREMENTS.length} allowlisted values`}, rejects any quote hash already used
           (QuoteAlreadyUsed), and stores signer to measurement plus expiry (now plus validity). Anyone may call it
           for any provider, since the signer comes from the quote itself. A stale quote reverts NonceMismatch and
           consumes nothing. The live registration ran in{' '}
