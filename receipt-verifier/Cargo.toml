@@ -1,0 +1,32 @@
+[package]
+name = "receipt-verify"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+alloy-primitives = "1.5.7"
+alloy-sol-types = "1.5.7"
+stylus-sdk = "0.10.9"
+ed25519-dalek = { version = "2", default-features = false }
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[features]
+default = ["mini-alloc"]
+export-abi = ["stylus-sdk/export-abi"]
+debug = ["stylus-sdk/debug"]
+mini-alloc = ["stylus-sdk/mini-alloc"]
+
+[dev-dependencies]
+stylus-sdk = { version = "0.10.9", features = ["stylus-test"] }
+ed25519-dalek = { version = "2", features = ["std", "rand_core"] }
+rand = "0.8"
+hex = "0.4"
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+panic = "abort"
+opt-level = "z"
