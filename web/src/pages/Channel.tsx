@@ -293,6 +293,7 @@ export function Channel() {
           </p>
         </div>
         <div className="picker" role="group" aria-label="Choose a channel">
+          <span className="picker-lab">Channel</span>
           {channelCountSnap.data &&
             Array.from({ length: Number(channelCountSnap.data.value) }, (_, i) => String(i)).map((id) => (
               <button
@@ -306,12 +307,19 @@ export function Channel() {
               </button>
             ))}
           <label className="sr-only" htmlFor="c-id">Channel id</label>
-          <input id="c-id" value={channelId} onChange={(e) => setChannelId(e.target.value)} inputMode="numeric" placeholder="id" aria-describedby="c-id-hint" />
+          <input
+            id="c-id"
+            value={channelCountSnap.data && /^\d+$/.test(channelId.trim()) && BigInt(channelId.trim()) < channelCountSnap.data.value ? '' : channelId}
+            onChange={(e) => setChannelId(e.target.value)}
+            inputMode="numeric"
+            placeholder="other"
+            aria-describedby="c-id-hint"
+          />
         </div>
       </div>
       <p className="hint-line" id="c-id-hint">
         {channelCountSnap.data
-          ? <><span className="num">{channelCountSnap.data.value.toString()}</span> channel(s) opened on this contract so far. <Stamp block={channelCountSnap.data.block} /></>
+          ? <><span className="num">{channelCountSnap.data.value.toString()}</span> {channelCountSnap.data.value === 1n ? 'channel' : 'channels'} opened on this contract so far. <Stamp block={channelCountSnap.data.block} /></>
           : 'Reading channelCount…'}
       </p>
 
@@ -459,7 +467,7 @@ export function Channel() {
                 onClick={() => setPinMode('receipt')}
               >
                 Receipt-only, pinned to model
-                <small>Only redeemWithReceipt can pay this channel. A Phala-signed receipt whose served model differs from the pinned model is refused.</small>
+                <small>Only redeemWithReceipt can pay this channel. A gateway-signed receipt whose served model differs from the pinned model is refused.</small>
               </button>
               <button
                 type="button"

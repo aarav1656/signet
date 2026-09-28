@@ -192,7 +192,7 @@ function RefusalHero() {
   const checks: { label: string; detail: string; mark: Mark }[] = r
     ? [
         {
-          label: 'Channel exists and is open',
+          label: 'Channel exists and is not closed',
           detail: `channels(0).closed = ${String(r.ch.closed)}`,
           mark: r.ch.provider !== ZERO_ADDR && !r.ch.closed ? 'pass' : 'fail',
         },
@@ -551,7 +551,7 @@ export function Overview() {
         </div>
         <div className="verified-grid">
           <div>
-            <h3>Proved onchain, per call</h3>
+            <h3>What the contract checks, per call</h3>
             <p>
               The gateway&apos;s receipt key lives in an Intel TDX guest whose measurement is on the allowlist, under a
               quote chain that ends at Intel&apos;s root. The receipt names the model the upstream served for this exact

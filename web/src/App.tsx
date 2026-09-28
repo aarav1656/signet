@@ -18,7 +18,7 @@ export function App() {
             <header className="top">
               <NavLink to="/" className="brand">
                 <span className="mark" aria-hidden="true">C</span>
-                Chiron <em>pay per call, against proof</em>
+                Chiron <em>USDG channels gated on TEE receipts</em>
               </NavLink>
               <nav className="pillnav" aria-label="Primary">
                 <NavLink to="/" end>

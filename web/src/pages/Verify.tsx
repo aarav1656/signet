@@ -328,7 +328,7 @@ export function Verify() {
           <b>nextRegisterNonce</b> binds the next quote this address may register. Each accepted register advances
           the counter, so a quote fetched now can never be replayed later.
         </p>
-        {!chain.ready && <p className="note">{chain.reason} You can still paste any provider address below to read its nonce.</p>}
+        {!chain.ready && !provider.trim() && <p className="note">{chain.reason} Or paste any provider address below to read its nonce.</p>}
         <div className="form">
           <div className="field">
             <label htmlFor="v-provider">Registering provider address</label>
@@ -396,9 +396,7 @@ export function Verify() {
           </div>
         )}
         {!providerOk && (
-          <div className="empty">
-            <h3>No provider address yet</h3>
-            <p>Enter the address that will call register(), or connect a wallet, to read its contract-issued nonce and build the exact fetch URL.</p>
+          <div className="actions">
             <button className="btn ghost" type="button" onClick={() => setProvider(demo.provider)}>
               Use live provider {short(demo.provider)}
             </button>
