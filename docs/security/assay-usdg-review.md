@@ -185,9 +185,9 @@ Suites on the working tree, run from a scratch copy at `/tmp/chiron-final/contra
 
 New failing tests: `/tmp/chiron-final/ReReview2.t.sol`. To run it, copy it into `test/` of a contracts copy and run `forge test --match-contract ReReview2Test`. Three tests are red on the current tree. The fourth is a guard for the fix, and it passes both before and after.
 
-**FIX FIRST**
+**DEPLOY**
 
-One Medium remains, and its fix is three lines. Assay is immutable, so fixing it after the redeploy would cost another redeploy.
+Re-verdict at `61fe925`: F-1 and F-2 are fixed in `16183ff`. `_payerSigValid` now accepts ECDSA by `c.agent` first, then ERC-1271 when the agent has code at redeem. ECDSA-first gives a contract agent no new path, because nobody holds a key for a CREATE or CREATE2 address, and a delegated EOA already holds its own key. Checked on a scratch copy of HEAD: fast suite 61/61, invariant 1/1, fork 13/13. With ECDSA-first mutated out, 10 or more existing tests go red.
 
 ### RR-1 to RR-8, verified
 
