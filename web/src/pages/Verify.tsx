@@ -83,6 +83,31 @@ function asciiString(hex: string): string | null {
   return String.fromCharCode(...bytes);
 }
 
+/** Assay's own ABI-encoded custom errors, as opposed to the Stylus verifier's raw ASCII revert
+ * strings (VERIFIER_HELP above). Both nextRegisterNonce (read here) and register (simulated
+ * below) can revert this way. */
+const ASSAY_ERROR_HELP: Record<string, string> = {
+  StaleRefBlock: "The refBlock this nonce or registration used fell outside Arbitrum's 256-block window (about 66 seconds). Read a fresh nextRegisterNonce and register immediately, or run the agent CLI (cd agent && npm run register), which does all three steps inside that window.",
+  QuoteAlreadyUsed: 'This exact quote was already submitted to register. Fetch a fresh quote with the current nonce.',
+  MeasurementNotApproved: 'The measurement this quote attests to is not on the allowlist.',
+};
+
+function assayErrorName(e: unknown): string | null {
+  const seen = new Set<unknown>();
+  const stack: unknown[] = [e];
+  while (stack.length > 0) {
+    const cur = stack.pop();
+    if (!cur || typeof cur !== 'object' || seen.has(cur)) continue;
+    seen.add(cur);
+    const o = cur as Record<string, unknown>;
+    if (typeof o.errorName === 'string') return o.errorName;
+    for (const v of Object.values(o)) {
+      if (v && typeof v === 'object') stack.push(v);
+    }
+  }
+  return null;
+}
+
 const normHex = (s: string) => s.trim().toLowerCase().replace(/^0x/, '');
 
 /** One plain-language status line per dry-run state, same pattern as VERIFIER_HELP: no
@@ -238,9 +263,14 @@ export function Verify() {
       setRegisterReport('Simulation passed from the connected account: register() would not revert with this quote.');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      setRegisterBad(true);
+      const assayName = assayErrorName(e);
+      if (assayName && ASSAY_ERROR_HELP[assayName]) {
+        setRegisterReport(`Simulation reverts with ${assayName}(). ${ASSAY_ERROR_HELP[assayName]}`);
+        return;
+      }
       const m = msg.match(/0x[0-9a-fA-F]+/);
       const decoded = m ? asciiString(m[0]) : null;
-      setRegisterBad(true);
       if (decoded && VERIFIER_HELP[decoded]) {
         setRegisterReport(`Simulation reverts with ${decoded}. ${VERIFIER_HELP[decoded]}`);
       } else {
@@ -315,7 +345,13 @@ export function Verify() {
         {providerOk && nonceSnap.isPending && <div className="skel" aria-busy="true">Reading nextRegisterNonce…</div>}
         {providerOk && nonceSnap.isError && (
           <p className="note err" role="alert">
-            Could not read the nonce ({String(nonceSnap.error)}). <button className="btn-ghost" onClick={() => nonceSnap.refetch()}>retry</button>
+            {(() => {
+              const name = assayErrorName(nonceSnap.error);
+              return name && ASSAY_ERROR_HELP[name]
+                ? `${name}(). ${ASSAY_ERROR_HELP[name]}`
+                : `Could not read the nonce (${String(nonceSnap.error)}).`;
+            })()}{' '}
+            <button className="btn-ghost" onClick={() => nonceSnap.refetch()}>retry</button>
           </p>
         )}
         {providerOk && nonceSnap.data && contractNonce && (

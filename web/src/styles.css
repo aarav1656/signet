@@ -291,6 +291,18 @@ h1, h2, h3 { margin: 0; font-style: normal; }
 .note.err { border-left: 2px solid var(--color-bad); padding-left: 12px; }
 .note.err b { font-family: var(--font-mono); font-weight: 600; }
 
+.mode-toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+.mode-toggle button {
+  flex: 1; min-width: 220px; text-align: left; cursor: pointer;
+  background: var(--color-sunken); border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-control); padding: 10px 14px; color: var(--color-fg);
+  font-size: 13px; font-weight: 600;
+}
+.mode-toggle button small { display: block; margin-top: 4px; font-size: 11.5px; font-weight: 400; color: var(--color-dim); }
+.mode-toggle button.active { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 16%, var(--color-sunken)); }
+.mode-toggle button:hover:not(.active) { border-color: var(--color-dim); }
+.mode-toggle button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+
 .form { display: grid; gap: 14px; margin-top: 14px; max-width: 640px; }
 .field { display: grid; gap: 6px; min-height: 1lh; }
 .field label { color: var(--color-muted); font-size: 13px; }
