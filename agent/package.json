@@ -7,9 +7,11 @@
   "scripts": {
     "refuse": "node --env-file-if-exists=.env src/index.ts refuse",
     "pay": "node --env-file-if-exists=.env src/index.ts pay",
+    "pay-receipt": "node --env-file-if-exists=.env src/index.ts pay-receipt",
     "test": "node --env-file-if-exists=.env --test test/*.test.ts"
   },
   "dependencies": {
+    "@noble/curves": "^1.9.1",
     "viem": "^2.56.9"
   }
 }

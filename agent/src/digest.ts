@@ -12,7 +12,7 @@
 //   requestHash,responseHash) under domain ("Assay","1",chainId,assayAddress),
 //   the exact type Assay.sol's VOUCHER_TYPEHASH and Channel.tsx's VoucherPanel
 //   both use.
-import { hashMessage, type Address, type Hex } from 'viem';
+import { hashMessage, keccak256, toBytes, type Address, type Hex } from 'viem';
 
 /// `bytes32` as 64 lowercase ASCII hex chars, no `0x` -- identical to
 /// Assay.sol's `_hex64` and Channel.tsx's `enclaveText` half.
@@ -50,4 +50,15 @@ export function voucherDomain(chainId: number, assayAddress: Address) {
 
 export function voucherMessage(channelId: bigint, cumulativeAmount: bigint, requestHash: Hex, responseHash: Hex) {
   return { channelId, cumulativeAmount, requestHash, responseHash } as const;
+}
+
+/// Model-swap refusal (redeemWithReceipt() path): `keccak256(abi.encodePacked(modelId))`,
+/// exactly what Assay.sol's `openChannel`/`openChannelWithPermit` doc comment
+/// (contracts/src/Assay.sol:293) says to pass as `requestedModelHash`, and what
+/// receipt-verifier's IReceiptVerifier.verifyReceipt hashes the receipt's own
+/// `model` / `upstream.verified.model_id` fields with onchain. `toBytes(string)`
+/// is a plain UTF-8 encode, identical to Solidity's `abi.encodePacked(string)`
+/// for a single string argument (no length prefix, no padding).
+export function modelHash(modelId: string): Hex {
+  return keccak256(toBytes(modelId));
 }
