@@ -289,7 +289,7 @@ export function Verify() {
 
   return (
     <main>
-      <div className="page-head">
+      <div className="ov-head">
         <div>
           <h1>Verify an attestation</h1>
           <p className="lede">
@@ -299,27 +299,9 @@ export function Verify() {
             onchain until you transact.
           </p>
         </div>
-        <div className="device">
-          <h3>Verifying on</h3>
-          <div className="stat">
-            <div className="lab">Network</div>
-            <div className="val">{assayChain.name}</div>
-          </div>
-          <div className="stat">
-            <div className="lab">Assay contract</div>
-            <div className="val mono" style={{ fontSize: 13 }}>
-              <a href={explorer.address(ASSAY)} target="_blank" rel="noreferrer">{short(ASSAY)}</a>
-            </div>
-          </div>
-          <div className="stat">
-            <div className="lab">Stylus verifier</div>
-            <div className="val mono" style={{ fontSize: 13 }}>
-              <a href={explorer.address(VERIFIER_ADDRESS)} target="_blank" rel="noreferrer">{short(VERIFIER_ADDRESS)}</a>
-            </div>
-          </div>
-        </div>
       </div>
-
+      <div className="v-grid">
+        <div className="v-main">
       <section className="section" aria-labelledby="v-nonce">
         <div className="section-head">
           <h2 id="v-nonce"><span className="step-n">1.</span> Contract-issued nonce</h2>
@@ -551,8 +533,28 @@ export function Verify() {
           {registerReport && <p className={registerBad ? 'note err' : 'note ok'} role={registerBad ? 'alert' : 'status'}>{registerReport}</p>}
         </section>
       )}
-
-      <section className="section" aria-labelledby="v-reg">
+        </div>
+        <aside className="v-aside">
+        <div className="device">
+          <h3>Verifying on</h3>
+          <div className="stat">
+            <div className="lab">Network</div>
+            <div className="val">{assayChain.name}</div>
+          </div>
+          <div className="stat">
+            <div className="lab">Assay contract</div>
+            <div className="val mono" style={{ fontSize: 13 }}>
+              <a href={explorer.address(ASSAY)} target="_blank" rel="noreferrer">{short(ASSAY)}</a>
+            </div>
+          </div>
+          <div className="stat">
+            <div className="lab">Stylus verifier</div>
+            <div className="val mono" style={{ fontSize: 13 }}>
+              <a href={explorer.address(VERIFIER_ADDRESS)} target="_blank" rel="noreferrer">{short(VERIFIER_ADDRESS)}</a>
+            </div>
+          </div>
+        </div>
+      <section className="v-how" aria-labelledby="v-reg">
         <div className="section-head">
           <h2 id="v-reg">How registration works</h2>
         </div>
@@ -568,6 +570,8 @@ export function Verify() {
           <a href={explorer.tx(REGISTER_TX)} target="_blank" rel="noreferrer">this transaction</a>.
         </p>
       </section>
+        </aside>
+      </div>
     </main>
   );
 }

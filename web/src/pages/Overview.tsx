@@ -65,16 +65,18 @@ type ChannelRow = {
   provider: Address;
   deposit: bigint;
   paid: bigint;
+  openedAt: bigint;
+  lastActivityAt: bigint;
   closed: boolean;
   measurement: Hex;
   requestedModelHash: Hex;
 };
 
 function toChannel(id: number, raw: unknown): ChannelRow {
-  const [agent, provider, deposit, paid, , , , closed, measurement, requestedModelHash] = raw as readonly [
+  const [agent, provider, deposit, paid, openedAt, lastActivityAt, , closed, measurement, requestedModelHash] = raw as readonly [
     Address, Address, bigint, bigint, bigint, bigint, bigint, boolean, Hex, Hex,
   ];
-  return { id, agent, provider, deposit, paid, closed, measurement, requestedModelHash };
+  return { id, agent, provider, deposit, paid, openedAt, lastActivityAt, closed, measurement, requestedModelHash };
 }
 
 /** The receipt's upstream.verified event, read from the exact bytes the ReceiptVerifier checks. */
@@ -96,9 +98,10 @@ async function readRefusal(c: PublicClient, block: bigint) {
   };
   const channelId = BigInt(d.channelId);
   const amount = BigInt(d.cumulativeAmount);
-  const [chRaw, receiptVerifier] = await Promise.all([
+  const [chRaw, receiptVerifier, channelTimeout] = await Promise.all([
     c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channels', args: [channelId], blockNumber: block }),
     c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'receiptVerifier', blockNumber: block }) as Promise<Address>,
+    c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channelTimeout', blockNumber: block }) as Promise<bigint>,
   ]);
   const ch = toChannel(d.channelId, chRaw);
   const receiptKey = keccak256(
@@ -163,7 +166,7 @@ async function readRefusal(c: PublicClient, block: bigint) {
   }
 
   return {
-    d, ch, amount, receiptVerifier, consumed, testKeyRegistered: testKeyReg[0] !== ZERO_HASH,
+    d, ch, amount, receiptVerifier, channelTimeout, consumed, testKeyRegistered: testKeyReg[0] !== ZERO_HASH,
     ok, requestedModelHash, servedModelHash, receiptRequestHash, receiptResponseHash, voucherSigner, revert,
     pinnedIsLlama: ch.requestedModelHash.toLowerCase() === keccak256(toHex(PINNED_MODEL_ID)).toLowerCase(),
     upstream: upstreamEvent(d.receiptBytes),
@@ -193,7 +196,10 @@ function RefusalHero() {
     ? [
         {
           label: 'Channel exists and is not closed',
-          detail: `channels(0).closed = ${String(r.ch.closed)}`,
+          detail:
+            q.data && Number(q.data.timestamp) > Number(r.ch.lastActivityAt || r.ch.openedAt) + Number(r.channelTimeout)
+              ? `closed = ${String(r.ch.closed)}; idle past channelTimeout, so the agent may requestClose`
+              : `channels(0).closed = ${String(r.ch.closed)}`,
           mark: r.ch.provider !== ZERO_ADDR && !r.ch.closed ? 'pass' : 'fail',
         },
         {
