@@ -61,6 +61,8 @@ Assay pools every channel's deposit in one contract address and pays out of real
 
 None of these are fixable from Assay.sol alone: they are inherent to any pooled escrow of a token whose issuer holds pause/freeze/wipe roles. Accepted for a testnet deploy of a few USDG; before any mainnet or higher-value deploy, separate crediting from transferring (`redeem` should credit `owed[provider]` rather than transfer directly, so a pause only delays a `withdraw()` instead of changing who is owed).
 
+Real-USDG deploy path review (Deploy.s.sol's `USDG_ADDRESS` override, the three issuer risks above with live fork evidence): `docs/security/assay-usdg-review.md`.
+
 **L-3 detail:** Stylus caches compiled programs and can invalidate that cache on an ArbOS upgrade (`ProgramNotActivated`). Reactivating a previously-deployed, unchanged Verifier is a call to `ArbWasm.activateProgram(address)` (address `0x0000000000000000000000000000000000000071`), which is **not access-controlled**: any address can pay the (small) activation data fee and call it for this Verifier's address, since the bytecode itself never changes. No owner key, no deployer-only path, and no action is required from Assay.sol, whose `verifier_` reference is immutable and keeps working once the program is reactivated.
 
 ## What Intel TDX attestation proves, and what it does not
