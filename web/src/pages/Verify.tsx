@@ -293,10 +293,8 @@ export function Verify() {
         <div>
           <h1>Verify an attestation</h1>
           <p className="lede">
-            Registration is nonce first. Read the contract-issued nonce for the registering address, fetch the legacy
-            endpoint report with exactly that nonce, then send <b>register</b> from the same address. The page parses
-            the report fields and dry-runs the Stylus verifier with a local <b>eth_call</b>, so nothing is submitted
-            onchain until you transact.
+            Take a gateway from a fresh Intel TDX quote to <b>register</b>. Every check below is a local{' '}
+            <b>eth_call</b>; nothing is submitted until you transact.
           </p>
         </div>
       </div>
@@ -465,10 +463,10 @@ export function Verify() {
         </section>
       )}
 
-      {parsed?.quoteHex && (
+      {(
         <section className="section" aria-labelledby="v-dry">
           <div className="section-head">
-            <h2 id="v-dry"><span className="step-n">3.</span> Contract dry run</h2>
+            <h2 id="v-dry"><span className="step-n">3.</span> Dry-run verify and register</h2>
           </div>
           <p className="sub">
             Calls <b>verify(bytes, bytes32)</b> on the Stylus verifier ({short(VERIFIER_ADDRESS)}) via eth_call with
@@ -477,11 +475,12 @@ export function Verify() {
             <b>register</b> transaction would hit.
           </p>
           {!contractNonce && <p className="note">Set a provider address in step 1 first, so the dry run can pass its current nonce.</p>}
+          {contractNonce && !parsed?.quoteHex && <p className="note">Paste or fetch the attestation report in step 2 first; the dry run needs its quote bytes.</p>}
           <div className="actions">
-            <button className="btn" onClick={dryRunVerify} disabled={dryRunBusy || !client || !contractNonce} type="button">
+            <button className="btn" onClick={dryRunVerify} disabled={dryRunBusy || !client || !contractNonce || !parsed?.quoteHex} type="button">
               {dryRunBusy ? 'Calling…' : 'Dry-run verify'}
             </button>
-            <button className="btn ghost" onClick={simulateRegister} disabled={registerBusy || !client || !chain.ready} type="button">
+            <button className="btn ghost" onClick={simulateRegister} disabled={registerBusy || !client || !chain.ready || !parsed?.quoteHex} type="button">
               {registerBusy ? 'Simulating…' : 'Simulate register'}
             </button>
           </div>
