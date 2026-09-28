@@ -9,7 +9,7 @@ import {
   USDG_ADDRESS,
 } from '../../web/src/lib/addresses.generated.ts';
 
-export const assay: Address = ASSAY_ADDRESS;
+export const assay: Address = ((process.env.ASSAY_ADDRESS ?? '').trim() || ASSAY_ADDRESS) as Address;
 export const usdg: Address = USDG_ADDRESS;
 export const chainId: number = CHAIN_ID;
 export const rpcUrl: string = (process.env.RPC_URL ?? '').trim() || RPC_URL;
