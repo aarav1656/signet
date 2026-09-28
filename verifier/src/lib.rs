@@ -35,6 +35,15 @@ use stylus_sdk::{
     prelude::*,
 };
 
+/// Reused verbatim from `receipt-verifier/src/json.rs` (same file, two
+/// crates): a minimal, allocation-free structural JSON scanner. Here it
+/// reads named fields out of a caller-supplied `workload_keyset` byte string
+/// only after `verify_keyset` has already checked those exact bytes hash to
+/// the digest the TEE itself committed into `report_data` (see
+/// `verify_keyset` below), so a malicious byte string can never reach it
+/// unless it also happens to be the real, attested keyset.
+mod json;
+
 /// TDReport10 body field offsets within `signed_scope` (48-byte header + 584-byte
 /// body), per dcap-qvl's `TDReport10` struct (src/quote.rs): tee_tcb_svn(16) +
 /// mr_seam(48) + mr_signer_seam(48) + seam_attributes(8) + td_attributes(8) +
@@ -556,6 +565,140 @@ fn parse_quote(raw: &[u8]) -> Result<QuoteParts<'_>, Vec<u8>> {
     })
 }
 
+/// Shared DCAP quote-chain verification: PCK chain to Intel's hardcoded
+/// root, qe_report signature, ISV/quote signature, M-1's DEBUG-attribute
+/// rejection, H-2's cert validity-window check, and the nine-field M-1
+/// measurement. Used by both `verify()` (legacy endpoint) and
+/// `verify_keyset()` (canonical `/v1/aci/attestation` endpoint) below: the
+/// DCAP crypto is identical either way, only the *interpretation* of the TD
+/// report's own `report_data` field differs per endpoint (raw address vs. a
+/// digest commitment), so it lives once here instead of being duplicated
+/// into a second Stylus binary (receipt-verifier is already at 19.2KB of
+/// the 24KB Stylus limit; growing this crate in place instead of adding a
+/// third one keeps both under budget).
+///
+/// Returns the TD report's own raw 64-byte `report_data` field verbatim
+/// (last 64 bytes of the 584-byte TDReport10 body) plus the measurement.
+/// Reverts (returns `Err`) on any structural or cryptographic failure.
+fn verify_dcap_chain(quote: &[u8], now: u64) -> Result<([u8; 64], FixedBytes<32>), Vec<u8>> {
+    let q = parse_quote(quote)?;
+
+    // M-1: TDATTRIBUTES bit 0 is DEBUG (Intel TDX Module Base Architecture
+    // Specification, section "TDATTRIBUTES", field is little-endian so bit 0
+    // is the low bit of byte 0). A debug TD lets the host inspect/alter its
+    // memory at will, so every measurement it could produce is unverifiable
+    // and must be rejected outright, not merely flagged.
+    if q.signed_scope.len() < XFAM_OFFSET + 8 {
+        return Err(b"SignedScopeTooShort".to_vec());
+    }
+    let td_attributes = &q.signed_scope[TD_ATTRIBUTES_OFFSET..TD_ATTRIBUTES_OFFSET + 8];
+    if td_attributes[0] & 0x01 != 0 {
+        return Err(b"DebugAttributeSet".to_vec());
+    }
+
+    let certs_der = extract_pem_certs(q.pck_chain_pem)?;
+    if certs_der.len() < 2 {
+        return Err(b"ChainTooShort".to_vec());
+    }
+    let leaf = parse_x509_cert(&certs_der[0])?;
+    let intermediate = parse_x509_cert(&certs_der[1])?;
+
+    // H-2: reject an expired or not-yet-valid PCK leaf/intermediate. TCB
+    // status, QE identity and PCK CRL checks still need live Intel PCCS
+    // collateral this contract does not fetch; see README's security table
+    // for exactly what that leaves unchecked.
+    if now < leaf.not_before || now > leaf.not_after {
+        return Err(b"LeafCertNotValid".to_vec());
+    }
+    if now < intermediate.not_before || now > intermediate.not_after {
+        return Err(b"IntermediateCertNotValid".to_vec());
+    }
+
+    // 1. leaf signed by intermediate
+    verify_p256(&intermediate.pubkey_xy, leaf.tbs_bytes, &leaf.signature)?;
+
+    // 2. intermediate signed by Intel's hardcoded SGX Root CA pubkey
+    verify_p256(&INTEL_ROOT_PUBKEY, intermediate.tbs_bytes, &intermediate.signature)?;
+
+    // 3. qe_report signed by the PCK leaf's pubkey
+    verify_p256(&leaf.pubkey_xy, q.qe_report, &q.qe_report_signature)?;
+
+    // 4. qe_report.report_data[0..32] == SHA256(attestation_key || qe_auth_data)
+    let mut hasher = Sha256::new();
+    hasher.update(q.ecdsa_attestation_key);
+    hasher.update(q.qe_auth_data);
+    let expect: [u8; 32] = hasher.finalize().into();
+    if q.qe_report.len() < 32 || &q.qe_report[q.qe_report.len() - 64..q.qe_report.len() - 32] != expect {
+        return Err(b"QeReportDataMismatch".to_vec());
+    }
+
+    // 5. ISV/quote signature: attestation key signs header||body
+    verify_p256(&q.ecdsa_attestation_key, q.signed_scope, &q.ecdsa_signature)?;
+
+    if q.signed_scope.len() < RTMR0_OFFSET + 3 * MR_LEN + MR_LEN + 64 {
+        return Err(b"SignedScopeTooShort".to_vec());
+    }
+    // M-1: measurement = keccak256(mr_seam || td_attributes || xfam || mr_td
+    // || mr_config_id || rtmr0 || rtmr1 || rtmr2 || rtmr3). Folding in
+    // mr_seam/td_attributes/xfam/mr_config_id means a swapped SEAM module or
+    // a changed TD feature/config bitmask now changes the pinned image hash
+    // too, not just a docker-compose RTMR3 change.
+    let mut measurement_input = [0u8; MEASUREMENT_LEN];
+    let mut off = 0usize;
+    measurement_input[off..off + MR_LEN].copy_from_slice(&q.signed_scope[MR_SEAM_OFFSET..MR_SEAM_OFFSET + MR_LEN]);
+    off += MR_LEN;
+    measurement_input[off..off + 8].copy_from_slice(td_attributes);
+    off += 8;
+    measurement_input[off..off + 8].copy_from_slice(&q.signed_scope[XFAM_OFFSET..XFAM_OFFSET + 8]);
+    off += 8;
+    measurement_input[off..off + MR_LEN].copy_from_slice(&q.signed_scope[MRTD_OFFSET..MRTD_OFFSET + MR_LEN]);
+    off += MR_LEN;
+    measurement_input[off..off + MR_LEN]
+        .copy_from_slice(&q.signed_scope[MR_CONFIG_ID_OFFSET..MR_CONFIG_ID_OFFSET + MR_LEN]);
+    off += MR_LEN;
+    for i in 0..4 {
+        let src = RTMR0_OFFSET + i * MR_LEN;
+        measurement_input[off + i * MR_LEN..off + (i + 1) * MR_LEN]
+            .copy_from_slice(&q.signed_scope[src..src + MR_LEN]);
+    }
+    let measurement = keccak256(measurement_input);
+
+    let mut report_data = [0u8; 64];
+    report_data.copy_from_slice(&q.signed_scope[RTMR0_OFFSET + 4 * MR_LEN..RTMR0_OFFSET + 4 * MR_LEN + 64]);
+    Ok((report_data, FixedBytes::from(measurement)))
+}
+
+/// `bytes` as lowercase ASCII hex, no `0x` prefix, matching both Rust's
+/// `hex::encode` and Solidity's `Strings.toHexString`/`_hex64` conventions
+/// used throughout this repo (e.g. `Assay.sol`'s own `_hex64`).
+fn hex64(bytes: &[u8]) -> Vec<u8> {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = Vec::with_capacity(bytes.len() * 2);
+    for &b in bytes {
+        out.push(HEX[(b >> 4) as usize]);
+        out.push(HEX[(b & 0x0f) as usize]);
+    }
+    out
+}
+
+/// Read a top-level JSON integer member (ASCII digits only, per the ACI
+/// spec's Appendix A integer-only number constraint) as `u64`.
+fn find_u64_member(b: &[u8], obj_start: usize, key: &str) -> Result<Option<u64>, json::JsonError> {
+    match json::find_member(b, obj_start, key)? {
+        None => Ok(None),
+        Some((s, e)) => {
+            let mut v: u64 = 0;
+            for &c in &b[s..e] {
+                if !c.is_ascii_digit() {
+                    return Err(json::JsonError);
+                }
+                v = v.saturating_mul(10).saturating_add((c - b'0') as u64);
+            }
+            Ok(Some(v))
+        }
+    }
+}
+
 sol_storage! {
     #[entrypoint]
     pub struct Verifier {}
@@ -587,88 +730,8 @@ impl Verifier {
     /// calldata argument nobody checked), closing the stale-quote replay this
     /// review's H-2 finding described.
     pub fn verify(&self, quote: Bytes, nonce: FixedBytes<32>) -> Result<(Address, FixedBytes<32>), Vec<u8>> {
-        let q = parse_quote(quote.as_ref())?;
-
-        // M-1: TDATTRIBUTES bit 0 is DEBUG (Intel TDX Module Base Architecture
-        // Specification, section "TDATTRIBUTES", field is little-endian so bit 0
-        // is the low bit of byte 0). A debug TD lets the host inspect/alter its
-        // memory at will, so every measurement it could produce is unverifiable
-        // and must be rejected outright, not merely flagged.
-        if q.signed_scope.len() < XFAM_OFFSET + 8 {
-            return Err(b"SignedScopeTooShort".to_vec());
-        }
-        let td_attributes = &q.signed_scope[TD_ATTRIBUTES_OFFSET..TD_ATTRIBUTES_OFFSET + 8];
-        if td_attributes[0] & 0x01 != 0 {
-            return Err(b"DebugAttributeSet".to_vec());
-        }
-
-        let certs_der = extract_pem_certs(q.pck_chain_pem)?;
-        if certs_der.len() < 2 {
-            return Err(b"ChainTooShort".to_vec());
-        }
-        let leaf = parse_x509_cert(&certs_der[0])?;
-        let intermediate = parse_x509_cert(&certs_der[1])?;
-
-        // H-2: reject an expired or not-yet-valid PCK leaf/intermediate. TCB
-        // status, QE identity and PCK CRL checks still need live Intel PCCS
-        // collateral this contract does not fetch; see README's security table
-        // for exactly what that leaves unchecked.
         let now = self.vm().block_timestamp();
-        if now < leaf.not_before || now > leaf.not_after {
-            return Err(b"LeafCertNotValid".to_vec());
-        }
-        if now < intermediate.not_before || now > intermediate.not_after {
-            return Err(b"IntermediateCertNotValid".to_vec());
-        }
-
-        // 1. leaf signed by intermediate
-        verify_p256(&intermediate.pubkey_xy, leaf.tbs_bytes, &leaf.signature)?;
-
-        // 2. intermediate signed by Intel's hardcoded SGX Root CA pubkey
-        verify_p256(&INTEL_ROOT_PUBKEY, intermediate.tbs_bytes, &intermediate.signature)?;
-
-        // 3. qe_report signed by the PCK leaf's pubkey
-        verify_p256(&leaf.pubkey_xy, q.qe_report, &q.qe_report_signature)?;
-
-        // 4. qe_report.report_data[0..32] == SHA256(attestation_key || qe_auth_data)
-        let mut hasher = Sha256::new();
-        hasher.update(q.ecdsa_attestation_key);
-        hasher.update(q.qe_auth_data);
-        let expect: [u8; 32] = hasher.finalize().into();
-        if q.qe_report.len() < 32 || &q.qe_report[q.qe_report.len() - 64..q.qe_report.len() - 32] != expect {
-            return Err(b"QeReportDataMismatch".to_vec());
-        }
-
-        // 5. ISV/quote signature: attestation key signs header||body
-        verify_p256(&q.ecdsa_attestation_key, q.signed_scope, &q.ecdsa_signature)?;
-
-        if q.signed_scope.len() < RTMR0_OFFSET + 3 * MR_LEN + MR_LEN {
-            return Err(b"SignedScopeTooShort".to_vec());
-        }
-        // M-1: measurement = keccak256(mr_seam || td_attributes || xfam || mr_td
-        // || mr_config_id || rtmr0 || rtmr1 || rtmr2 || rtmr3). Folding in
-        // mr_seam/td_attributes/xfam/mr_config_id means a swapped SEAM module or
-        // a changed TD feature/config bitmask now changes the pinned image hash
-        // too, not just a docker-compose RTMR3 change.
-        let mut measurement_input = [0u8; MEASUREMENT_LEN];
-        let mut off = 0usize;
-        measurement_input[off..off + MR_LEN].copy_from_slice(&q.signed_scope[MR_SEAM_OFFSET..MR_SEAM_OFFSET + MR_LEN]);
-        off += MR_LEN;
-        measurement_input[off..off + 8].copy_from_slice(td_attributes);
-        off += 8;
-        measurement_input[off..off + 8].copy_from_slice(&q.signed_scope[XFAM_OFFSET..XFAM_OFFSET + 8]);
-        off += 8;
-        measurement_input[off..off + MR_LEN].copy_from_slice(&q.signed_scope[MRTD_OFFSET..MRTD_OFFSET + MR_LEN]);
-        off += MR_LEN;
-        measurement_input[off..off + MR_LEN]
-            .copy_from_slice(&q.signed_scope[MR_CONFIG_ID_OFFSET..MR_CONFIG_ID_OFFSET + MR_LEN]);
-        off += MR_LEN;
-        for i in 0..4 {
-            let src = RTMR0_OFFSET + i * MR_LEN;
-            measurement_input[off + i * MR_LEN..off + (i + 1) * MR_LEN]
-                .copy_from_slice(&q.signed_scope[src..src + MR_LEN]);
-        }
-        let measurement = keccak256(measurement_input);
+        let (report_data, measurement) = verify_dcap_chain(quote.as_ref(), now)?;
 
         // signer = report_data[0..20], read as a raw 20-byte Ethereum address.
         //
@@ -689,15 +752,7 @@ impl Verifier {
         // per-response receipts with (dstack.rs `sign_legacy_message`), so it is a real
         // payee identity, not a fingerprint. The canonical `/v1/aci/attestation`
         // endpoint's report_data instead commits to a nonce+keyset-digest hash and does
-        // NOT carry a raw address, so `register()` must be called with a quote fetched
-        // from the legacy endpoint. See README.md for what still blocks
-        // a live positive redemption (an API key to obtain a real per-response
-        // signature, plus that signature's own text format).
-        if q.signed_scope.len() < RTMR0_OFFSET + 3 * MR_LEN + MR_LEN + 64 {
-            return Err(b"SignedScopeTooShort".to_vec());
-        }
-        let report_data = &q.signed_scope[RTMR0_OFFSET + 4 * MR_LEN..RTMR0_OFFSET + 4 * MR_LEN + 64];
-
+        // NOT carry a raw address; see `verify_keyset` below for that path.
         // H-2: report_data == signing_address(20) || zero(12) || nonce(32), per
         // Phala's legacy endpoint layout cited above. The zero padding must
         // actually be zero (M-1's report_data structural check) and the last 32
@@ -711,7 +766,124 @@ impl Verifier {
             return Err(b"NonceMismatch".to_vec());
         }
 
-        Ok((Address::from_slice(&report_data[0..20]), FixedBytes::from(measurement)))
+        Ok((Address::from_slice(&report_data[0..20]), measurement))
+    }
+
+    /// Verify one real Phala CANONICAL `GET /v1/aci/attestation?nonce=...` TDX
+    /// quote end to end (the same DCAP chain as `verify()` above, via
+    /// `verify_dcap_chain`) and additionally check the TD report's
+    /// `report_data` commits to the caller-supplied `keyset_bytes` via
+    /// Phala's own binding mechanism, then that `pubkey` is one of that
+    /// keyset's live receipt-signing keys.
+    ///
+    /// Binding mechanism (cited, not invented; `Dstack-TEE/private-ai-gateway`
+    /// commit `fea9d0ed37b1807edb418f2a8c2b4151c6d1fdb0`):
+    /// `crates/aci-protocol/src/identity.rs` `REPORT_DATA_PURPOSE` (="aci.report_data.v1"),
+    /// `attestation_statement` (builds the ASCII JSON
+    /// `{"keyset_digest":"sha256:<hex>","nonce":"<nonce>","purpose":"aci.report_data.v1"}`,
+    /// keys already in the sorted order JCS would produce since the ACI spec
+    /// (Appendix A) restricts every field to ASCII strings/integers), and
+    /// `report_data`/`report_data_slot` (= `sha256(statement) || zero(32)`,
+    /// placed verbatim in the TD report's `report_data` field). Independently
+    /// confirmed as the real wire shape via `crates/aci-verify/src/report.rs`'s
+    /// `verify_report_binding` (recomputes this exact digest and compares it
+    /// to the reported `report_data`) and `src/aggregator/service/e2ee.rs`'s
+    /// `assemble_report`/`attestation_report_for_domain` (builds this exact
+    /// statement before calling the quoter) -- and reproduced live against a
+    /// real `GET /v1/aci/attestation?nonce=<chosen>` fetch (see
+    /// `fixtures/aci_attestation1.json`/`aci_attestation1_nonce.txt`): this
+    /// crate's own test `test_real_aci_bundle_verifies_keyset` recomputes the
+    /// identical digest in Rust and it matches the live response's
+    /// `attestation.report_data` field byte for byte.
+    ///
+    /// No JCS canonicalization is implemented on-chain: `keyset_bytes` is
+    /// hashed exactly as supplied. If a caller's local canonicalization of
+    /// `workload_keyset` is wrong, the digest simply will not match what the
+    /// TEE actually signed and this call reverts -- correctness is enforced
+    /// by the equality check, not by re-deriving JCS on-chain.
+    ///
+    /// `pubkey` (a raw 32-byte Ed25519 public key) must appear in
+    /// `keyset_bytes`'s `receipt_signing_keys` array with `"algo":"ed25519"`
+    /// and a lowercase-hex `public_key` equal to `pubkey`
+    /// (`crates/aci-protocol/src/types.rs` `WorkloadKeyset`/`KeyedPublicKey`),
+    /// and the keyset's own top-level `not_after` (unix seconds) must not
+    /// have passed (`WorkloadKeyset::is_expired_at`), so a caller cannot
+    /// register a stale or swapped-in key the TEE never actually attested to.
+    ///
+    /// This is the binding step for `Assay.registerReceiptKey`: it proves
+    /// `pubkey` was produced by the SAME class of TDX-attested enclave Assay
+    /// already trusts (same DCAP chain, same nine-field measurement, same
+    /// allowlist gate as `verify()`/`register()` above), via Phala's own
+    /// report_data-commitment mechanism -- not a separate ECDSA-signs-Ed25519
+    /// scheme invented for this task, because Phala's source does not
+    /// implement one; see the chiron repo's top-level README, "Model-swap
+    /// refusal" section, "How the Ed25519 key is bound" for the full writeup.
+    pub fn verify_keyset(
+        &self,
+        quote: Bytes,
+        keyset_bytes: Bytes,
+        nonce: FixedBytes<32>,
+        pubkey: FixedBytes<32>,
+    ) -> Result<FixedBytes<32>, Vec<u8>> {
+        let now = self.vm().block_timestamp();
+        let (report_data, measurement) = verify_dcap_chain(quote.as_ref(), now)?;
+
+        // report_data_slot(digest) = digest(32) || zero(32) (identity.rs
+        // `report_data_slot`); the zero half must actually be zero.
+        if report_data[32..64].iter().any(|&b| b != 0) {
+            return Err(b"ReportDataPaddingNotZero".to_vec());
+        }
+
+        // statement = {"keyset_digest":"sha256:<hex64(sha256(keyset_bytes))>","nonce":"<hex64(nonce)>","purpose":"aci.report_data.v1"}
+        let keyset_digest_hex = hex64(&Sha256::digest(keyset_bytes.as_ref()));
+        let nonce_hex = hex64(nonce.as_slice());
+        let mut statement = Vec::with_capacity(64 + keyset_digest_hex.len() + nonce_hex.len());
+        statement.extend_from_slice(br#"{"keyset_digest":"sha256:"#);
+        statement.extend_from_slice(&keyset_digest_hex);
+        statement.extend_from_slice(br#"","nonce":""#);
+        statement.extend_from_slice(&nonce_hex);
+        statement.extend_from_slice(br#"","purpose":"aci.report_data.v1"}"#);
+        let statement_digest: [u8; 32] = Sha256::digest(&statement).into();
+        if statement_digest != report_data[0..32] {
+            return Err(b"KeysetDigestMismatch".to_vec());
+        }
+
+        let kb = keyset_bytes.as_ref();
+
+        // Keyset freshness: WorkloadKeyset.not_after (unix seconds) must not
+        // have passed. Read straight off the caller-supplied bytes, which by
+        // this point have already been proven to hash to what the TEE itself
+        // committed into report_data, so this is reading attested data.
+        let not_after = find_u64_member(kb, 0, "not_after")
+            .map_err(|_| b"BadKeysetJson".to_vec())?
+            .ok_or_else(|| b"KeysetMissingNotAfter".to_vec())?;
+        if now >= not_after {
+            return Err(b"KeysetExpired".to_vec());
+        }
+
+        // pubkey must appear in receipt_signing_keys with algo == "ed25519".
+        let (arr_start, _) = json::find_member(kb, 0, "receipt_signing_keys")
+            .map_err(|_| b"BadKeysetJson".to_vec())?
+            .ok_or_else(|| b"KeysetMissingReceiptSigningKeys".to_vec())?;
+        let pubkey_hex = hex64(pubkey.as_slice());
+        let found = json::find_array_element(kb, arr_start, |b, es, _ee| {
+            let algo = json::find_string_member(b, es, "algo")?;
+            if algo != Some(b"ed25519".as_slice()) {
+                return Ok(None);
+            }
+            let pk = json::find_string_member(b, es, "public_key")?;
+            if pk == Some(pubkey_hex.as_slice()) {
+                Ok(Some(()))
+            } else {
+                Ok(None)
+            }
+        })
+        .map_err(|_| b"BadKeysetJson".to_vec())?;
+        if found.is_none() {
+            return Err(b"PubkeyNotInKeyset".to_vec());
+        }
+
+        Ok(measurement)
     }
 }
 
@@ -865,5 +1037,174 @@ mod test {
             .verify(raw.into(), FixedBytes::from(FIXTURE_NONCE))
             .expect_err("debug-attribute quote must be rejected");
         assert_eq!(err, b"DebugAttributeSet".to_vec());
+    }
+
+    // -----------------------------------------------------------------
+    // verify_keyset (canonical `/v1/aci/attestation` endpoint) tests.
+    //
+    // fixtures/quote_aci1.hex, fixtures/keyset_bytes_aci1.json and
+    // fixtures/aci_attestation1_nonce.txt are one real, freshly-fetched
+    // `GET https://inference.phala.com/v1/aci/attestation?nonce=<chosen>`
+    // response (no API key required for this endpoint, confirmed live), with
+    // a caller-chosen nonce so it (unlike the legacy fixture, where the
+    // nonce is embedded raw in report_data) can be reconstructed and
+    // checked offline. `keyset_bytes_aci1.json` is the exact JCS
+    // canonicalization of that response's `attestation.workload_keyset`
+    // object (sorted keys, compact separators -- the ACI spec's ASCII/
+    // integer-only constraint means JCS reduces to exactly that); verified
+    // independently in Python before writing this Rust: sha256(these exact
+    // bytes) == the response's own `workload_keyset_digest` field, and
+    // sha256(the statement built from that digest + the chosen nonce) ==
+    // the response's own `attestation.report_data` field, byte for byte.
+    // -----------------------------------------------------------------
+
+    const ACI_NONCE: [u8; 32] =
+        hex_literal_32("2445e2b20b47c224fc77af00e742d54f8147acca66abcd118269a7c3603bad85");
+
+    /// `receipt_signing_keys[0].public_key` from `keyset_bytes_aci1.json`,
+    /// the one live Ed25519 receipt-signing key this real keyset attests to.
+    const ACI_PUBKEY: [u8; 32] =
+        hex_literal_32("110f3824daeeef29dbeba9677a5794ffed257b1082d9fd4599b3c0819953aa0a");
+
+    fn load_aci_quote() -> Vec<u8> {
+        let hex_str = include_str!("../../fixtures/quote_aci1.hex");
+        hex::decode(hex_str.trim()).unwrap()
+    }
+
+    fn load_aci_keyset_bytes() -> Vec<u8> {
+        include_bytes!("../../fixtures/keyset_bytes_aci1.json").to_vec()
+    }
+
+    #[test]
+    fn test_real_aci_bundle_verifies_keyset() {
+        let vm = vm_at_test_time();
+        let contract = Verifier::from(&vm);
+        let measurement = contract
+            .verify_keyset(
+                load_aci_quote().into(),
+                load_aci_keyset_bytes().into(),
+                FixedBytes::from(ACI_NONCE),
+                FixedBytes::from(ACI_PUBKEY),
+            )
+            .expect("real ACI bundle must verify and bind the receipt pubkey");
+        assert_ne!(measurement, FixedBytes::<32>::ZERO);
+        // Same DCAP chain as the legacy endpoint's quote, so the same
+        // nine-field measurement formula applies; both quotes come from
+        // the same class of Phala gateway image, so their measurements
+        // should agree -- an independent cross-check that verify_keyset
+        // isn't computing something different from verify().
+        let (_, legacy_measurement) = contract
+            .verify(load_quote().into(), FixedBytes::from(FIXTURE_NONCE))
+            .expect("legacy bundle must also verify");
+        assert_eq!(measurement, legacy_measurement);
+    }
+
+    /// Red: a nonce the caller did not actually use to fetch the quote (so
+    /// the statement it builds hashes to something the TEE never signed)
+    /// must not verify, even though the quote itself and keyset_bytes are
+    /// both genuine and untouched.
+    #[test]
+    fn test_aci_wrong_nonce_reverts() {
+        let vm = vm_at_test_time();
+        let contract = Verifier::from(&vm);
+        let mut wrong_nonce = ACI_NONCE;
+        wrong_nonce[0] ^= 0x01;
+        let err = contract
+            .verify_keyset(
+                load_aci_quote().into(),
+                load_aci_keyset_bytes().into(),
+                FixedBytes::from(wrong_nonce),
+                FixedBytes::from(ACI_PUBKEY),
+            )
+            .expect_err("wrong nonce must be rejected");
+        assert_eq!(err, b"KeysetDigestMismatch".to_vec());
+    }
+
+    /// Red, mutation-proof for the digest-binding check itself: a single
+    /// flipped byte anywhere in the caller-supplied keyset bytes changes
+    /// their sha256, so it can no longer match what the TEE actually
+    /// committed into report_data, even though the quote is genuine and the
+    /// nonce is correct. This is the same shape as `Assay.redeemWithReceipt`
+    /// rejecting a tampered/substituted model claim: a value the contract
+    /// itself hashes and compares, not one it trusts unchecked.
+    #[test]
+    fn test_aci_tampered_keyset_bytes_reverts() {
+        let vm = vm_at_test_time();
+        let contract = Verifier::from(&vm);
+        let mut kb = load_aci_keyset_bytes();
+        // Flip a byte inside the "ed25519" algo string value -- still
+        // syntactically valid JSON bytes-wise for this scanner (this test
+        // only exercises the digest check, before any JSON is parsed).
+        let pos = kb.iter().position(|&b| b == b'e').unwrap();
+        kb[pos] ^= 0x01;
+        let err = contract
+            .verify_keyset(
+                load_aci_quote().into(),
+                kb.into(),
+                FixedBytes::from(ACI_NONCE),
+                FixedBytes::from(ACI_PUBKEY),
+            )
+            .expect_err("tampered keyset bytes must be rejected");
+        assert_eq!(err, b"KeysetDigestMismatch".to_vec());
+    }
+
+    /// Red: a pubkey that is not in the attested keyset's
+    /// `receipt_signing_keys` must not bind, even with a genuine quote,
+    /// genuine keyset bytes and the correct nonce -- otherwise anyone could
+    /// register an unattested key by reusing someone else's real bundle.
+    #[test]
+    fn test_aci_pubkey_not_in_keyset_reverts() {
+        let vm = vm_at_test_time();
+        let contract = Verifier::from(&vm);
+        let wrong_pubkey = [0xABu8; 32];
+        let err = contract
+            .verify_keyset(
+                load_aci_quote().into(),
+                load_aci_keyset_bytes().into(),
+                FixedBytes::from(ACI_NONCE),
+                FixedBytes::from(wrong_pubkey),
+            )
+            .expect_err("unregistered pubkey must be rejected");
+        assert_eq!(err, b"PubkeyNotInKeyset".to_vec());
+    }
+
+    /// Red: once `block.timestamp >= keyset.not_after`, registration must
+    /// fail even for an otherwise fully genuine, correctly-bound bundle --
+    /// a provider cannot register a stale keyset's receipt key forever.
+    #[test]
+    fn test_aci_expired_keyset_reverts() {
+        let vm = TestVM::default();
+        vm.set_block_timestamp(1_792_250_755); // exactly keyset_bytes_aci1.json's not_after
+        let contract = Verifier::from(&vm);
+        let err = contract
+            .verify_keyset(
+                load_aci_quote().into(),
+                load_aci_keyset_bytes().into(),
+                FixedBytes::from(ACI_NONCE),
+                FixedBytes::from(ACI_PUBKEY),
+            )
+            .expect_err("expired keyset must be rejected");
+        assert_eq!(err, b"KeysetExpired".to_vec());
+    }
+
+    /// Red: `verify_keyset` shares `verify_dcap_chain` with `verify()`, so a
+    /// corrupted quote signature must fail there too, not just for the
+    /// legacy entrypoint -- proves the refactor didn't silently drop a
+    /// check for one of the two callers.
+    #[test]
+    fn test_aci_flipped_quote_signature_reverts() {
+        let vm = vm_at_test_time();
+        let contract = Verifier::from(&vm);
+        let mut raw = load_aci_quote();
+        let off = 48 + 584 + 4 + 5; // inside the ISV/quote ecdsa_signature field
+        raw[off] ^= 0x01;
+        assert!(contract
+            .verify_keyset(
+                raw.into(),
+                load_aci_keyset_bytes().into(),
+                FixedBytes::from(ACI_NONCE),
+                FixedBytes::from(ACI_PUBKEY),
+            )
+            .is_err());
     }
 }
