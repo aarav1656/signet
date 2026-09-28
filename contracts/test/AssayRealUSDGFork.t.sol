@@ -156,7 +156,7 @@ contract AssayRealUSDGForkTest is Test {
     function test_fork_openChannelWithPermit_realUSDG() public {
         uint256 n0 = USDG.nonces(agent);
         uint256 id = _open(1_000_000);
-        (,, uint128 dep,,,,,,,,) = assay.channels(id);
+        (,, uint128 dep,,,,,,,) = assay.channels(id);
         assertEq(dep, 1_000_000);
         assertEq(USDG.balanceOf(address(assay)), 1_000_000);
         assertEq(USDG.balanceOf(agent), 0);

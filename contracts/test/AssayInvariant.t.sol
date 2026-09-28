@@ -56,7 +56,7 @@ contract AssayHandler is Test {
         uint256 n = assay.channelCount();
         if (n == 0) return;
         uint256 id = channelSeed % n;
-        (,, uint128 deposit, uint128 paid,,,, bool closed,,,) = assay.channels(id);
+        (,, uint128 deposit, uint128 paid,,,, bool closed,,) = assay.channels(id);
         if (closed || paid >= deposit) return;
 
         uint256 bump = bound(bumpSeed, 1, uint256(deposit - paid));
@@ -76,7 +76,7 @@ contract AssayHandler is Test {
         uint256 n = assay.channelCount();
         if (n == 0) return;
         uint256 id = channelSeed % n;
-        (,,,, uint64 openedAt, uint64 lastActivityAt, uint64 closeRequestedAt, bool closed,,,) = assay.channels(id);
+        (,,,, uint64 openedAt, uint64 lastActivityAt, uint64 closeRequestedAt, bool closed,,) = assay.channels(id);
         if (closed) return;
 
         if (closeRequestedAt == 0) {
@@ -187,7 +187,7 @@ contract AssayInvariantTest is StdInvariant, Test {
         uint256 n = assay.channelCount();
         uint256 total;
         for (uint256 i = 0; i < n; i++) {
-            (,, uint128 deposit, uint128 paid,,,,,,,) = assay.channels(i);
+            (,, uint128 deposit, uint128 paid,,,,,,) = assay.channels(i);
             total += uint256(deposit) - uint256(paid);
         }
         assertEq(usdg.balanceOf(address(assay)), total, "assay's USDG balance must equal sum(deposit - paid) across all channels");

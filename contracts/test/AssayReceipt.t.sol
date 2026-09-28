@@ -63,7 +63,7 @@ contract AssayReceiptTest is AssayTestBase {
         );
 
         assertEq(usdg.balanceOf(provider), 100e6);
-        (,, uint128 deposit, uint128 paid,,,,,,,) = assay.channels(channelId);
+        (,, uint128 deposit, uint128 paid,,,,,,) = assay.channels(channelId);
         assertEq(deposit, 1_000e6);
         assertEq(paid, 100e6);
     }
@@ -257,7 +257,7 @@ contract AssayReceiptTest is AssayTestBase {
         // Paid only the 150e6 delta the second time, not the full 250e6 again.
         assertEq(usdg.balanceOf(provider), 250e6);
 
-        (,, uint128 deposit, uint128 paid,,,,,,,) = assay.channels(channelId);
+        (,, uint128 deposit, uint128 paid,,,,,,) = assay.channels(channelId);
         assertEq(deposit, 1_000e6);
         assertEq(paid, 250e6);
         assertLe(paid, deposit);

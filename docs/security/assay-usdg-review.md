@@ -176,3 +176,98 @@ Fix: `verify_strict`. Green on scratch, and all 17 existing receipt-verifier tes
 - The Solidity tests use mocks for both Stylus contracts. The nonce-bound mock in RR-2 imitates `verifier/src/lib.rs:765`; it is not the real verifier.
 - RR-4b simulates EIP-7702 with `vm.etch`. Arbitrum Sepolia 7702 support was not checked live.
 - The scratch fixes prove that the tests can go green. They are not reviewed patches.
+
+## Final review 2026-09-28 (pre-redeploy)
+
+Reviewer: JUDGE (opus/high), read-only except this section. Scope: the uncommitted diff against HEAD `6e35b45` in `contracts/`, `receipt-verifier/`, `agent/src/` and `web/src/pages/Verify.tsx`.
+
+Suites on the working tree, run from a scratch copy at `/tmp/chiron-final/contracts`: fast `forge test` 57 passed, 0 failed. `AssayInvariant` 1 passed (256 runs, 128000 calls). `AssayRealUSDGFork` 13 passed, forked at Arbitrum Sepolia head. `receipt-verifier` `cargo test` 18 passed. `agent` `node --test` 17 passed.
+
+New failing tests: `/tmp/chiron-final/ReReview2.t.sol`. To run it, copy it into `test/` of a contracts copy and run `forge test --match-contract ReReview2Test`. Three tests are red on the current tree. The fourth is a guard for the fix, and it passes both before and after.
+
+**FIX FIRST**
+
+One Medium remains, and its fix is three lines. Assay is immutable, so fixing it after the redeploy would cost another redeploy.
+
+### RR-1 to RR-8, verified
+
+- RR-1 is fixed. `Assay.sol:398` reverts `ModelMismatch` on a pinned channel before any signature is checked. A zero-hash channel cannot pass `redeemWithReceipt`, because that path would need `keccak256(model) == 0`. The agent refuses `pay` on a pinned channel (`agent/src/index.ts:196`) and refuses `pay-receipt` on a zero-hash channel.
+- RR-2 is fixed. I checked it live by running `eth_call` on a probe contract, deployed with `--create`, that runs the same staticcall logic. The probe ran at L2 head 313660297, where EVM `block.number` was 11801634 (the L1 estimate). Results by refBlock:
+  - N-1 and N-200 return 32 bytes.
+  - N-300, 0, the L1-numbered 11801135, N+1000 and N+100000 all revert, so they come back as `StaleRefBlock`.
+  - `0x64` has code `0xfe`, so the `blockhash` fallback cannot run on Arbitrum.
+  - `arbOSVersion()` returned 116.
+- RR-3 is fixed, and the digest matches. Phala's `request.received` `body_hash` is `sha256` of the raw bytes axum received (`src/aggregator/service/forward.rs:246-262` and `src/aci/receipt.rs:240` at `fea9d0ed`; `tests/http.rs:601-603` asserts it). The agent sends exactly `completion.requestBody` (`agent/src/phala.ts:55-59`) and signs `sha256` of those same bytes (`index.ts`, the `requestHash` line in `runPayReceipt`). It also refuses before signing unless the receipt's field is equal. The Stylus decoder takes the first `request.received` event, and Phala's builder writes exactly one.
+- Tuple order is consistent:
+  - Solidity (`Assay.sol:467-478`), the Rust return, `contracts/src/IReceiptVerifier.sol` and `receipt-verifier/solidity/IReceiptVerifier.sol` all use `(ok, requested, served, request, response)`.
+  - The web ABI lists `channels()` with 11 outputs: `[9]` is `requestedModelHash` and `[10]` is `agentIsContract`.
+  - The web reads (`Channel.tsx:132`, `:658`, `HeroBanner.tsx:36`) and the agent reads (`[0]`, `[1]`, `[2]`, `[3]`, `[9]`) all use the right indices.
+- RR-4 is accepted, and `test_RR4_erc1271AgentRotatesOwner_voidsUnredeemedVouchers` pins it. RR-4b is fixed only for an EOA with no code at open. See F-1.
+- RR-5 is acceptable for this deploy. `Deploy.s.sol:42-43` builds a one-entry allowlist. The cost is liveness only: a Phala image roll strands every channel, and agents refund themselves after `channelTimeout + challengeWindow`.
+- RR-7 is acceptable while `ATTESTATION_VALIDITY` stays at its 1 day default (`Deploy.s.sol:37`). Do not raise it on the redeploy. The overhang equals that value.
+- RR-6 is fixed. `receipt-verifier/src/lib.rs:157` uses `verify_strict`, the weak-key test passes, and so does the full suite.
+- RR-8: `register` mode (`agent/src/index.ts:92-128`) runs the legacy `register()` first. It waits for that receipt before it reads the second nonce, so the shared `registerNonce` is read after it advances. Each nonce uses refBlock = head-1 and is consumed in the same run, inside the 256-block window. Verify.tsx pins the (nonce, refBlock) pair when the fetch URL is taken.
+
+### Medium
+
+**F-1 An EOA that is already EIP-7702-delegated at open can void every voucher it signed.**
+
+Location: `Assay.sol:356` and `Assay.sol:513-515`.
+
+`agentIsContract` is `msg.sender.code.length != 0` at open. A delegated EOA has 23 bytes of code (`0xef0100 || delegate`), so it is snapshotted as a contract. From then on its vouchers are checked only through ERC-1271 on whatever delegate it points at when the provider redeems.
+
+The agent's wallet signs an ordinary ECDSA voucher, and the provider checks it and serves. The agent then revokes the delegation (a type-4 authorization to address(0)) or re-delegates to a delegate without `isValidSignature`. Now `isValidERC1271SignatureNow` returns false, `redeem` reverts `PayerNotAgent`, and the agent refunds the whole deposit at `finalizeClose`.
+
+The same path also traps an honest agent whose delegate has no ERC-1271. That channel can never pay.
+
+This is the RR-4b threat in the other order, and the NatSpec at `Assay.sol:71-74` does not cover it. The provider cannot see the problem in the signature. Only `channels()[10]` shows it.
+
+7702 is live on Arbitrum Sepolia: `cast estimate` of a type-4 transaction carrying a throwaway signed authorization returned 48869 gas. No transaction was sent.
+
+Tests:
+- `test_F1_delegatedAtOpen_revokesDelegation_providerMustStillBePaid` is red with `PayerNotAgent()`.
+- `test_F1_delegatedAtOpen_delegateWithout1271_providerMustBePaid` is red with `PayerNotAgent()`.
+
+Fix: accept an ECDSA signature by `c.agent` first, then fall back to ERC-1271 only for a contract agent.
+
+```solidity
+(address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, payerSig);
+if (err == ECDSA.RecoverError.NoError && recovered == c.agent) return true;
+return c.agentIsContract && SignatureChecker.isValidERC1271SignatureNow(c.agent, digest, payerSig);
+```
+
+I applied this to the scratch copy. Both F-1 tests went green, and all 57 existing tests and `test_fixGuard_contractAgent_strangerEcdsaStillRejected` still pass. No one holds a key for a CREATE or CREATE2 address, so accepting ECDSA first gives a real contract agent no new path.
+
+### Low
+
+**F-2 A contract agent that opens from its own constructor can never be paid.**
+
+Location: `Assay.sol:356`.
+
+During construction, `code.length` is 0, so the channel is snapshotted as an EOA and ERC-1271 is never consulted. The owner-signed vouchers revert `PayerNotAgent`, and the agent refunds itself. This belongs to the accepted RR-4 class: a contract agent can already void its vouchers. A provider can detect it, because `channels()[10]` is false for an address that has code.
+
+Test: `test_F2_contractOpenedFromConstructor_providerMustBePaid` is red.
+
+Fix: to support this case, fall back to ERC-1271 when `c.agent.code.length != 0` at redeem instead of reading the snapshot. I verified that on scratch too: all 61 tests pass. That variant does let an EOA that later delegates be paid through its own delegate's ERC-1271, which is the agent's own trust choice. Otherwise, disclose it.
+
+### Info
+
+- The agent CLI has three problems, none of which moves funds.
+  - `runPayReceipt` (`agent/src/index.ts:289`) lacks the channel-party check that `runPay` has. In `runPay` the check appears twice (`:188-195`). If the channel's provider is not the provider key, viem's gas estimation fails before broadcast, so no voucher leaks.
+  - Both pay modes use absolute cumulative amounts (`:204` and `:310`), so a second run on the same channel fails `AmountNotIncreasing`.
+  - `runOpen` reads `channelCount` before its transaction (`:145`), so a concurrent open makes the post-check throw even though the channel opened. It should read `ChannelOpened` instead.
+- `runRegister` exits 0 without registering anything if the keyset has no ed25519 key (`:108-128`). It should throw when nothing registered. If a load-balanced RPC lags, it can read the pre-register nonce. Gas estimation then fails, and rerunning also re-registers the legacy key.
+- The deploy has to point `RECEIPT_VERIFIER` at a fresh build of `receipt-verifier/`. A 4-tuple verifier from before this diff returns 128 bytes, and every `redeemWithReceipt` would revert while decoding. After the deploy, check `verifyReceipt` against `fixtures/receipt_vectors.json`, and compare the 5-word return with the expected hashes.
+- Verify.tsx keeps a pin after a successful register or a provider change. That pinned nonce is then stale until the user clicks Unpin.
+
+### Blind spots
+
+- No live ACI receipt was fetched, because a Phala API key is needed. Three things are therefore unproven on real traffic:
+  - that the receipt's `request.received` `body_hash` equals `sha256` of the bytes the agent sent, through the public edge;
+  - that `upstream.verified` arrives with `result: verified` for the default model;
+  - that the requested and served model strings match byte for byte.
+
+  Any of these failing makes pinned channels unpayable. That is liveness, not theft.
+- The invariant handler still never calls `redeemWithReceipt` or `openChannelWithPermit`.
+- The 7702 tests model delegation with `vm.etch` under Prague. On chain, 7702 was confirmed only by gas estimation.
+- The Stylus contracts are mocked in every Solidity test. The 5-tuple ABI was checked by reading the code, not by calling a deployed Stylus build.

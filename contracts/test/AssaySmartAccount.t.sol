@@ -37,7 +37,7 @@ contract AssaySmartAccountTest is AssayTestBase {
         _register(signerAddr, APPROVED_MEASUREMENT);
         uint256 channelId = _openChannelForWallet(1_000e6);
 
-        (address a,,,,,,,,,,) = assay.channels(channelId);
+        (address a,,,,,,,,,) = assay.channels(channelId);
         assertEq(a, address(wallet), "channel agent must be the smart account, not its owner EOA");
 
         bytes memory payerSig = _signVoucher(WALLET_OWNER_PK, channelId, 100e6, keccak256("req-1"), keccak256("resp-1"));

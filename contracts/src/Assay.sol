@@ -68,11 +68,6 @@ contract Assay is ReentrancyGuard, EIP712 {
         /// redeem() (which carries no model evidence) reverts ModelMismatch. When
         /// zero, the channel is legacy-only and redeemWithReceipt() cannot match it.
         bytes32 requestedModelHash;
-        /// Snapshot of `agent.code.length != 0` at open(). Fixes how payerSig is
-        /// checked for the channel's whole life (ECDSA for an EOA, ERC-1271 for a
-        /// contract), so an EOA that later gains code (EIP-7702) cannot void the
-        /// vouchers it already signed.
-        bool agentIsContract;
     }
 
     /// Authorizes the payer's spend, not the work itself: the agent's own key,
@@ -352,8 +347,7 @@ contract Assay is ReentrancyGuard, EIP712 {
             closeRequestedAt: 0,
             closed: false,
             measurement: measurement,
-            requestedModelHash: requestedModelHash,
-            agentIsContract: msg.sender.code.length != 0
+            requestedModelHash: requestedModelHash
         });
         emit ChannelOpened(channelId, msg.sender, provider, amount, requestedModelHash);
     }
@@ -494,10 +488,11 @@ contract Assay is ReentrancyGuard, EIP712 {
         _push(c.provider, delta);
     }
 
-    /// payerSig over the EIP-712 Voucher, checked the way the channel's open-time
-    /// snapshot says: ECDSA against an EOA agent, ERC-1271 against a contract
-    /// agent. A contract agent's validity is still read at redeem time, so a smart
-    /// account that rotates its owner voids vouchers it has not had redeemed;
+    /// payerSig over the EIP-712 Voucher. An ECDSA signature by the agent's own key
+    /// is always accepted, so adding, swapping or dropping an EIP-7702 delegation
+    /// cannot void vouchers the agent signed. Only if that fails and the agent has
+    /// code now is ERC-1271 asked. A smart account's answer is read at redeem time,
+    /// so one that rotates its owner voids vouchers it has not had redeemed;
     /// providers serving one should redeem each voucher as it arrives.
     function _payerSigValid(
         Channel storage c,
@@ -510,9 +505,9 @@ contract Assay is ReentrancyGuard, EIP712 {
         bytes32 digest = _hashTypedDataV4(
             keccak256(abi.encode(VOUCHER_TYPEHASH, channelId, cumulativeAmount, requestHash, responseHash))
         );
-        if (c.agentIsContract) return SignatureChecker.isValidERC1271SignatureNow(c.agent, digest, payerSig);
         (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, payerSig);
-        return err == ECDSA.RecoverError.NoError && recovered == c.agent;
+        if (err == ECDSA.RecoverError.NoError && recovered == c.agent) return true;
+        return c.agent.code.length != 0 && SignatureChecker.isValidERC1271SignatureNow(c.agent, digest, payerSig);
     }
 
     /// `bytes32` as 64 lowercase ASCII hex chars, no `0x`: exactly
