@@ -25,7 +25,7 @@ pragma solidity ^0.8.28;
 interface IReceiptVerifier {
     function verifyReceipt(bytes32 pubkey, bytes calldata receiptBytes, bytes calldata signature)
         external
-        returns (bool ok, bytes32 requestedModelHash, bytes32 servedModelHash, bytes32 responseHash);
+        returns (bool ok, bytes32 requestedModelHash, bytes32 servedModelHash, bytes32 requestHash, bytes32 responseHash);
 }
 
 /// Design note: how `Assay.redeem` would call this (not implemented here; `contracts/`

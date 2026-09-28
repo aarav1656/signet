@@ -48,7 +48,7 @@ extern crate alloc;
 mod json;
 
 use alloc::vec::Vec;
-use ed25519_dalek::{Signature, Verifier as Ed25519Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, VerifyingKey};
 use stylus_sdk::{
     alloy_primitives::{keccak256, Bytes, FixedBytes},
     prelude::*,
@@ -62,6 +62,12 @@ pub struct VerifiedReceipt {
     /// `keccak256` of the verified `upstream.verified` event's `model_id`
     /// string (the model actually served).
     pub served_model_hash: [u8; 32],
+    /// The raw 32 bytes decoded from `request.received`'s `"sha256:"+hex`
+    /// `body_hash`: Phala's digest of the exact request body it received.
+    /// Returned so a caller can bind the receipt to one request; the receipt
+    /// key is shared by every Phala customer, so this is the only field that
+    /// ties a receipt to a particular caller's request.
+    pub request_hash: [u8; 32],
     /// The raw 32 bytes decoded from `response.returned`'s
     /// `"sha256:"+hex` `body_hash` field — already a digest Phala computed
     /// over the exact wire response bytes, not rehashed here.
@@ -113,11 +119,13 @@ fn find_verified_upstream_event(doc: &[u8], event_log_start: usize) -> Option<(u
     .flatten()
 }
 
-fn find_response_returned_hash(doc: &[u8], event_log_start: usize) -> Option<[u8; 32]> {
+/// `body_hash` of the first event of type `event_type` (`request.received`
+/// or `response.returned`).
+fn find_event_body_hash(doc: &[u8], event_log_start: usize, event_type: &[u8]) -> Option<[u8; 32]> {
     let (es, _ee) = json::find_array_element(doc, event_log_start, |b, es, ee| {
         let is_type = matches!(
             json::find_string_member(b, es, "type"),
-            Ok(Some(t)) if t == b"response.returned"
+            Ok(Some(t)) if t == event_type
         );
         Ok(if is_type { Some((es, ee)) } else { None })
     })
@@ -144,7 +152,9 @@ pub fn verify_receipt_core(
     let sig_bytes: [u8; 64] = signature.try_into().ok()?;
     let vk = VerifyingKey::from_bytes(pubkey).ok()?;
     let sig = Signature::from_bytes(&sig_bytes);
-    vk.verify(receipt_bytes, &sig).ok()?;
+    // verify_strict, not verify: the permissive check accepts a small-order
+    // pubkey with R = identity, s = 0 over any message.
+    vk.verify_strict(receipt_bytes, &sig).ok()?;
 
     // From here on `receipt_bytes` is exactly what Phala's TEE signed (the
     // signature could not otherwise verify), so it is well-formed ACI JSON.
@@ -164,11 +174,13 @@ pub fn verify_receipt_core(
         .flatten()?;
     let served_model_hash = keccak256(served_model).0;
 
-    let response_hash = find_response_returned_hash(doc, event_log_start)?;
+    let request_hash = find_event_body_hash(doc, event_log_start, b"request.received")?;
+    let response_hash = find_event_body_hash(doc, event_log_start, b"response.returned")?;
 
     Some(VerifiedReceipt {
         requested_model_hash,
         served_model_hash,
+        request_hash,
         response_hash,
     })
 }
@@ -193,15 +205,16 @@ impl ReceiptVerifier {
         pubkey: FixedBytes<32>,
         receipt_bytes: Bytes,
         signature: Bytes,
-    ) -> Result<(bool, FixedBytes<32>, FixedBytes<32>, FixedBytes<32>), Vec<u8>> {
+    ) -> Result<(bool, FixedBytes<32>, FixedBytes<32>, FixedBytes<32>, FixedBytes<32>), Vec<u8>> {
         match verify_receipt_core(&pubkey.0, receipt_bytes.as_ref(), signature.as_ref()) {
             Some(v) => Ok((
                 true,
                 FixedBytes::from(v.requested_model_hash),
                 FixedBytes::from(v.served_model_hash),
+                FixedBytes::from(v.request_hash),
                 FixedBytes::from(v.response_hash),
             )),
-            None => Ok((false, FixedBytes::ZERO, FixedBytes::ZERO, FixedBytes::ZERO)),
+            None => Ok((false, FixedBytes::ZERO, FixedBytes::ZERO, FixedBytes::ZERO, FixedBytes::ZERO)),
         }
     }
 }
@@ -222,10 +235,10 @@ mod contract_test {
         let contract = ReceiptVerifier::from(&vm);
 
         let key = ed25519_dalek::SigningKey::from_bytes(&[0x11; 32]);
-        let doc = br#"{"api_version":"aci/1","chat_id":"c","endpoint":"/v1/chat/completions","event_log":[{"body_hash":"sha256:aa","type":"request.received"},{"model_id":"served-model","required":true,"result":"verified","session_id":"s","type":"upstream.verified"},{"body_hash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","type":"response.returned"}],"key_id":"k","method":"POST","model":"requested-model","receipt_id":"r","served_at":1,"workload_keyset_digest":"sha256:d"}"#;
+        let doc = br#"{"api_version":"aci/1","chat_id":"c","endpoint":"/v1/chat/completions","event_log":[{"body_hash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","type":"request.received"},{"model_id":"served-model","required":true,"result":"verified","session_id":"s","type":"upstream.verified"},{"body_hash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","type":"response.returned"}],"key_id":"k","method":"POST","model":"requested-model","receipt_id":"r","served_at":1,"workload_keyset_digest":"sha256:d"}"#;
         let sig = key.sign(doc);
 
-        let (ok, requested_hash, served_hash, response_hash) = contract
+        let (ok, requested_hash, served_hash, request_hash, response_hash) = contract
             .verify_receipt(
                 FixedBytes::from(*key.verifying_key().as_bytes()),
                 Bytes::from(doc.to_vec()),
@@ -235,13 +248,14 @@ mod contract_test {
         assert!(ok);
         assert_ne!(requested_hash, served_hash);
         assert_eq!(requested_hash, FixedBytes::from(keccak256(b"requested-model").0));
+        assert_eq!(request_hash, FixedBytes::from([0xaa; 32]));
         assert_ne!(response_hash, FixedBytes::ZERO);
 
         // A tampered signature (bit flip) must come back as a clean
         // `(false, 0, 0, 0)`, never a revert and never a panic.
         let mut bad_sig = sig.to_bytes();
         bad_sig[0] ^= 0x01;
-        let (ok2, r2, s2, h2) = contract
+        let (ok2, r2, s2, q2, h2) = contract
             .verify_receipt(
                 FixedBytes::from(*key.verifying_key().as_bytes()),
                 Bytes::from(doc.to_vec()),
@@ -251,6 +265,7 @@ mod contract_test {
         assert!(!ok2);
         assert_eq!(r2, FixedBytes::ZERO);
         assert_eq!(s2, FixedBytes::ZERO);
+        assert_eq!(q2, FixedBytes::ZERO);
         assert_eq!(h2, FixedBytes::ZERO);
     }
 }

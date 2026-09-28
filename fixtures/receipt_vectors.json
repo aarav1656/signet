@@ -6,6 +6,7 @@
     "signature_hex": "0xd990067fa16a07120c19de0f7ed2049c4723a6acdd9c2d91f74333b5a4b15f3a177c9ff89d5dd86cd693e1889d0137ceb98fffd2350a0ec1506437c0eb0a710d",
     "requested_model_hash": "0x497a85cd7265a340d6aec2b741ab914e07b7c7551a6ef92e4a1c0b13a0c0ab8e",
     "served_model_hash": "0x497a85cd7265a340d6aec2b741ab914e07b7c7551a6ef92e4a1c0b13a0c0ab8e",
+    "request_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "response_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
   },
   "model_swap": {
@@ -13,6 +14,7 @@
     "signature_hex": "0x68b25319da80f5db80631a95c6e5767564d2cfa5f4a3e4aa80cd12dbbfdfc7bcc80287e21cae707971cc024a1cbefad6bba5963507ab8164663936c20e254f00",
     "requested_model_hash": "0x497a85cd7265a340d6aec2b741ab914e07b7c7551a6ef92e4a1c0b13a0c0ab8e",
     "served_model_hash": "0x8f033fe30cc7c1c1d4a22d4cf3c13473ca3eb8dffdb5ea05bd977c3df64f22f4",
+    "request_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "response_hash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
   }
 }

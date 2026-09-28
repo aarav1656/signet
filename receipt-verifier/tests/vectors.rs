@@ -77,6 +77,7 @@ fn genuine_receipt_verifies_and_extracts_matching_model_hashes() {
 
     assert_eq!(out.requested_model_hash, keccak256(b"deepseek-v3.1"));
     assert_eq!(out.served_model_hash, keccak256(b"deepseek-v3.1"));
+    assert_eq!(out.request_hash, hex_to_32(&REQUEST_HASH["sha256:".len()..]));
     assert_eq!(
         out.response_hash,
         hex_to_32(&RESPONSE_HASH["sha256:".len()..])

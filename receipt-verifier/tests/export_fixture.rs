@@ -49,6 +49,7 @@ fn export_receipt_vectors_for_solidity() {
         .expect("honest fixture receipt must verify");
     assert_eq!(honest.requested_model_hash, honest.served_model_hash);
     assert_eq!(honest.requested_model_hash, keccak256(b"requested-model"));
+    assert_eq!(honest.request_hash, [0xaa; 32]);
     assert_eq!(honest.response_hash, [0xbb; 32]);
 
     // Case "swap": served model differs from requested -> Assay.redeemWithReceipt
@@ -60,6 +61,7 @@ fn export_receipt_vectors_for_solidity() {
     assert_ne!(swap.requested_model_hash, swap.served_model_hash);
     assert_eq!(swap.requested_model_hash, keccak256(b"requested-model"));
     assert_eq!(swap.served_model_hash, keccak256(b"served-model"));
+    assert_eq!(swap.request_hash, [0xaa; 32]);
     assert_eq!(swap.response_hash, [0xcc; 32]);
 
     let json = format!(
@@ -71,6 +73,7 @@ fn export_receipt_vectors_for_solidity() {
     "signature_hex": "0x{honest_sig_hex}",
     "requested_model_hash": "{honest_req}",
     "served_model_hash": "{honest_served}",
+    "request_hash": "{honest_rq}",
     "response_hash": "{honest_resp}"
   }},
   "model_swap": {{
@@ -78,6 +81,7 @@ fn export_receipt_vectors_for_solidity() {
     "signature_hex": "0x{swap_sig_hex}",
     "requested_model_hash": "{swap_req}",
     "served_model_hash": "{swap_served}",
+    "request_hash": "{swap_rq}",
     "response_hash": "{swap_resp}"
   }}
 }}
@@ -87,11 +91,13 @@ fn export_receipt_vectors_for_solidity() {
         honest_sig_hex = hex::encode(honest_sig.to_bytes()),
         honest_req = hex32(honest.requested_model_hash),
         honest_served = hex32(honest.served_model_hash),
+        honest_rq = hex32(honest.request_hash),
         honest_resp = hex32(honest.response_hash),
         swap_doc_hex = hex::encode(&swap_doc),
         swap_sig_hex = hex::encode(swap_sig.to_bytes()),
         swap_req = hex32(swap.requested_model_hash),
         swap_served = hex32(swap.served_model_hash),
+        swap_rq = hex32(swap.request_hash),
         swap_resp = hex32(swap.response_hash),
     );
 
