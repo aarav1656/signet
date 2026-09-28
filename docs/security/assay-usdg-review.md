@@ -5,7 +5,10 @@ Scope: `contracts/src/Assay.sol` end to end (open, permit, redeem, close, regist
 
 Fork tests written for this review live at `contracts/test/AssayRealUSDGFork.t.sol`, a fork of Arbitrum Sepolia at block 313045372 that deploys the repo's unmodified `Assay.sol` against the real USDG proxy. `MockVerifier` stands in for the Stylus verifier because revm cannot run Stylus WASM. Run: `cd contracts && forge test --match-contract AssayRealUSDGFork`.
 
-Repo suite: `cd contracts && forge test`: 4 suites, 27 passed, 0 failed.
+Repo suite: `cd contracts && forge test`: 5 suites, 27 passed, 0 failed, 1 skipped (28
+total); the 5th suite is this review's own `AssayRealUSDGFork.t.sol`, whose `setUp()`
+calls `vm.skip` unless `CHIRON_FUNDED_TEST_ACCOUNT` is set, in which case its 13 tests run
+too (5 suites, 40 passed, 0 failed).
 
 ## Verdict
 

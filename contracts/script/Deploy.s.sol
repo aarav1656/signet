@@ -3,7 +3,6 @@ pragma solidity ^0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
 import {Assay} from "../src/Assay.sol";
-import {TestUSDG} from "../src/TestUSDG.sol";
 
 /// forge script script/Deploy.s.sol --rpc-url arbitrum_sepolia --broadcast
 ///
@@ -16,14 +15,16 @@ import {TestUSDG} from "../src/TestUSDG.sol";
 ///                        none) before the agent can call requestClose (default 1 hours)
 ///   CHALLENGE_WINDOW     seconds after requestClose before finalizeClose can pay
 ///                        out the remainder (default 1 hours)
-///   USDG_ADDRESS         optional address of a real USDG token already deployed on
-///                        this chain (e.g. Paxos USDG on Arbitrum Seponia 421614,
-///                        0xFFC95faa3d63Cde504a05B567C600B78C0b41892). When set, this
-///                        script binds `usdg_` to it and deploys no TestUSDG. When
-///                        unset, it deploys TestUSDG as before (see
-///                        an internal security review, H-1).
-///   MINT_TO              optional address to mint 1,000,000 testUSDG (6dp) to;
-///                        ignored when USDG_ADDRESS is set (nothing to mint)
+///   USDG_ADDRESS         required address of the ERC-20 (with EIP-2612 permit, for
+///                        openChannelWithPermit) this deploy binds `usdg_` to, e.g.
+///                        real Paxos USDG on Arbitrum Sepolia (421614),
+///                        0xFFC95faa3d63Cde504a05B567C600B78C0b41892. This script
+///                        deploys no token of its own: an internal security review
+///                        found the prior optional-env-var shape could silently fall
+///                        back to a fresh, open-mint TestUSDG on a real deploy (see
+///                        SECURITY-REVIEW.md, H-1); making this required removes that
+///                        failure mode entirely instead of relying on a post-deploy
+///                        `usdg()` check to catch it.
 ///   PRIVATE_KEY          optional (otherwise pass --private-key)
 contract Deploy is Script {
     function run() external returns (address usdg, address assay) {
@@ -32,8 +33,7 @@ contract Deploy is Script {
         uint64 attestationValidity = uint64(vm.envOr("ATTESTATION_VALIDITY", uint256(1 days)));
         uint64 channelTimeout = uint64(vm.envOr("CHANNEL_TIMEOUT", uint256(1 hours)));
         uint64 challengeWindow = uint64(vm.envOr("CHALLENGE_WINDOW", uint256(1 hours)));
-        address existingUsdg = vm.envOr("USDG_ADDRESS", address(0));
-        address mintTo = vm.envOr("MINT_TO", address(0));
+        usdg = vm.envAddress("USDG_ADDRESS");
 
         bytes32[] memory approved = new bytes32[](1);
         approved[0] = approvedMeasurement;
@@ -41,14 +41,6 @@ contract Deploy is Script {
         uint256 key = vm.envOr("PRIVATE_KEY", uint256(0));
         if (key != 0) vm.startBroadcast(key);
         else vm.startBroadcast();
-
-        if (existingUsdg != address(0)) {
-            usdg = existingUsdg;
-        } else {
-            TestUSDG token = new TestUSDG();
-            usdg = address(token);
-            if (mintTo != address(0)) token.mint(mintTo, 1_000_000e6);
-        }
 
         Assay a = new Assay(usdg, verifier, approved, attestationValidity, channelTimeout, challengeWindow);
         assay = address(a);

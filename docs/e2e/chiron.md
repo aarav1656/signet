@@ -60,8 +60,10 @@ either, consistent with the repo's existing practice for this product.
 
 ### Solidity test suite (updated)
 
-`cd contracts && forge test`: **5 suites, 40 passed, 0 failed** (the prior 4 suites, 27
-passed, plus the new `AssayRealUSDGForkTest`, 13 passed).
+`cd contracts && forge test` with `CHIRON_FUNDED_TEST_ACCOUNT` set: **5 suites, 40 passed,
+0 failed** (the prior 4 suites, 27 passed, plus the new `AssayRealUSDGForkTest`, 13
+passed). Without that env var set (the default), the fork suite's `setUp()` calls
+`vm.skip`: **5 suites, 27 passed, 0 failed, 1 skipped (28 total)**.
 
 ## Agent client (agent/, 2026-09-27)
 
@@ -160,9 +162,12 @@ BLOCKED below and proven instead by contract tests using a registered test key, 
 
 ## Solidity tests
 
-`cd contracts && forge test`: **27 passed, 0 failed, 0 skipped** across 4 suites
-(`AssayTest` 6, `AttackReviewTest` 5, `AssayAttacksTest` 14, `AssayFuzzTest` 2, the latter two
-fuzz tests at 256 runs each).
+`cd contracts && forge test`: **5 suites, 27 passed, 0 failed, 1 skipped (28 total)**
+(`AssayTest` 6, `AttackReviewTest` 5, `AssayAttacksTest` 14, `AssayFuzzTest` 2 at 256 runs
+each, plus `AssayRealUSDGForkTest`, whose `setUp()` calls `vm.skip` and contributes the 1
+skipped test unless `CHIRON_FUNDED_TEST_ACCOUNT` is set in the environment). With that env
+var set, the fork suite's own 13 tests run too: 5 suites, 40 passed, 0 failed (see the top
+of this document for that run).
 
 ## Rust tests
 

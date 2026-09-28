@@ -1,5 +1,12 @@
-//! Chiron spike: verify one real Phala `GET /v1/aci/attestation` bundle's Intel TDX
-//! quote chain of trust in a Stylus contract, one transaction.
+//! Chiron: verify one real Phala legacy `GET /v1/attestation/report?nonce=...`
+//! bundle's Intel TDX quote chain of trust in a Stylus contract, one transaction.
+//! The canonical `/v1/aci/attestation` endpoint is NOT what this verifies: its
+//! report_data commits to a nonce+keyset-digest hash with no raw address in it,
+//! so it cannot key a payee registry the way `register()` needs. The legacy
+//! endpoint's report_data instead carries `signing_address(20) || zero(12) ||
+//! nonce(32)` verbatim (confirmed against `Dstack-TEE/private-ai-gateway`'s own
+//! source and a live fetch, byte for byte; see `verify()` below), which is what
+//! `signer` below is read from.
 //!
 //! Real bundle structure (fetched 2026-09-26, see ../attestation_raw_*.json): TDX
 //! quote v4, ECDSA-P256 attestation key type, PCK cert chain (leaf, intermediate,
@@ -556,15 +563,20 @@ sol_storage! {
 
 #[public]
 impl Verifier {
-    /// Verify one real Phala `GET /v1/aci/attestation` TDX quote end to end
-    /// (PCK chain to Intel's hardcoded root, qe_report, ISV/quote signature)
-    /// and return (a) an address derived from the bound attestation key
-    /// (keccak256(pubkey)[12..32], the same derivation Ethereum uses), so a
-    /// caller has a concrete "signer" to key a registry on, and (b) a
-    /// measurement: keccak256(MRTD || RTMR0 || RTMR1 || RTMR2 || RTMR3) from
-    /// the TD report body, so a caller can pin payment to a specific image
-    /// (RTMR3 carries the compose-hash of the deployed docker-compose.yaml,
-    /// per docs.phala.com/phala-cloud/attestation/verify-your-application).
+    /// Verify one real Phala legacy `GET /v1/attestation/report?nonce=...` TDX
+    /// quote end to end (PCK chain to Intel's hardcoded root, qe_report,
+    /// ISV/quote signature) and return (a) `signer`, the TD report's own
+    /// `report_data[0..20]` read as a raw 20-byte Ethereum address, the real
+    /// secp256k1 key Phala's gateway signs per-response receipts with, not a
+    /// fingerprint of the Quoting Enclave's ephemeral attestation key, and (b)
+    /// `measurement`: keccak256(mr_seam || td_attributes || xfam || MRTD ||
+    /// mr_config_id || RTMR0 || RTMR1 || RTMR2 || RTMR3), nine TD report
+    /// fields, so a caller can pin payment to a specific image (RTMR3 carries
+    /// the compose-hash of the deployed docker-compose.yaml, per
+    /// docs.phala.com/phala-cloud/attestation/verify-your-application; the
+    /// other eight fields mean a swapped SEAM module or a changed TD
+    /// feature/config bitmask also changes the pinned hash, not just a
+    /// docker-compose edit).
     /// Reverts (returns Err) on any structural or cryptographic failure.
     ///
     /// `nonce` (H-2) is the caller-supplied freshness value: Assay.sol computes
