@@ -129,13 +129,40 @@ export function Channel() {
     async (c, block) => {
       if (chanId === null) throw new Error('bad-id');
       const raw = await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channels', args: [chanId], blockNumber: block });
-      const [agent, provider, deposit, paid, openedAt, lastActivityAt, closeRequestedAt, closed, measurement] = raw as unknown as readonly [
-        string, string, bigint, bigint, bigint, bigint, bigint, boolean, string,
+      const [agent, provider, deposit, paid, openedAt, lastActivityAt, closeRequestedAt, closed, measurement, requestedModelHash] = raw as unknown as readonly [
+        string, string, bigint, bigint, bigint, bigint, bigint, boolean, string, string,
       ];
-      const ch = { agent, provider, deposit, paid, openedAt, lastActivityAt, closeRequestedAt, closed, measurement };
+      const ch = { agent, provider, deposit, paid, openedAt, lastActivityAt, closeRequestedAt, closed, measurement, requestedModelHash };
       const timeout = await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channelTimeout', blockNumber: block });
       const challenge = await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'challengeWindow', blockNumber: block });
       return { ch, timeout: timeout as bigint, challenge: challenge as bigint };
+    },
+    chanId !== null,
+  );
+
+  // Model-swap-refusal display: every RedeemedWithReceipt this channel has ever emitted, each
+  // one already proof-checked onchain (redeemWithReceipt reverts ModelMismatch before emitting,
+  // see contracts/src/Assay.sol), so requested always equals served by the time it lands here --
+  // this reads that proof back, it does not perform it. `getLogs` over the whole chain can hit a
+  // public RPC's block-range cap; a failure here degrades to "no receipt redemptions read" rather
+  // than breaking the channel-state read above, which is a separate query.
+  const receiptRedeems = useAtBlock(
+    ['assay-redeemed-with-receipt', channelId.trim()],
+    async (c, block) => {
+      if (chanId === null) throw new Error('bad-id');
+      try {
+        const logs = await c.getContractEvents({
+          address: ASSAY,
+          abi: assayAbi,
+          eventName: 'RedeemedWithReceipt',
+          args: { channelId: chanId },
+          fromBlock: 'earliest',
+          toBlock: block,
+        });
+        return logs;
+      } catch {
+        return [];
+      }
     },
     chanId !== null,
   );
@@ -201,7 +228,7 @@ export function Channel() {
         address: ASSAY,
         abi: assayAbi,
         functionName: 'openChannelWithPermit',
-        args: [provider as Hex, amountWei, APPROVED_MEASUREMENTS[0], deadline, Number(v), r, sSig],
+        args: [provider as Hex, amountWei, APPROVED_MEASUREMENTS[0], `0x${'0'.repeat(64)}` as Hex, deadline, Number(v), r, sSig],
       });
     });
     setPermitBusy(false);
@@ -323,7 +350,60 @@ export function Channel() {
               </dd>
               <dt>Measurement (pinned at open)</dt>
               <dd className="mono">{ch.measurement}</dd>
+              <dt>Requested model hash (pinned at open)</dt>
+              <dd className="mono">
+                {ch.requestedModelHash === '0x0000000000000000000000000000000000000000000000000000000000000000'
+                  ? 'unset (opened via legacy openChannel/openChannelWithPermit with no model pinned; only the ECDSA redeem() path can pay this channel)'
+                  : ch.requestedModelHash}
+              </dd>
             </dl>
+            {ch.requestedModelHash !== '0x0000000000000000000000000000000000000000000000000000000000000000' && (
+              <div style={{ marginTop: 12 }}>
+                <h3>Model-swap check, per receipt redeem</h3>
+                <p className="sub">
+                  Each row is a `RedeemedWithReceipt` event already checked onchain: `redeemWithReceipt` reverts
+                  `ModelMismatch` before it can ever emit one where served differs from requested (see the
+                  README&apos;s &quot;Model-swap refusal&quot; section), so this table reads back a proof already
+                  made, not a live check.
+                </p>
+                {receiptRedeems.isPending && <div className="skel" aria-busy="true">Reading receipt redemptions…</div>}
+                {receiptRedeems.data && receiptRedeems.data.value.length === 0 && (
+                  <p className="note">No `redeemWithReceipt` calls on this channel yet.</p>
+                )}
+                {receiptRedeems.data && receiptRedeems.data.value.length > 0 && (
+                  <table className="mono" style={{ width: '100%', fontSize: 13 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left' }}>Block</th>
+                        <th style={{ textAlign: 'left' }}>Requested model hash</th>
+                        <th style={{ textAlign: 'left' }}>Served model hash</th>
+                        <th style={{ textAlign: 'left' }}>Paid</th>
+                        <th style={{ textAlign: 'left' }}>Match</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {receiptRedeems.data.value.map((log) => {
+                        const args = log.args as {
+                          requestedModelHash?: string;
+                          servedModelHash?: string;
+                          paidNow?: bigint;
+                        };
+                        const match = args.requestedModelHash === args.servedModelHash;
+                        return (
+                          <tr key={`${log.transactionHash}-${log.logIndex}`}>
+                            <td>{log.blockNumber?.toString()}</td>
+                            <td>{args.requestedModelHash}</td>
+                            <td>{args.servedModelHash}</td>
+                            <td>{args.paidNow !== undefined ? fmtUsdg(args.paidNow) : ''}</td>
+                            <td>{match ? 'match' : 'MISMATCH (should be impossible)'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -360,7 +440,7 @@ export function Channel() {
               Approve
             </button>
             <button className="btn" type="button" disabled={!chain.ready || writing || !isAddress(provider) || !amountOk}
-              onClick={() => run('Open channel', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'openChannel', args: [provider as Hex, amountWei as bigint, APPROVED_MEASUREMENTS[0]] }))}>
+              onClick={() => run('Open channel', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'openChannel', args: [provider as Hex, amountWei as bigint, APPROVED_MEASUREMENTS[0], `0x${'0'.repeat(64)}` as Hex] }))}>
               Open channel
             </button>
             <button className="btn ghost" type="button" disabled={!chain.ready || writing || permitBusy || !isAddress(provider) || !amountOk}
@@ -576,7 +656,7 @@ function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; ag
       const channelId = BigInt(cid.trim());
       const chRaw = await publicClient.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channels', args: [channelId] });
       const [chAgent, chProvider, chDeposit, chPaid, , , chCloseRequestedAt, chClosed, chMeasurement] = chRaw as unknown as readonly [
-        string, string, bigint, bigint, bigint, bigint, bigint, boolean, string,
+        string, string, bigint, bigint, bigint, bigint, bigint, boolean, string, string,
       ];
       const ch = {
         agent: chAgent,
