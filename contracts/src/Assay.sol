@@ -7,6 +7,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IAssayVerifier} from "./IAssayVerifier.sol";
@@ -299,7 +300,12 @@ contract Assay is ReentrancyGuard, EIP712 {
         bytes32 voucherDigest = _hashTypedDataV4(
             keccak256(abi.encode(VOUCHER_TYPEHASH, channelId, cumulativeAmount, requestHash, responseHash))
         );
-        if (ECDSA.recover(voucherDigest, payerSig) != c.agent) revert PayerNotAgent();
+        // c.agent may be an EOA (ECDSA) or a smart account (ERC-1271, e.g. Safe,
+        // ZeroDev Kernel): SignatureChecker tries ECDSA.recover first, then falls
+        // back to calling isValidSignature(voucherDigest, payerSig) on c.agent's
+        // code, so a contract wallet's voucher signature is honored the same as
+        // an EOA's without changing behaviour for the common EOA case.
+        if (!SignatureChecker.isValidSignatureNow(c.agent, voucherDigest, payerSig)) revert PayerNotAgent();
 
         bytes32 enclaveDigest = MessageHashUtils.toEthSignedMessageHash(
             bytes.concat(_hex64(requestHash), ":", _hex64(responseHash))
