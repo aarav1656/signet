@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { decodeFunctionResult, encodeFunctionData, isAddress, isAddressEqual, type Hex } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { ASSAY, assayChain, explorer } from '../chain';
@@ -9,6 +9,7 @@ import {
   VERIFIER_ADDRESS,
 } from '../lib/addresses.generated';
 import { short } from '../lib/format';
+import demo from '../lib/refusal-demo.json';
 import { Stamp } from '../components/Stamp';
 import { useOnChain } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
@@ -127,6 +128,9 @@ function plainStatusLine(r: DryRun): string {
 export function Verify() {
   const client = usePublicClient();
   const chain = useOnChain();
+  useEffect(() => {
+    document.title = 'Chiron: verify a TDX attestation and register';
+  }, []);
   const [provider, setProvider] = useState('');
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
@@ -318,6 +322,7 @@ export function Verify() {
 
       <section className="section" aria-labelledby="v-nonce">
         <div className="section-head">
+          <span className="step">1</span>
           <h2 id="v-nonce">Contract-issued nonce</h2>
         </div>
         <p className="sub">
@@ -395,22 +400,26 @@ export function Verify() {
           <div className="empty">
             <h3>No provider address yet</h3>
             <p>Enter the address that will call register(), or connect a wallet, to read its contract-issued nonce and build the exact fetch URL.</p>
+            <button className="btn ghost" type="button" onClick={() => setProvider(demo.provider)}>
+              Read the nonce for the live provider {short(demo.provider)}
+            </button>
           </div>
         )}
       </section>
 
       <section className="section" aria-labelledby="v-in">
         <div className="section-head">
-          <h2 id="v-in">Attestation input</h2>
+          <span className="step">2</span>
+          <h2 id="v-in">Attestation report</h2>
         </div>
         <div className="form">
           <div className="field">
             <label htmlFor="v-url">Fetch from URL (optional)</label>
             <input id="v-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" spellCheck={false} />
-            <span className="hint">Fetch with the nonce URL from section 02, never a reused or random nonce.</span>
+            <span className="hint">Fetch with the nonce URL from step 1, never a reused or random nonce.</span>
           </div>
           <div className="actions">
-            <button className="btn ghost" onClick={fillContractNonceUrl} disabled={!phalaUrl} type="button">Use the nonce URL from section 02</button>
+            <button className="btn ghost" onClick={fillContractNonceUrl} disabled={!phalaUrl} type="button">Use the nonce URL from step 1</button>
             <button className="btn ghost" onClick={fetchFromUrl} type="button" disabled={!url.trim() || fetchState === 'loading'}>
               {fetchState === 'loading' ? 'Fetching…' : 'Fetch'}
             </button>
@@ -451,11 +460,11 @@ export function Verify() {
             <dd className="mono">{parsed.nonce ?? <span style={{ color: 'var(--color-dim)' }}>absent (expected under nvidia_payload.nonce)</span>}</dd>
             {reportNonceMatches !== undefined && (
               <>
-                <dt>nonce matches section 02</dt>
+                <dt>nonce matches step 1</dt>
                 <dd className={reportNonceMatches ? 'sig-ok' : 'sig-bad'}>
                   {reportNonceMatches
                     ? 'yes. This report was fetched with the current contract nonce.'
-                    : 'NO. This report binds a different nonce and register() would revert NonceMismatch. Fetch again with the URL in section 02.'}
+                    : 'NO. This report binds a different nonce and register() would revert NonceMismatch. Fetch again with the URL in step 1.'}
                 </dd>
               </>
             )}
@@ -481,15 +490,16 @@ export function Verify() {
       {parsed?.quoteHex && (
         <section className="section" aria-labelledby="v-dry">
           <div className="section-head">
-            <h2 id="v-dry">Contract dry run</h2>
+            <span className="step">3</span>
+          <h2 id="v-dry">Contract dry run</h2>
           </div>
           <p className="sub">
             Calls <b>verify(bytes, bytes32)</b> on the Stylus verifier ({short(VERIFIER_ADDRESS)}) via eth_call with
-            the report&apos;s quote bytes and {contractNonce ? 'the nonce from section 02' : 'a contract-issued nonce'}.
+            the report&apos;s quote bytes and {contractNonce ? 'the nonce from step 1' : 'a contract-issued nonce'}.
             A success returns the signer and measurement the chain would derive; a revert carries the same failure a{' '}
             <b>register</b> transaction would hit.
           </p>
-          {!contractNonce && <p className="note">Set a provider address in section 02 first, so the dry run can pass its current nonce.</p>}
+          {!contractNonce && <p className="note">Set a provider address in step 1 first, so the dry run can pass its current nonce.</p>}
           <div className="actions">
             <button className="btn" onClick={dryRunVerify} disabled={dryRunBusy || !client || !contractNonce} type="button">
               {dryRunBusy ? 'Calling…' : 'Dry-run verify'}
@@ -553,7 +563,7 @@ export function Verify() {
         </div>
         <p className="sub">
           Three steps in order. First read <b>nextRegisterNonce</b> for the address that will send the transaction
-          (section 02). Then fetch the legacy endpoint with exactly that nonce (report_data[32:64] must equal it,
+          (step 1). Then fetch the legacy endpoint with exactly that nonce (report_data[32:64] must equal it,
           report_data[20:32] must be zero). Then call <b>register(bytes quote)</b> from the same address: it calls
           the verifier with that nonce, requires the derived measurement to be one of{' '}
           {APPROVED_MEASUREMENTS.length} allowlisted value(s), rejects any quote hash already used

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   hashMessage,
   isAddress,
@@ -122,7 +123,15 @@ export function Channel() {
   const chain = useOnChain();
   const publicClient = usePublicClient();
   const { signTypedDataAsync } = useSignTypedData();
-  const [channelId, setChannelId] = useState('0');
+  const [params, setParams] = useSearchParams();
+  const [channelId, setChannelIdState] = useState(() => (/^\d+$/.test(params.get('id') ?? '') ? (params.get('id') as string) : '0'));
+  const setChannelId = (v: string) => {
+    setChannelIdState(v);
+    if (/^\d+$/.test(v.trim())) setParams({ id: v.trim() }, { replace: true });
+  };
+  useEffect(() => {
+    document.title = `Chiron: channel ${channelId}`;
+  }, [channelId]);
   const [provider, setProvider] = useState('');
   const [deposit, setDeposit] = useState('100');
   const [pinMode, setPinMode] = useState<'receipt' | 'legacy'>('receipt');
@@ -274,50 +283,43 @@ export function Channel() {
 
   return (
     <main>
-      <div className="page-head">
+      <div className="ch-head">
         <div>
-          <h1>Payment channel</h1>
+          <h1>Channel {channelId}</h1>
           <p className="lede">
-            An agent locks USDG into a channel with a provider. Redemption needs two signatures over the same{' '}
-            <b>channelId, cumulativeAmount, requestHash, responseHash</b>: the agent&apos;s EIP-712 voucher authorizing
-            spend, and the enclave&apos;s personal_sign receipt proving the work came from the measured image.
+            An agent locks USDG against one provider and pins a model. A receipt-only channel pays only through{' '}
+            <b>redeemWithReceipt</b>, against a TEE-signed receipt for that model; a legacy channel pays against the
+            enclave&apos;s per-response signature.
           </p>
         </div>
-        <div className="device">
-          <h3>Settling on</h3>
-          <div className="stat">
-            <div className="lab">Network</div>
-            <div className="val">{assayChain.name}</div>
-          </div>
-          <div className="stat">
-            <div className="lab">USDG token</div>
-            <div className="val mono" style={{ fontSize: 13 }}>
-              <a href={explorer.address(USDG_ADDRESS)} target="_blank" rel="noreferrer">{short(USDG_ADDRESS)}</a>
-            </div>
-          </div>
-          <div className="stat">
-            <div className="lab">Assay contract</div>
-            <div className="val mono" style={{ fontSize: 13 }}>
-              <a href={explorer.address(ASSAY)} target="_blank" rel="noreferrer">{short(ASSAY)}</a>
-            </div>
-          </div>
+        <div className="picker" role="group" aria-label="Choose a channel">
+          {channelCountSnap.data &&
+            Array.from({ length: Number(channelCountSnap.data.value) }, (_, i) => String(i)).map((id) => (
+              <button
+                key={id}
+                type="button"
+                className={id === channelId.trim() ? 'active' : ''}
+                aria-pressed={id === channelId.trim()}
+                onClick={() => setChannelId(id)}
+              >
+                {id}
+              </button>
+            ))}
+          <label className="sr-only" htmlFor="c-id">Channel id</label>
+          <input id="c-id" value={channelId} onChange={(e) => setChannelId(e.target.value)} inputMode="numeric" placeholder="id" aria-describedby="c-id-hint" />
         </div>
       </div>
+      <p className="hint-line" id="c-id-hint">
+        {channelCountSnap.data
+          ? <><span className="num">{channelCountSnap.data.value.toString()}</span> channel(s) opened on this contract so far. <Stamp block={channelCountSnap.data.block} /></>
+          : 'Reading channelCount…'}
+      </p>
 
-      <section className="section" aria-labelledby="c-lookup">
+      <div className="ch-grid">
+      <section className="ch-main" aria-labelledby="c-lookup">
         <div className="section-head">
           <h2 id="c-lookup">Channel state</h2>
-        </div>
-        <div className="form">
-          <div className="field">
-            <label htmlFor="c-id">Channel id</label>
-            <input id="c-id" value={channelId} onChange={(e) => setChannelId(e.target.value)} inputMode="numeric" />
-            <span className="hint">
-              {channelCountSnap.data
-                ? <><span className="num">{channelCountSnap.data.value.toString()}</span> channel(s) opened on this contract so far. <Stamp block={channelCountSnap.data.block} /></>
-                : 'Reading channelCount…'}
-            </span>
-          </div>
+          {snapshot.data && <Stamp block={snapshot.data.block} />}
         </div>
         {snapshot.isPending && <div className="skel" aria-busy="true">Reading channel {channelId}…</div>}
         {snapshot.isError && snapshot.error.message !== 'bad-id' && (
@@ -331,28 +333,31 @@ export function Channel() {
         )}
         {snapshot.data && exists && ch && (
           <div>
-            <div style={{ marginTop: 12 }}><Stamp block={snapshot.data.block} /></div>
             {selfTest && (
               <p className="note" role="note">
                 Self-test channel: agent and provider are the same wallet ({short(ch.agent)}).
               </p>
             )}
-            <div className="fig">
-              <span className="num">{fmtUsdg(ch.deposit)}</span>
-              <small>USDG deposit, channel {channelId}</small>
-              <div className="fig-stats">
-                <div className="stat">
-                  <div className="lab">Paid</div>
-                  <div className="val num">{fmtUsdg(ch.paid)} USDG</div>
-                </div>
-                <div className="stat">
-                  <div className="lab">Remaining</div>
-                  <div className="val num">{fmtUsdg(ch.deposit - ch.paid)} USDG</div>
-                </div>
-                <div className="stat">
-                  <div className="lab">Status</div>
-                  <div className="val">{statusText}</div>
-                </div>
+            <div className="tiles">
+              <div className="tile">
+                <div className="lab">Deposit</div>
+                <div className="val num">{fmtUsdg(ch.deposit)} <small>USDG</small></div>
+              </div>
+              <div className="tile">
+                <div className="lab">Paid</div>
+                <div className="val num">{fmtUsdg(ch.paid)} <small>USDG</small></div>
+              </div>
+              <div className="tile">
+                <div className="lab">Remaining</div>
+                <div className="val num">{fmtUsdg(ch.deposit - ch.paid)} <small>USDG</small></div>
+              </div>
+              <div className="tile">
+                <div className="lab">Path</div>
+                <div className="val">{ch.requestedModelHash === ZERO_HASH ? 'legacy signature' : 'receipt-only'}</div>
+              </div>
+              <div className="tile">
+                <div className="lab">Status</div>
+                <div className="val">{statusText}</div>
               </div>
             </div>
             <dl className="kv">
@@ -383,14 +388,13 @@ export function Channel() {
               <div style={{ marginTop: 12 }}>
                 <h3>Model-swap check, per receipt redeem</h3>
                 <p className="sub">
-                  Each row is a `RedeemedWithReceipt` event already checked onchain: `redeemWithReceipt` reverts
-                  `ModelMismatch` before it can ever emit one where served differs from requested (see the
-                  README&apos;s &quot;Model-swap refusal&quot; section), so this table reads back a proof already
-                  made, not a live check.
+                  Each row is a <b>RedeemedWithReceipt</b> event. <b>redeemWithReceipt</b> reverts <b>ModelMismatch</b>{' '}
+                  before it can emit one where the served model differs from the pinned one, so this list reads back
+                  payments that already passed the check. The live refusal is on the Overview.
                 </p>
                 {receiptRedeems.isPending && <div className="skel" aria-busy="true">Reading receipt redemptions…</div>}
                 {receiptRedeems.data && receiptRedeems.data.value.length === 0 && (
-                  <p className="note">No `redeemWithReceipt` calls on this channel yet.</p>
+                  <p className="note">No redeemWithReceipt payment on this channel yet: paid is 0.00.</p>
                 )}
                 {receiptRedeems.data && receiptRedeems.data.value.length > 0 && (
                   <table className="mono" style={{ width: '100%', fontSize: 13 }}>
@@ -430,10 +434,8 @@ export function Channel() {
         )}
       </section>
 
-      <section className="section" aria-labelledby="c-open">
-        <div className="section-head">
-          <h2 id="c-open">Open a channel</h2>
-        </div>
+      <section className="ticket ch-ticket" aria-labelledby="c-open">
+        <h2 id="c-open">Open a channel</h2>
         <p className="sub">
             Real Paxos USDG, no test faucet in this app. Approve then open in two calls, or sign one EIP-2612 permit
             and open in a single transaction with openChannelWithPermit.
@@ -510,6 +512,7 @@ export function Channel() {
           )}
         </div>
       </section>
+      </div>
 
       <VoucherPanel agent={exists && ch ? ch.agent : undefined} channelIdDefault={channelId} />
 
@@ -517,6 +520,7 @@ export function Channel() {
 
       <section className="section" aria-labelledby="c-close">
         <div className="section-head">
+          <span className="step">3</span>
           <h2 id="c-close">Close channel</h2>
         </div>
         <p className="sub">
@@ -629,6 +633,7 @@ function VoucherPanel({ agent, channelIdDefault }: { agent?: string; channelIdDe
   return (
     <section className="section" aria-labelledby="c-voucher">
       <div className="section-head">
+        <span className="step">1</span>
         <h2 id="c-voucher">Sign the agent voucher</h2>
       </div>
       <p className="sub">
@@ -862,6 +867,7 @@ function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; ag
   return (
     <section className="section" aria-labelledby="c-redeem">
       <div className="section-head">
+        <span className="step">2</span>
         <h2 id="c-redeem">Redeem with both signatures</h2>
       </div>
       <p className="sub">

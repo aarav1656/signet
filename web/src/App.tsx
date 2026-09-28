@@ -3,7 +3,7 @@ import { WagmiProvider } from 'wagmi';
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
 import { ASSAY, assayChain, explorer, wagmiConfig } from './chain';
 import { Wallet } from './components/Wallet';
-import { Providers } from './pages/Providers';
+import { Overview } from './pages/Overview';
 import { Verify } from './pages/Verify';
 import { Channel } from './pages/Channel';
 
@@ -18,14 +18,14 @@ export function App() {
             <header className="top">
               <NavLink to="/" className="brand">
                 <span className="mark" aria-hidden="true">C</span>
-                Chiron <em>attested settlement</em>
+                Chiron <em>pay per call, against proof</em>
               </NavLink>
               <nav className="pillnav" aria-label="Primary">
                 <NavLink to="/" end>
-                  Providers
+                  Overview
                 </NavLink>
-                <NavLink to="/verify">Verify</NavLink>
                 <NavLink to="/channel">Channel</NavLink>
+                <NavLink to="/verify">Verify</NavLink>
                 <a className="ext" href={explorer.address(ASSAY)} target="_blank" rel="noreferrer">
                   Contract
                 </a>
@@ -33,7 +33,7 @@ export function App() {
               <Wallet />
             </header>
             <Routes>
-              <Route path="/" element={<Providers />} />
+              <Route path="/" element={<Overview />} />
               <Route path="/verify" element={<Verify />} />
               <Route path="/channel" element={<Channel />} />
             </Routes>
