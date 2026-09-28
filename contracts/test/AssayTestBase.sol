@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Assay} from "../src/Assay.sol";
 import {TestUSDG} from "../src/TestUSDG.sol";
 import {MockVerifier} from "./mocks/MockVerifier.sol";
+import {MockReceiptVerifier} from "./mocks/MockReceiptVerifier.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -15,6 +16,9 @@ abstract contract AssayTestBase is Test {
     /// the channel was pinned to at open(), not merely "is on the allowlist".
     bytes32 internal constant APPROVED_MEASUREMENT_2 = keccak256("phala-gateway-image-v1-rev2");
     bytes32 internal constant OTHER_MEASUREMENT = keccak256("some-other-image");
+    /// Default requestedModelHash pinned by _openChannel()'s single-arg overload,
+    /// matching fixtures/receipt_vectors.json's "requested-model" fixture.
+    bytes32 internal constant REQUESTED_MODEL_HASH = keccak256("requested-model");
 
     uint64 internal constant ATTESTATION_VALIDITY = 1 days;
     uint64 internal constant CHANNEL_TIMEOUT = 1 hours;
@@ -23,6 +27,7 @@ abstract contract AssayTestBase is Test {
     Assay internal assay;
     TestUSDG internal usdg;
     MockVerifier internal verifier;
+    MockReceiptVerifier internal receiptVerifier;
 
     address internal provider = makeAddr("provider");
 
@@ -35,17 +40,32 @@ abstract contract AssayTestBase is Test {
     uint256 internal signerPk = 0xA11CE;
     address internal signerAddr;
 
+    // The Ed25519 receipt-signing pubkey registered via registerReceiptKey(), used
+    // by redeemWithReceipt() tests. A raw 32-byte value, not a secp256k1 key -- no
+    // "private key" here, only the public key MockReceiptVerifier is told to accept
+    // (real Ed25519 signing is exercised in receipt-verifier's own test suite, see
+    // fixtures/receipt_vectors.json).
+    bytes32 internal receiptPubkey = keccak256("receipt-pubkey-fixture");
+
     function setUp() public virtual {
         usdg = new TestUSDG();
         verifier = new MockVerifier();
+        receiptVerifier = new MockReceiptVerifier();
         agent = vm.addr(agentPk);
         signerAddr = vm.addr(signerPk);
 
         bytes32[] memory approved = new bytes32[](2);
         approved[0] = APPROVED_MEASUREMENT;
         approved[1] = APPROVED_MEASUREMENT_2;
-        assay =
-            new Assay(address(usdg), address(verifier), approved, ATTESTATION_VALIDITY, CHANNEL_TIMEOUT, CHALLENGE_WINDOW);
+        assay = new Assay(
+            address(usdg),
+            address(verifier),
+            address(receiptVerifier),
+            approved,
+            ATTESTATION_VALIDITY,
+            CHANNEL_TIMEOUT,
+            CHALLENGE_WINDOW
+        );
 
         usdg.mint(agent, 1_000_000e6);
     }
@@ -70,10 +90,31 @@ abstract contract AssayTestBase is Test {
     }
 
     function _openChannel(uint128 amount, bytes32 measurement_) internal returns (uint256 channelId) {
+        channelId = _openChannel(amount, measurement_, bytes32(0));
+    }
+
+    /// For redeemWithReceipt() tests, which need a real (nonzero) pinned model.
+    function _openChannel(uint128 amount, bytes32 measurement_, bytes32 requestedModelHash_)
+        internal
+        returns (uint256 channelId)
+    {
         vm.startPrank(agent);
         usdg.approve(address(assay), amount);
-        channelId = assay.openChannel(provider, amount, measurement_);
+        channelId = assay.openChannel(provider, amount, measurement_, requestedModelHash_);
         vm.stopPrank();
+    }
+
+    /// Registers `receiptPubkey` to `measurement_` via the mocked
+    /// IAssayVerifier.verifyKeyset path (MockVerifier.setNextKeyset), exactly
+    /// mirroring how _registerQuote() drives register() through MockVerifier.setNext.
+    function _registerReceiptKey(bytes32 measurement_) internal {
+        verifier.setNextKeyset(measurement_);
+        // Distinct quote bytes from _register()'s default (hex"1234"): usedQuote is a
+        // single mapping shared by register() and registerReceiptKey(), so an equal
+        // quote would collide (QuoteAlreadyUsed) when a test registers both an ECDSA
+        // signer and a receipt pubkey, exactly as two real quotes fetched from
+        // Phala's two different attestation endpoints never collide in practice.
+        assay.registerReceiptKey(hex"deadbeef", hex"5678", 0, receiptPubkey);
     }
 
     /// EIP-712 Voucher{channelId,cumulativeAmount,requestHash,responseHash}, signed
@@ -136,5 +177,16 @@ abstract contract AssayTestBase is Test {
     {
         payerSig = _signVoucher(agentPk, channelId, cumulativeAmount, requestHash, responseHash);
         enclaveSig = _signEnclave(signerPk, requestHash, responseHash);
+    }
+
+    /// Convenience: a payerSig for redeemWithReceipt(), whose responseHash must
+    /// match the receiptResponseHash MockReceiptVerifier is configured to return
+    /// (set separately via receiptVerifier.setNext(...) before calling this).
+    function _receiptPayerSig(uint256 channelId, uint256 cumulativeAmount, bytes32 requestHash, bytes32 responseHash)
+        internal
+        view
+        returns (bytes memory)
+    {
+        return _signVoucher(agentPk, channelId, cumulativeAmount, requestHash, responseHash);
     }
 }

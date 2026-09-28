@@ -14,6 +14,11 @@ contract MockVerifier is IAssayVerifier {
     bytes32 public nextMeasurement;
     bool public shouldRevert;
 
+    /// Separate from nextMeasurement/shouldRevert so a test can exercise
+    /// register() and registerReceiptKey() independently in the same run.
+    bytes32 public nextKeysetMeasurement;
+    bool public keysetShouldRevert;
+
     function setNext(address signer_, bytes32 measurement_) external {
         nextSigner = signer_;
         nextMeasurement = measurement_;
@@ -24,8 +29,22 @@ contract MockVerifier is IAssayVerifier {
         shouldRevert = r;
     }
 
+    function setNextKeyset(bytes32 measurement_) external {
+        nextKeysetMeasurement = measurement_;
+        keysetShouldRevert = false;
+    }
+
+    function setKeysetRevert(bool r) external {
+        keysetShouldRevert = r;
+    }
+
     function verify(bytes calldata, bytes32) external view returns (address, bytes32) {
         if (shouldRevert) revert("MockVerifierReject");
         return (nextSigner, nextMeasurement);
+    }
+
+    function verifyKeyset(bytes calldata, bytes calldata, bytes32, bytes32) external view returns (bytes32) {
+        if (keysetShouldRevert) revert("MockVerifierKeysetReject");
+        return nextKeysetMeasurement;
     }
 }

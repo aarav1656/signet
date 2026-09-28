@@ -11,6 +11,7 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IAssayVerifier} from "./IAssayVerifier.sol";
+import {IReceiptVerifier} from "./IReceiptVerifier.sol";
 
 /// A USDG payment channel that pays an inference seller per call only against a
 /// cumulative voucher signed by a key whose Intel TDX attestation the Stylus
@@ -58,6 +59,15 @@ contract Assay is ReentrancyGuard, EIP712 {
         /// redeem() requires the recovered enclaveSigner's registered measurement to
         /// match this exactly (see redeem()). Immutable for the channel's lifetime.
         bytes32 measurement;
+        /// Pinned at open() to keccak256(modelId) the agent and provider agreed off
+        /// chain (e.g. keccak256("deepseek-v3.1")). redeemWithReceipt() (the new
+        /// Ed25519-receipt path) requires both the receipt's requested and served
+        /// model hashes to equal this exactly (see redeemWithReceipt()), refusing
+        /// payment for a swapped model. The legacy redeem() (ECDSA enclaveSig path,
+        /// kept for backward compatibility) never inspects this field and pays
+        /// against any channel regardless of what model, if any, is pinned here --
+        /// the model-swap refusal is a property of redeemWithReceipt() only.
+        bytes32 requestedModelHash;
     }
 
     /// Authorizes the payer's spend, not the work itself: the agent's own key,
@@ -68,6 +78,9 @@ contract Assay is ReentrancyGuard, EIP712 {
 
     IERC20 public immutable usdg;
     IAssayVerifier public immutable verifier;
+    /// The Stylus Ed25519 receipt verifier (receipt-verifier/, item E5). Checked
+    /// only by redeemWithReceipt(); the legacy ECDSA redeem() path never calls it.
+    IReceiptVerifier public immutable receiptVerifier;
     uint64 public immutable attestationValidity;
     uint64 public immutable channelTimeout;
     /// Window after requestClose() during which the provider can still redeem a
@@ -76,6 +89,9 @@ contract Assay is ReentrancyGuard, EIP712 {
 
     mapping(bytes32 => bool) public approvedMeasurement;
     mapping(address => Signer) public signers;
+    /// Parallel to `signers`, keyed on the Ed25519 receipt-signing pubkey (raw 32
+    /// bytes) instead of a secp256k1 address. Populated by registerReceiptKey().
+    mapping(bytes32 => Signer) public receiptSigners;
 
     /// Per-caller monotonic counter feeding nextRegisterNonce(); advances only on
     /// a successful register().
@@ -93,7 +109,14 @@ contract Assay is ReentrancyGuard, EIP712 {
     mapping(bytes32 => bool) public consumedReceipt;
 
     event Registered(address indexed signer, bytes32 measurement, uint64 expiry);
-    event ChannelOpened(uint256 indexed channelId, address indexed agent, address indexed provider, uint256 deposit);
+    event ReceiptKeyRegistered(bytes32 indexed pubkey, bytes32 measurement, uint64 expiry);
+    event ChannelOpened(
+        uint256 indexed channelId,
+        address indexed agent,
+        address indexed provider,
+        uint256 deposit,
+        bytes32 requestedModelHash
+    );
     event Redeemed(
         uint256 indexed channelId,
         address indexed enclaveSigner,
@@ -101,6 +124,21 @@ contract Assay is ReentrancyGuard, EIP712 {
         uint256 paidNow,
         bytes32 requestHash,
         bytes32 responseHash
+    );
+    /// requestedModelHash/servedModelHash are the receipt's own fields (see
+    /// IReceiptVerifier.verifyReceipt); both equal channelId's pinned
+    /// requestedModelHash by the time this fires, since redeemWithReceipt()
+    /// reverts ModelMismatch before emitting otherwise. Both are surfaced anyway
+    /// so a UI can show "requested vs served" without re-fetching the receipt.
+    event RedeemedWithReceipt(
+        uint256 indexed channelId,
+        bytes32 indexed pubkey,
+        uint256 cumulativeAmount,
+        uint256 paidNow,
+        bytes32 requestHash,
+        bytes32 responseHash,
+        bytes32 requestedModelHash,
+        bytes32 servedModelHash
     );
     event CloseRequested(uint256 indexed channelId, uint64 requestedAt);
     event ChannelClosed(uint256 indexed channelId, uint256 refund);
@@ -123,20 +161,33 @@ contract Assay is ReentrancyGuard, EIP712 {
     error CloseAlreadyRequested();
     error CloseNotRequested();
     error ChallengeWindowActive();
+    /// redeemWithReceipt(): the receipt's servedModelHash or requestedModelHash
+    /// did not equal the channel's pinned requestedModelHash -- the model-swap
+    /// refusal this path exists for.
+    error ModelMismatch();
+    /// redeemWithReceipt(): IReceiptVerifier.verifyReceipt returned ok == false
+    /// (bad signature or malformed/incomplete receipt document).
+    error ReceiptInvalid();
+    /// redeemWithReceipt(): the receipt's own responseHash did not match the
+    /// voucher's responseHash -- the provider and agent disagree on which
+    /// response this payment is for.
+    error ResponseHashMismatch();
 
     constructor(
         address usdg_,
         address verifier_,
+        address receiptVerifier_,
         bytes32[] memory approvedMeasurements_,
         uint64 attestationValidity_,
         uint64 channelTimeout_,
         uint64 challengeWindow_
     ) EIP712("Assay", "1") {
-        if (usdg_ == address(0) || verifier_ == address(0)) revert BadParams();
+        if (usdg_ == address(0) || verifier_ == address(0) || receiptVerifier_ == address(0)) revert BadParams();
         if (approvedMeasurements_.length == 0 || attestationValidity_ == 0 || channelTimeout_ == 0) revert BadParams();
         if (challengeWindow_ == 0) revert BadParams();
         usdg = IERC20(usdg_);
         verifier = IAssayVerifier(verifier_);
+        receiptVerifier = IReceiptVerifier(receiptVerifier_);
         attestationValidity = attestationValidity_;
         channelTimeout = channelTimeout_;
         challengeWindow = challengeWindow_;
@@ -204,16 +255,49 @@ contract Assay is ReentrancyGuard, EIP712 {
         emit Registered(signer, measurement, expiry);
     }
 
+    /// Verify a fresh quote against Phala's canonical `/v1/aci/attestation`
+    /// endpoint and register (or re-register, extending expiry) the Ed25519
+    /// `pubkey` it binds, iff the measurement it attests to is on the allowlist
+    /// fixed at construction. `keysetBytes` must be the exact JCS bytes of that
+    /// quote's `attestation.workload_keyset` object (see
+    /// IAssayVerifier.verifyKeyset); `pubkey` must appear in its
+    /// `receipt_signing_keys[]`. Reuses the same nonce/quote-replay machinery as
+    /// register() (nextRegisterNonce, registerNonce, usedQuote) -- same anti-replay
+    /// guarantee, just feeding the ACI endpoint's nonce slot instead of the legacy
+    /// endpoint's. Anyone may call this for any provider; the pubkey is bound to
+    /// the quote by IAssayVerifier.verifyKeyset's own digest-equality check (see
+    /// there), so this cannot register a key the quote did not attest to.
+    function registerReceiptKey(bytes calldata quote, bytes calldata keysetBytes, uint256 refBlock, bytes32 pubkey)
+        external
+        nonReentrant
+        returns (bytes32 measurement)
+    {
+        bytes32 quoteHash = keccak256(quote);
+        if (usedQuote[quoteHash]) revert QuoteAlreadyUsed();
+        bytes32 nonce = nextRegisterNonce(msg.sender, refBlock);
+        measurement = verifier.verifyKeyset(quote, keysetBytes, nonce, pubkey);
+        if (!approvedMeasurement[measurement]) revert MeasurementNotApproved();
+        usedQuote[quoteHash] = true;
+        registerNonce[msg.sender] += 1;
+        uint64 expiry = uint64(block.timestamp) + attestationValidity;
+        receiptSigners[pubkey] = Signer(measurement, expiry);
+        emit ReceiptKeyRegistered(pubkey, measurement, expiry);
+    }
+
     /// Open a channel funded by a prior `usdg.approve(address(this), amount)`,
     /// pinned to `measurement` (must be on the allowlist fixed at construction):
     /// only a signer currently registered under exactly this measurement can
-    /// redeem against this channel (see redeem()).
-    function openChannel(address provider, uint128 amount, bytes32 measurement)
+    /// redeem against this channel (see redeem()). `requestedModelHash` pins the
+    /// model redeemWithReceipt() will require a receipt's own requested and
+    /// served model hashes to equal (see redeemWithReceipt()); pass
+    /// `keccak256(abi.encodePacked(modelId))` or, if this channel will only ever
+    /// use the legacy redeem() path, `bytes32(0)`.
+    function openChannel(address provider, uint128 amount, bytes32 measurement, bytes32 requestedModelHash)
         external
         nonReentrant
         returns (uint256 channelId)
     {
-        channelId = _openChannel(provider, amount, measurement);
+        channelId = _openChannel(provider, amount, measurement, requestedModelHash);
         _pull(msg.sender, amount);
     }
 
@@ -225,6 +309,7 @@ contract Assay is ReentrancyGuard, EIP712 {
         address provider,
         uint128 amount,
         bytes32 measurement,
+        bytes32 requestedModelHash,
         uint256 deadline,
         uint8 v,
         bytes32 r,
@@ -234,11 +319,14 @@ contract Assay is ReentrancyGuard, EIP712 {
         catch {
             if (usdg.allowance(msg.sender, address(this)) < amount) revert BadParams();
         }
-        channelId = _openChannel(provider, amount, measurement);
+        channelId = _openChannel(provider, amount, measurement, requestedModelHash);
         _pull(msg.sender, amount);
     }
 
-    function _openChannel(address provider, uint128 amount, bytes32 measurement) private returns (uint256 channelId) {
+    function _openChannel(address provider, uint128 amount, bytes32 measurement, bytes32 requestedModelHash)
+        private
+        returns (uint256 channelId)
+    {
         if (provider == address(0) || amount == 0) revert BadParams();
         if (!approvedMeasurement[measurement]) revert MeasurementNotApproved();
         channelId = channelCount++;
@@ -251,9 +339,10 @@ contract Assay is ReentrancyGuard, EIP712 {
             lastActivityAt: 0,
             closeRequestedAt: 0,
             closed: false,
-            measurement: measurement
+            measurement: measurement,
+            requestedModelHash: requestedModelHash
         });
-        emit ChannelOpened(channelId, msg.sender, provider, amount);
+        emit ChannelOpened(channelId, msg.sender, provider, amount, requestedModelHash);
     }
 
     /// Redemption needs two independent signatures because they prove two
@@ -324,6 +413,73 @@ contract Assay is ReentrancyGuard, EIP712 {
         c.lastActivityAt = uint64(block.timestamp);
 
         emit Redeemed(channelId, enclaveSigner, cumulativeAmount, delta, requestHash, responseHash);
+        _push(c.provider, delta);
+    }
+
+    /// The model-swap-refusal redemption path (item E5): same payer authorization
+    /// as redeem() (`payerSig` over the identical Voucher{channelId,cumulativeAmount,
+    /// requestHash,responseHash} EIP-712 struct -- the voucher shape is unchanged),
+    /// but provenance comes from a Phala canonical ACI receipt (`receiptBytes` +
+    /// `signature`, Ed25519-verified by `receiptVerifier`) instead of the legacy
+    /// per-response ECDSA signature. The receipt's own `servedModelHash` and
+    /// `requestedModelHash` must both equal this channel's pinned
+    /// `requestedModelHash` (set at openChannel()) -- a provider whose enclave
+    /// actually routed to a different model cannot get paid, regardless of what it
+    /// claims off chain, because `servedModelHash` is read from bytes the TEE
+    /// itself signed. `pubkey` must be currently registered (via
+    /// registerReceiptKey()) to this channel's exact pinned `measurement`, mirroring
+    /// redeem()'s enclaveSigner check. Same replay space as redeem(): keyed on
+    /// (provider, requestHash, responseHash), so a receipt cannot be paid twice
+    /// either on this channel or across channels, nor after its (requestHash,
+    /// responseHash) pair was already paid via the legacy redeem() path or vice
+    /// versa. Pays only the delta over what was already paid; reverts once
+    /// finalizeClose() has run, exactly as redeem() does.
+    function redeemWithReceipt(
+        uint256 channelId,
+        uint256 cumulativeAmount,
+        bytes32 requestHash,
+        bytes32 responseHash,
+        bytes calldata payerSig,
+        bytes32 pubkey,
+        bytes calldata receiptBytes,
+        bytes calldata signature
+    ) external nonReentrant {
+        Channel storage c = channels[channelId];
+        if (c.provider == address(0)) revert BadParams();
+        if (msg.sender != c.provider) revert NotProvider();
+        if (c.closed) revert ChannelClosedErr();
+        if (cumulativeAmount <= c.paid) revert AmountNotIncreasing();
+        if (cumulativeAmount > c.deposit) revert AmountExceedsDeposit();
+
+        bytes32 receiptKey = keccak256(abi.encode(c.provider, requestHash, responseHash));
+        if (consumedReceipt[receiptKey]) revert ReceiptAlreadyConsumed();
+
+        bytes32 voucherDigest = _hashTypedDataV4(
+            keccak256(abi.encode(VOUCHER_TYPEHASH, channelId, cumulativeAmount, requestHash, responseHash))
+        );
+        if (!SignatureChecker.isValidSignatureNow(c.agent, voucherDigest, payerSig)) revert PayerNotAgent();
+
+        (bool ok, bytes32 requestedModelHash, bytes32 servedModelHash, bytes32 receiptResponseHash) =
+            receiptVerifier.verifyReceipt(pubkey, receiptBytes, signature);
+        if (!ok) revert ReceiptInvalid();
+        if (servedModelHash != c.requestedModelHash) revert ModelMismatch();
+        if (requestedModelHash != c.requestedModelHash) revert ModelMismatch(); // defence in depth
+        if (receiptResponseHash != responseHash) revert ResponseHashMismatch();
+
+        Signer storage rs = receiptSigners[pubkey];
+        if (rs.measurement == bytes32(0)) revert SignerNotRegistered();
+        if (rs.measurement != c.measurement) revert MeasurementMismatch();
+        if (block.timestamp > rs.expiry) revert AttestationExpired();
+
+        uint256 delta = cumulativeAmount - c.paid;
+        // forge-lint: disable-next-line(unsafe-typecast)
+        c.paid = uint128(cumulativeAmount); // safe: cumulativeAmount <= c.deposit (uint128), checked above
+        consumedReceipt[receiptKey] = true;
+        c.lastActivityAt = uint64(block.timestamp);
+
+        emit RedeemedWithReceipt(
+            channelId, pubkey, cumulativeAmount, delta, requestHash, responseHash, requestedModelHash, servedModelHash
+        );
         _push(c.provider, delta);
     }
 

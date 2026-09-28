@@ -16,7 +16,7 @@ contract AssayFuzzTest is AssayTestBase {
         _register(signerAddr, APPROVED_MEASUREMENT);
         vm.startPrank(agent);
         usdg.approve(address(assay), deposit);
-        uint256 channelId = assay.openChannel(provider, deposit, APPROVED_MEASUREMENT);
+        uint256 channelId = assay.openChannel(provider, deposit, APPROVED_MEASUREMENT, bytes32(0));
         vm.stopPrank();
 
         uint256 cumulative = 0;
@@ -33,7 +33,7 @@ contract AssayFuzzTest is AssayTestBase {
             vm.prank(provider);
             assay.redeem(channelId, cumulative, requestHash, responseHash, payerSig, enclaveSig);
 
-            (,,, uint128 paid,,,,,) = assay.channels(channelId);
+            (,,, uint128 paid,,,,,,) = assay.channels(channelId);
             assertEq(paid, cumulative);
             assertLe(cumulative, deposit);
             assertEq(usdg.balanceOf(provider), cumulative);
@@ -51,7 +51,7 @@ contract AssayFuzzTest is AssayTestBase {
         _register(signerAddr, APPROVED_MEASUREMENT);
         vm.startPrank(agent);
         usdg.approve(address(assay), deposit);
-        uint256 channelId = assay.openChannel(provider, deposit, APPROVED_MEASUREMENT);
+        uint256 channelId = assay.openChannel(provider, deposit, APPROVED_MEASUREMENT, bytes32(0));
         vm.stopPrank();
 
         (bytes memory payerSig, bytes memory enclaveSig) =

@@ -6,6 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {Assay} from "../src/Assay.sol";
 import {TestUSDG} from "../src/TestUSDG.sol";
 import {MockVerifier} from "./mocks/MockVerifier.sol";
+import {MockReceiptVerifier} from "./mocks/MockReceiptVerifier.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -46,7 +47,7 @@ contract AssayHandler is Test {
         uint128 amount = uint128(bound(amountSeed, 1, 1_000_000e6));
         vm.startPrank(agent);
         usdg.approve(address(assay), amount);
-        assay.openChannel(provider, amount, measurement);
+        assay.openChannel(provider, amount, measurement, bytes32(0));
         vm.stopPrank();
         opens++;
     }
@@ -55,7 +56,7 @@ contract AssayHandler is Test {
         uint256 n = assay.channelCount();
         if (n == 0) return;
         uint256 id = channelSeed % n;
-        (,, uint128 deposit, uint128 paid,,,, bool closed,) = assay.channels(id);
+        (,, uint128 deposit, uint128 paid,,,, bool closed,,) = assay.channels(id);
         if (closed || paid >= deposit) return;
 
         uint256 bump = bound(bumpSeed, 1, uint256(deposit - paid));
@@ -75,7 +76,7 @@ contract AssayHandler is Test {
         uint256 n = assay.channelCount();
         if (n == 0) return;
         uint256 id = channelSeed % n;
-        (,,,, uint64 openedAt, uint64 lastActivityAt, uint64 closeRequestedAt, bool closed,) = assay.channels(id);
+        (,,,, uint64 openedAt, uint64 lastActivityAt, uint64 closeRequestedAt, bool closed,,) = assay.channels(id);
         if (closed) return;
 
         if (closeRequestedAt == 0) {
@@ -158,10 +159,18 @@ contract AssayInvariantTest is StdInvariant, Test {
     function setUp() public {
         usdg = new TestUSDG();
         verifier = new MockVerifier();
+        MockReceiptVerifier receiptVerifier = new MockReceiptVerifier();
         bytes32[] memory approved = new bytes32[](1);
         approved[0] = MEASUREMENT;
-        assay =
-            new Assay(address(usdg), address(verifier), approved, ATTESTATION_VALIDITY, CHANNEL_TIMEOUT, CHALLENGE_WINDOW);
+        assay = new Assay(
+            address(usdg),
+            address(verifier),
+            address(receiptVerifier),
+            approved,
+            ATTESTATION_VALIDITY,
+            CHANNEL_TIMEOUT,
+            CHALLENGE_WINDOW
+        );
 
         handler = new AssayHandler(assay, usdg, verifier, MEASUREMENT);
         targetContract(address(handler));
@@ -177,7 +186,7 @@ contract AssayInvariantTest is StdInvariant, Test {
         uint256 n = assay.channelCount();
         uint256 total;
         for (uint256 i = 0; i < n; i++) {
-            (,, uint128 deposit, uint128 paid,,,,,) = assay.channels(i);
+            (,, uint128 deposit, uint128 paid,,,,,,) = assay.channels(i);
             total += uint256(deposit) - uint256(paid);
         }
         assertEq(usdg.balanceOf(address(assay)), total, "assay's USDG balance must equal sum(deposit - paid) across all channels");

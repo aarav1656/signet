@@ -7,7 +7,10 @@ import {Assay} from "../src/Assay.sol";
 /// forge script script/Deploy.s.sol --rpc-url arbitrum_sepolia --broadcast
 ///
 /// Env:
-///   VERIFIER             address of the already-deployed Stylus TDX verifier
+///   VERIFIER              address of the already-deployed Stylus TDX verifier
+///   RECEIPT_VERIFIER      address of the already-deployed Stylus Ed25519 receipt
+///                         verifier (receipt-verifier/), checked only by
+///                         redeemWithReceipt()
 ///   APPROVED_MEASUREMENT bytes32 measurement from a real verify() call on a live
 ///                        quote (the sole allowlist entry; construction is immutable)
 ///   ATTESTATION_VALIDITY seconds a registered signer stays valid (default 1 days)
@@ -29,6 +32,7 @@ import {Assay} from "../src/Assay.sol";
 contract Deploy is Script {
     function run() external returns (address usdg, address assay) {
         address verifier = vm.envAddress("VERIFIER");
+        address receiptVerifier = vm.envAddress("RECEIPT_VERIFIER");
         bytes32 approvedMeasurement = vm.envBytes32("APPROVED_MEASUREMENT");
         uint64 attestationValidity = uint64(vm.envOr("ATTESTATION_VALIDITY", uint256(1 days)));
         uint64 channelTimeout = uint64(vm.envOr("CHANNEL_TIMEOUT", uint256(1 hours)));
@@ -42,7 +46,8 @@ contract Deploy is Script {
         if (key != 0) vm.startBroadcast(key);
         else vm.startBroadcast();
 
-        Assay a = new Assay(usdg, verifier, approved, attestationValidity, channelTimeout, challengeWindow);
+        Assay a =
+            new Assay(usdg, verifier, receiptVerifier, approved, attestationValidity, channelTimeout, challengeWindow);
         assay = address(a);
 
         vm.stopBroadcast();

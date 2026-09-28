@@ -22,4 +22,24 @@ pragma solidity ^0.8.28;
 /// is what a caller pays gas for.
 interface IAssayVerifier {
     function verify(bytes calldata quote, bytes32 nonce) external returns (address signer, bytes32 measurement);
+
+    /// Binds an Ed25519 receipt-signing pubkey to the same TDX-attested
+    /// enclave `verify` trusts, via Phala's canonical `/v1/aci/attestation`
+    /// endpoint (`verifier/src/lib.rs`'s `verify_keyset`, cited there against
+    /// `crates/aci-protocol/src/identity.rs`'s `REPORT_DATA_PURPOSE` /
+    /// `attestation_statement` and `crates/aci-verify/src/report.rs`'s
+    /// `verify_report_binding`): that endpoint's `report_data[0..32]` is
+    /// `sha256(JCS({"keyset_digest":"sha256:"+sha256(keysetBytes),"nonce":hex(nonce),
+    /// "purpose":"aci.report_data.v1"}))`, so the pubkey is bound by hash
+    /// equality, not a separate signature over the pubkey -- there is no
+    /// on-chain JCS re-canonicalization; wrong or non-canonical
+    /// `keysetBytes` simply fails the digest match and reverts, fail-closed
+    /// by construction. `keysetBytes` must be the caller-supplied JCS bytes
+    /// of the quote's `attestation.workload_keyset` object; `pubkey` must
+    /// appear in its `receipt_signing_keys[]` with `algo == "ed25519"`.
+    /// Reverts (does not return a boolean) on any structural or
+    /// cryptographic failure, same shape as `verify`.
+    function verifyKeyset(bytes calldata quote, bytes calldata keysetBytes, bytes32 nonce, bytes32 pubkey)
+        external
+        returns (bytes32 measurement);
 }

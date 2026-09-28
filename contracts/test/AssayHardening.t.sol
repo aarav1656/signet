@@ -103,7 +103,7 @@ contract AssayHardeningTest is AssayTestBase {
         vm.startPrank(agent);
         usdg.approve(address(assay), 1_000e6);
         vm.expectRevert(Assay.MeasurementNotApproved.selector);
-        assay.openChannel(provider, 1_000e6, OTHER_MEASUREMENT);
+        assay.openChannel(provider, 1_000e6, OTHER_MEASUREMENT, bytes32(0));
         vm.stopPrank();
     }
 
