@@ -33,7 +33,7 @@ contract AssayFuzzTest is AssayTestBase {
             vm.prank(provider);
             assay.redeem(channelId, cumulative, requestHash, responseHash, payerSig, enclaveSig);
 
-            (,,, uint128 paid,,,,,,) = assay.channels(channelId);
+            (,,, uint128 paid,,,,,,,) = assay.channels(channelId);
             assertEq(paid, cumulative);
             assertLe(cumulative, deposit);
             assertEq(usdg.balanceOf(provider), cumulative);

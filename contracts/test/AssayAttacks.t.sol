@@ -138,7 +138,7 @@ contract AssayAttacksTest is AssayTestBase {
     function test_attack_measurementNotOnAllowlist_reverts() public {
         verifier.setNext(signerAddr, OTHER_MEASUREMENT);
         vm.expectRevert(Assay.MeasurementNotApproved.selector);
-        assay.register(hex"1234", 0);
+        assay.register(hex"1234", block.number - 1);
 
         (bytes32 measurement,) = assay.signers(signerAddr);
         assertEq(measurement, bytes32(0));

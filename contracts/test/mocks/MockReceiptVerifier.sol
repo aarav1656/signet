@@ -9,7 +9,7 @@ import {IReceiptVerifier} from "../../src/IReceiptVerifier.sol";
 /// `cargo test --test vectors` (9 real-Ed25519-keypair vectors, including the exact
 /// model-substitution case) and `cargo test --test export_fixture` (the two vectors
 /// this repo's Solidity tests hardcode from `fixtures/receipt_vectors.json`, so the
-/// (requestedModelHash, servedModelHash, responseHash) values below are not invented
+/// (requestedModelHash, servedModelHash, requestHash, responseHash) values below are not invented
 /// in Solidity -- they are exactly what `verify_receipt_core` computed). No
 /// pure-Solidity Ed25519 library is vendored in this repo's dependency tree
 /// (`contracts/lib` has only openzeppelin-contracts and forge-std) and this repo's
@@ -21,25 +21,28 @@ contract MockReceiptVerifier is IReceiptVerifier {
     bool public nextOk;
     bytes32 public nextRequestedModelHash;
     bytes32 public nextServedModelHash;
+    bytes32 public nextRequestHash;
     bytes32 public nextResponseHash;
 
     function setNext(
         bool ok_,
         bytes32 requestedModelHash_,
         bytes32 servedModelHash_,
+        bytes32 requestHash_,
         bytes32 responseHash_
     ) external {
         nextOk = ok_;
         nextRequestedModelHash = requestedModelHash_;
         nextServedModelHash = servedModelHash_;
+        nextRequestHash = requestHash_;
         nextResponseHash = responseHash_;
     }
 
     function verifyReceipt(bytes32, bytes calldata, bytes calldata)
         external
         view
-        returns (bool ok, bytes32 requestedModelHash, bytes32 servedModelHash, bytes32 responseHash)
+        returns (bool ok, bytes32 requestedModelHash, bytes32 servedModelHash, bytes32 requestHash, bytes32 responseHash)
     {
-        return (nextOk, nextRequestedModelHash, nextServedModelHash, nextResponseHash);
+        return (nextOk, nextRequestedModelHash, nextServedModelHash, nextRequestHash, nextResponseHash);
     }
 }

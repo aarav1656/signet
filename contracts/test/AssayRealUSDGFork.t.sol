@@ -39,6 +39,15 @@ interface IPaxos {
 /// safe way to fabricate that balance for an address nobody has funded. Set
 /// CHIRON_FUNDED_TEST_ACCOUNT to a funded address before running this file, or it skips.
 /// ponytail: single skip guard here, not per-test, since every test in this file shares setUp.
+/// Forge cannot run Arbitrum precompiles on a fork (0x64 has placeholder code), so
+/// register()'s ArbSys.arbBlockHash call gets this stand-in. The nonce's block-hash
+/// binding is tested in AssayHardening.t.sol; this suite is about real USDG.
+contract ForkArbSys {
+    function arbBlockHash(uint256 n) external pure returns (bytes32) {
+        return keccak256(abi.encode(n));
+    }
+}
+
 contract AssayRealUSDGForkTest is Test {
     IPaxos constant USDG = IPaxos(0xFFC95faa3d63Cde504a05B567C600B78C0b41892);
     bytes32 constant M = 0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149;
@@ -60,7 +69,7 @@ contract AssayRealUSDGForkTest is Test {
             vm.skip(true);
             return;
         }
-        vm.createSelectFork("https://sepolia-rollup.arbitrum.io/rpc", 313045372);
+        vm.createSelectFork("https://sepolia-rollup.arbitrum.io/rpc", vm.envOr("CHIRON_FORK_BLOCK", uint256(313045372)));
         agent = vm.addr(agentPk);
         verifier = new MockVerifier();
         receiptVerifier = new MockReceiptVerifier();
@@ -69,8 +78,9 @@ contract AssayRealUSDGForkTest is Test {
         assay = new Assay(address(USDG), address(verifier), address(receiptVerifier), ap, 1 days, 1 hours, 1 hours);
         vm.prank(FUNDED);
         USDG.transfer(agent, 1_000_000); // 1.000000 USDG
+        vm.etch(address(0x64), address(new ForkArbSys()).code);
         verifier.setNext(vm.addr(signerPk), M);
-        assay.register(hex"01", 0);
+        assay.register(hex"01", block.number - 1);
     }
 
     function _permitSig(uint256 value, uint256 deadline) internal view returns (uint8 v, bytes32 r, bytes32 s) {
@@ -146,7 +156,7 @@ contract AssayRealUSDGForkTest is Test {
     function test_fork_openChannelWithPermit_realUSDG() public {
         uint256 n0 = USDG.nonces(agent);
         uint256 id = _open(1_000_000);
-        (,, uint128 dep,,,,,,,) = assay.channels(id);
+        (,, uint128 dep,,,,,,,,) = assay.channels(id);
         assertEq(dep, 1_000_000);
         assertEq(USDG.balanceOf(address(assay)), 1_000_000);
         assertEq(USDG.balanceOf(agent), 0);

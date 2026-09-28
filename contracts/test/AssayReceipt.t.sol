@@ -54,7 +54,7 @@ contract AssayReceiptTest is AssayTestBase {
         _registerReceiptKey(APPROVED_MEASUREMENT);
         uint256 channelId = _openReceiptChannel(1_000e6);
 
-        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, honestResponseHash);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-1"), honestResponseHash);
         bytes memory payerSig = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), honestResponseHash);
 
         vm.prank(provider);
@@ -63,7 +63,7 @@ contract AssayReceiptTest is AssayTestBase {
         );
 
         assertEq(usdg.balanceOf(provider), 100e6);
-        (,, uint128 deposit, uint128 paid,,,,,,) = assay.channels(channelId);
+        (,, uint128 deposit, uint128 paid,,,,,,,) = assay.channels(channelId);
         assertEq(deposit, 1_000e6);
         assertEq(paid, 100e6);
     }
@@ -76,7 +76,7 @@ contract AssayReceiptTest is AssayTestBase {
         _registerReceiptKey(APPROVED_MEASUREMENT);
         uint256 channelId = _openReceiptChannel(1_000e6);
 
-        receiptVerifier.setNext(true, swapRequestedModelHash, swapServedModelHash, swapResponseHash);
+        receiptVerifier.setNext(true, swapRequestedModelHash, swapServedModelHash, keccak256("req-1"), swapResponseHash);
         bytes memory payerSig = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), swapResponseHash);
 
         vm.prank(provider);
@@ -96,7 +96,7 @@ contract AssayReceiptTest is AssayTestBase {
         // isolates the second `if` in redeemWithReceipt from the first.
         uint256 channelId = _openChannel(1_000e6, APPROVED_MEASUREMENT, swapServedModelHash);
 
-        receiptVerifier.setNext(true, swapRequestedModelHash, swapServedModelHash, swapResponseHash);
+        receiptVerifier.setNext(true, swapRequestedModelHash, swapServedModelHash, keccak256("req-1"), swapResponseHash);
         bytes memory payerSig = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), swapResponseHash);
 
         vm.prank(provider);
@@ -113,7 +113,7 @@ contract AssayReceiptTest is AssayTestBase {
         _registerReceiptKey(APPROVED_MEASUREMENT);
         uint256 channelId = _openReceiptChannel(1_000e6);
 
-        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, honestResponseHash);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-1"), honestResponseHash);
         bytes32 tamperedResponseHash = keccak256("not-the-real-response");
         bytes memory payerSig = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), tamperedResponseHash);
 
@@ -128,7 +128,7 @@ contract AssayReceiptTest is AssayTestBase {
     /// redeem, regardless of what the mock receipt verifier says.
     function test_redeemWithReceipt_unregisteredPubkey_reverts() public {
         uint256 channelId = _openReceiptChannel(1_000e6);
-        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, honestResponseHash);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-1"), honestResponseHash);
         bytes memory payerSig = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), honestResponseHash);
 
         vm.prank(provider);
@@ -145,7 +145,7 @@ contract AssayReceiptTest is AssayTestBase {
         _registerReceiptKey(APPROVED_MEASUREMENT_2); // channel below is pinned to APPROVED_MEASUREMENT
         uint256 channelId = _openReceiptChannel(1_000e6);
 
-        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, honestResponseHash);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-1"), honestResponseHash);
         bytes memory payerSig = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), honestResponseHash);
 
         vm.prank(provider);
@@ -161,7 +161,7 @@ contract AssayReceiptTest is AssayTestBase {
     function test_redeemWithReceipt_replay_reverts() public {
         _registerReceiptKey(APPROVED_MEASUREMENT);
         uint256 channelId = _openReceiptChannel(1_000e6);
-        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, honestResponseHash);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-1"), honestResponseHash);
 
         bytes memory payerSig1 = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), honestResponseHash);
         vm.prank(provider);
@@ -181,34 +181,55 @@ contract AssayReceiptTest is AssayTestBase {
         );
     }
 
-    /// The replay guard's namespace is shared with the legacy redeem() path: a
-    /// (requestHash, responseHash) pair already paid via one path can never be paid
-    /// again via the other, closing what would otherwise be a double-pay route
-    /// (pay once via ECDSA enclaveSig, again via a receipt, or vice versa).
-    function test_replaySharedAcrossPaths_reverts() public {
+    /// A model-pinned channel is receipt-only: the legacy redeem() carries no model
+    /// evidence, so a provider cannot route a swapped model's response through it
+    /// (re-review RR-1). With each channel restricted to one path, a pair can no
+    /// longer be paid once per path on the same channel.
+    function test_modelPinnedChannel_refusesLegacyRedeem() public {
         _register(signerAddr, APPROVED_MEASUREMENT);
-        _registerReceiptKey(APPROVED_MEASUREMENT);
         uint256 channelId = _openReceiptChannel(1_000e6);
 
         (bytes memory payerSig, bytes memory enclaveSig) =
             _redeemArgs(channelId, 100e6, keccak256("req-1"), honestResponseHash);
         vm.prank(provider);
+        vm.expectRevert(Assay.ModelMismatch.selector);
         assay.redeem(channelId, 100e6, keccak256("req-1"), honestResponseHash, payerSig, enclaveSig);
+        assertEq(usdg.balanceOf(provider), 0);
+    }
 
-        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, honestResponseHash);
-        bytes memory receiptPayerSig = _receiptPayerSig(channelId, 200e6, keccak256("req-1"), honestResponseHash);
+    /// A legacy-only channel (requestedModelHash == 0) cannot be paid by a receipt:
+    /// the receipt's model hash is never zero, so it can never match.
+    function test_legacyOnlyChannel_refusesReceipt() public {
+        _registerReceiptKey(APPROVED_MEASUREMENT);
+        uint256 channelId = _openChannel(1_000e6);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-1"), honestResponseHash);
+        bytes memory payerSig = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), honestResponseHash);
         vm.prank(provider);
-        vm.expectRevert(Assay.ReceiptAlreadyConsumed.selector);
+        vm.expectRevert(Assay.ModelMismatch.selector);
         assay.redeemWithReceipt(
-            channelId,
-            200e6,
-            keccak256("req-1"),
-            honestResponseHash,
-            receiptPayerSig,
-            receiptPubkey,
-            hex"aa",
-            hex"bb"
+            channelId, 100e6, keccak256("req-1"), honestResponseHash, payerSig, receiptPubkey, hex"aa", hex"bb"
         );
+    }
+
+    /// The receipt's request.received body hash must equal the voucher's requestHash,
+    /// so one receipt cannot back payments for different requests (re-review RR-3).
+    function test_receiptRequestHashMismatch_reverts() public {
+        _registerReceiptKey(APPROVED_MEASUREMENT);
+        uint256 channelId = _openReceiptChannel(1_000e6);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-1"), honestResponseHash);
+
+        bytes memory payerSig1 = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), honestResponseHash);
+        vm.startPrank(provider);
+        assay.redeemWithReceipt(
+            channelId, 100e6, keccak256("req-1"), honestResponseHash, payerSig1, receiptPubkey, hex"aa", hex"bb"
+        );
+        bytes memory payerSig2 = _receiptPayerSig(channelId, 200e6, keccak256("req-2"), honestResponseHash);
+        vm.expectRevert(Assay.RequestHashMismatch.selector);
+        assay.redeemWithReceipt(
+            channelId, 200e6, keccak256("req-2"), honestResponseHash, payerSig2, receiptPubkey, hex"aa", hex"bb"
+        );
+        vm.stopPrank();
+        assertEq(usdg.balanceOf(provider), 100e6);
     }
 
     /// Invariant: two successive honest redeemWithReceipt() calls still pay only the
@@ -217,7 +238,7 @@ contract AssayReceiptTest is AssayTestBase {
     function test_redeemWithReceipt_cumulativeDeltaInvariantHolds() public {
         _registerReceiptKey(APPROVED_MEASUREMENT);
         uint256 channelId = _openReceiptChannel(1_000e6);
-        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, honestResponseHash);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-1"), honestResponseHash);
 
         bytes memory payerSig1 = _receiptPayerSig(channelId, 100e6, keccak256("req-1"), honestResponseHash);
         vm.prank(provider);
@@ -227,7 +248,7 @@ contract AssayReceiptTest is AssayTestBase {
         assertEq(usdg.balanceOf(provider), 100e6);
 
         bytes32 secondResponseHash = keccak256("second-call-response");
-        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, secondResponseHash);
+        receiptVerifier.setNext(true, honestRequestedModelHash, honestServedModelHash, keccak256("req-2"), secondResponseHash);
         bytes memory payerSig2 = _receiptPayerSig(channelId, 250e6, keccak256("req-2"), secondResponseHash);
         vm.prank(provider);
         assay.redeemWithReceipt(
@@ -236,7 +257,7 @@ contract AssayReceiptTest is AssayTestBase {
         // Paid only the 150e6 delta the second time, not the full 250e6 again.
         assertEq(usdg.balanceOf(provider), 250e6);
 
-        (,, uint128 deposit, uint128 paid,,,,,,) = assay.channels(channelId);
+        (,, uint128 deposit, uint128 paid,,,,,,,) = assay.channels(channelId);
         assertEq(deposit, 1_000e6);
         assertEq(paid, 250e6);
         assertLe(paid, deposit);

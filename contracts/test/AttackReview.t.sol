@@ -16,7 +16,7 @@ contract AttackReviewTest is AssayTestBase {
     function test_H1_challengeWindowPaysPendingVoucherBeforeClose() public {
         _register(signerAddr, APPROVED_MEASUREMENT);
         uint256 id = _openChannel(100e6);
-        (,,,, uint64 openedAt,,,,,) = assay.channels(id);
+        (,,,, uint64 openedAt,,,,,,) = assay.channels(id);
 
         vm.warp(openedAt + CHANNEL_TIMEOUT - 1);
         (bytes memory p, bytes memory e) = _redeemArgs(id, 40e6, keccak256("req"), keccak256("resp"));
@@ -35,7 +35,7 @@ contract AttackReviewTest is AssayTestBase {
         assay.finalizeClose(id);
         assertEq(usdg.balanceOf(agent), agentBefore + 60e6);
 
-        (,,, uint128 paid,,,, bool closed,,) = assay.channels(id);
+        (,,, uint128 paid,,,, bool closed,,,) = assay.channels(id);
         assertEq(paid, 40e6);
         assertTrue(closed);
     }
@@ -47,11 +47,11 @@ contract AttackReviewTest is AssayTestBase {
     function test_H2_staleQuoteCannotReRegister() public {
         bytes memory quote = hex"1234";
         verifier.setNext(signerAddr, APPROVED_MEASUREMENT);
-        assay.register(quote, 0);
+        assay.register(quote, block.number - 1);
 
         vm.warp(block.timestamp + 400 days);
         vm.expectRevert(Assay.QuoteAlreadyUsed.selector);
-        assay.register(quote, 0);
+        assay.register(quote, block.number - 1);
     }
 
     /// M-1 fix: consumedReceipt is keyed globally on (provider, requestHash,
@@ -125,7 +125,7 @@ contract AttackReviewTest is AssayTestBase {
         uint256 channelId = assay.openChannelWithPermit(provider, amount, APPROVED_MEASUREMENT, bytes32(0), deadline, v, r, s);
 
         assertEq(usdg.balanceOf(agent), before - amount, "open still pulled the deposit despite the front-run permit");
-        (address a, address p,,,,,,,,) = assay.channels(channelId);
+        (address a, address p,,,,,,,,,) = assay.channels(channelId);
         assertEq(a, agent);
         assertEq(p, provider);
     }

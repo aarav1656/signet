@@ -18,7 +18,7 @@ contract AssayTest is AssayTestBase {
         assertEq(usdg.balanceOf(agent), before - 1_000e6);
         assertEq(usdg.balanceOf(address(assay)), 1_000e6);
 
-        (address a, address p, uint128 deposit, uint128 paid,,,,,,) = assay.channels(channelId);
+        (address a, address p, uint128 deposit, uint128 paid,,,,,,,) = assay.channels(channelId);
         assertEq(a, agent);
         assertEq(p, provider);
         assertEq(deposit, 1_000e6);
@@ -41,7 +41,7 @@ contract AssayTest is AssayTestBase {
         assay.redeem(channelId, 250e6, keccak256("req-2"), keccak256("call-2"), payerSig2, enclaveSig2);
         assertEq(usdg.balanceOf(provider), 250e6);
 
-        (,, uint128 deposit, uint128 paid,,,,,,) = assay.channels(channelId);
+        (,, uint128 deposit, uint128 paid,,,,,,,) = assay.channels(channelId);
         assertEq(deposit, 1_000e6);
         assertEq(paid, 250e6);
     }
@@ -65,7 +65,7 @@ contract AssayTest is AssayTestBase {
         assay.finalizeClose(channelId);
         assertEq(usdg.balanceOf(agent), agentBefore + 700e6);
 
-        (,,, uint128 paid,,,, bool closed,,) = assay.channels(channelId);
+        (,,, uint128 paid,,,, bool closed,,,) = assay.channels(channelId);
         assertEq(paid, 300e6);
         assertTrue(closed);
     }

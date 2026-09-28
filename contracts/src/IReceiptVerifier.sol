@@ -12,13 +12,13 @@ pragma solidity ^0.8.28;
 /// and the function returns keccak256 of the receipt's top-level `model`
 /// field (the model requested), keccak256 of the verified
 /// `upstream.verified` event's `model_id` field (the model actually
-/// served), and the raw 32 bytes of the `response.returned` event's
-/// `body_hash` digest. On any signature, structural, or missing-field
+/// served), and the raw 32 bytes of the `request.received` and
+/// `response.returned` events' `body_hash` digests. On any signature, structural, or missing-field
 /// failure `ok` is false and every other field is zero; the call never
 /// reverts on a bad receipt so `Assay.redeemWithReceipt` can branch on `ok`
 /// in one call instead of catching a revert.
 interface IReceiptVerifier {
     function verifyReceipt(bytes32 pubkey, bytes calldata receiptBytes, bytes calldata signature)
         external
-        returns (bool ok, bytes32 requestedModelHash, bytes32 servedModelHash, bytes32 responseHash);
+        returns (bool ok, bytes32 requestedModelHash, bytes32 servedModelHash, bytes32 requestHash, bytes32 responseHash);
 }

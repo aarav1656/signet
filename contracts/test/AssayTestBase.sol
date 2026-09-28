@@ -48,6 +48,8 @@ abstract contract AssayTestBase is Test {
     bytes32 internal receiptPubkey = keccak256("receipt-pubkey-fixture");
 
     function setUp() public virtual {
+        // register() needs a nonzero blockhash(refBlock); tests pass block.number - 1.
+        vm.roll(100);
         usdg = new TestUSDG();
         verifier = new MockVerifier();
         receiptVerifier = new MockReceiptVerifier();
@@ -76,12 +78,12 @@ abstract contract AssayTestBase is Test {
 
     /// Same as `_register`, but with an explicit quote so a test can re-register
     /// with a distinct (fresh) quote instead of hitting the QuoteAlreadyUsed guard.
-    /// refBlock is 0: MockVerifier ignores the nonce entirely (see MockVerifier.sol),
-    /// so its exact value is irrelevant here; the real ArbSys-vs-blockhash nonce
-    /// derivation is exercised directly in AssayArbSysNonce.t.sol.
+    /// refBlock is the previous block: MockVerifier ignores the nonce's value (see
+    /// MockVerifier.sol), but nextRegisterNonce() still refuses a zero block hash;
+    /// the ArbSys-vs-blockhash derivation itself is tested in AssayHardening.t.sol.
     function _registerQuote(bytes memory quote, address signer_, bytes32 measurement_) internal returns (bytes32) {
         verifier.setNext(signer_, measurement_);
-        (, bytes32 m) = assay.register(quote, 0);
+        (, bytes32 m) = assay.register(quote, block.number - 1);
         return m;
     }
 
@@ -114,7 +116,7 @@ abstract contract AssayTestBase is Test {
         // quote would collide (QuoteAlreadyUsed) when a test registers both an ECDSA
         // signer and a receipt pubkey, exactly as two real quotes fetched from
         // Phala's two different attestation endpoints never collide in practice.
-        assay.registerReceiptKey(hex"deadbeef", hex"5678", 0, receiptPubkey);
+        assay.registerReceiptKey(hex"deadbeef", hex"5678", block.number - 1, receiptPubkey);
     }
 
     /// EIP-712 Voucher{channelId,cumulativeAmount,requestHash,responseHash}, signed

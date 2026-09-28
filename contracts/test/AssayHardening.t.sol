@@ -148,9 +148,10 @@ contract AssayHardeningTest is AssayTestBase {
 
     // ---- Item 4c: when ArbSys IS present (etched at 0x64), its arbBlockHash() return
     // value drives the nonce, not blockhash(); and when ArbSys reverts for a refBlock
-    // outside its window (simulated here, matching the real precompile's documented
-    // shape), the call falls back to blockhash() instead of reverting register(). ----
-    function test_nextRegisterNonce_usesArbSysWhenPresent_fallsBackOnRevert() public {
+    // outside its window (the real precompile's shape), nextRegisterNonce() reverts
+    // StaleRefBlock instead of falling back to blockhash(), which on Arbitrum reads
+    // L1-numbered blocks and would open a second, longer window (re-review RR-2). ----
+    function test_nextRegisterNonce_usesArbSysWhenPresent_revertsOnArbSysRevert() public {
         FakeArbSys template = new FakeArbSys();
         vm.etch(ARBSYS, address(template).code);
         FakeArbSys(ARBSYS).set(42, bytes32(uint256(0xABCDEF)));
@@ -161,15 +162,25 @@ contract AssayHardeningTest is AssayTestBase {
         );
         assertEq(nonceFromArbSys, expectedFromArbSys, "must use ArbSys.arbBlockHash's value when the precompile answers");
 
-        // refBlock 999 was never `set` on the fake, so arbBlockHash(999) reverts, exactly
-        // like the real precompile does for an out-of-window block.
-        vm.roll(1000);
-        bytes32 nonceFallback = assay.nextRegisterNonce(provider, 999);
-        bytes32 expectedFallback = keccak256(
-            abi.encode(block.chainid, address(assay), provider, assay.registerNonce(provider), blockhash(999))
-        );
-        assertEq(nonceFallback, expectedFallback, "must fall back to blockhash() when ArbSys reverts");
-        assertTrue(nonceFromArbSys != nonceFallback);
+        // refBlock 99 was never `set` on the fake, so arbBlockHash(99) reverts, exactly
+        // like the real precompile does for an out-of-window block, even though native
+        // blockhash(99) is nonzero here.
+        assertTrue(blockhash(99) != bytes32(0));
+        vm.expectRevert(Assay.StaleRefBlock.selector);
+        assay.nextRegisterNonce(provider, 99);
+    }
+
+    // ---- RR-2: off Arbitrum, a refBlock whose blockhash() is zero (0, the current
+    // block, or older than 256 blocks) reverts instead of forming a constant nonce. ----
+    function test_nextRegisterNonce_zeroBlockhash_reverts() public {
+        vm.roll(1_000);
+        assertTrue(assay.nextRegisterNonce(provider, block.number - 1) != bytes32(0));
+        vm.expectRevert(Assay.StaleRefBlock.selector);
+        assay.nextRegisterNonce(provider, 0);
+        vm.expectRevert(Assay.StaleRefBlock.selector);
+        assay.nextRegisterNonce(provider, block.number - 300);
+        vm.expectRevert(Assay.StaleRefBlock.selector);
+        assay.nextRegisterNonce(provider, block.number);
     }
 
     // ---- Item 4c end to end: register() itself still succeeds through the ArbSys path

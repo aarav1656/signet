@@ -29,15 +29,17 @@ import {IReceiptVerifier} from "./IReceiptVerifier.sol";
 /// pair never paid before on any channel; the contract pays only the delta,
 /// capped at the channel's deposit, and never below what was already paid.
 ///
-/// Unilateral close is two-phase: requestClose() opens a challenge window (fixed
-/// at construction) measured from the channel's last redeem (or, if none, from
-/// openedAt); the provider can still redeem any pending voucher during that
+/// Unilateral close is two-phase: requestClose(), callable once channelTimeout
+/// has passed since the channel's last redeem (or, if none, since openedAt),
+/// opens a challenge window (fixed at construction) measured from that
+/// requestClose(); the provider can still redeem any pending voucher during that
 /// window; finalizeClose(), callable only after the window elapses, pays the
 /// agent whatever remains unredeemed. redeem() reverts once finalizeClose has run.
 ///
-/// Pull-based: register/openChannel/redeem/requestClose/finalizeClose are each
-/// called by the party that receives value in that call. No owner, no upgrade,
-/// no pause, no setter for the allowlist after construction.
+/// openChannel/redeem/requestClose/finalizeClose are each called by the party
+/// that receives value in that call; register() is open to anyone, since the key
+/// it records comes from the quote itself. No owner, no upgrade, no pause, no
+/// setter for the allowlist after construction.
 contract Assay is ReentrancyGuard, EIP712 {
     using SafeERC20 for IERC20;
 
@@ -60,14 +62,17 @@ contract Assay is ReentrancyGuard, EIP712 {
         /// match this exactly (see redeem()). Immutable for the channel's lifetime.
         bytes32 measurement;
         /// Pinned at open() to keccak256(modelId) the agent and provider agreed off
-        /// chain (e.g. keccak256("deepseek-v3.1")). redeemWithReceipt() (the new
-        /// Ed25519-receipt path) requires both the receipt's requested and served
-        /// model hashes to equal this exactly (see redeemWithReceipt()), refusing
-        /// payment for a swapped model. The legacy redeem() (ECDSA enclaveSig path,
-        /// kept for backward compatibility) never inspects this field and pays
-        /// against any channel regardless of what model, if any, is pinned here --
-        /// the model-swap refusal is a property of redeemWithReceipt() only.
+        /// chain (e.g. keccak256("deepseek-v3.1")). When nonzero, redeemWithReceipt()
+        /// is the only way to pay the channel: it requires both the receipt's
+        /// requested and served model hashes to equal this exactly, and the legacy
+        /// redeem() (which carries no model evidence) reverts ModelMismatch. When
+        /// zero, the channel is legacy-only and redeemWithReceipt() cannot match it.
         bytes32 requestedModelHash;
+        /// Snapshot of `agent.code.length != 0` at open(). Fixes how payerSig is
+        /// checked for the channel's whole life (ECDSA for an EOA, ERC-1271 for a
+        /// contract), so an EOA that later gains code (EIP-7702) cannot void the
+        /// vouchers it already signed.
+        bool agentIsContract;
     }
 
     /// Authorizes the payer's spend, not the work itself: the agent's own key,
@@ -105,7 +110,10 @@ contract Assay is ReentrancyGuard, EIP712 {
 
     /// keccak256(provider, requestHash, responseHash) -> paid. One real attested
     /// receipt can be paid at most once, ever, on any channel that provider holds
-    /// (the enclave signature itself is not bound to a channel).
+    /// (the enclave signature itself is not bound to a channel). Both paths bind
+    /// both hashes to TEE-signed bytes: the legacy signature covers them directly,
+    /// and redeemWithReceipt() requires them to equal the receipt's own
+    /// request.received and response.returned body hashes.
     mapping(bytes32 => bool) public consumedReceipt;
 
     event Registered(address indexed signer, bytes32 measurement, uint64 expiry);
@@ -172,6 +180,13 @@ contract Assay is ReentrancyGuard, EIP712 {
     /// voucher's responseHash -- the provider and agent disagree on which
     /// response this payment is for.
     error ResponseHashMismatch();
+    /// redeemWithReceipt(): the receipt's request.received body hash did not
+    /// match the voucher's requestHash.
+    error RequestHashMismatch();
+    /// nextRegisterNonce(): refBlock has no usable block hash (outside ArbSys's
+    /// 256-block window, or zero from native blockhash()). A zero hash would make
+    /// the nonce a constant a quote could be fetched for at any time.
+    error StaleRefBlock();
 
     constructor(
         address usdg_,
@@ -206,20 +221,17 @@ contract Assay is ReentrancyGuard, EIP712 {
 
     /// A recent, hard-to-predict-before-it-exists block hash, bound into the
     /// register() nonce so a quote cannot be pre-fetched for a future nonce value.
-    /// Tries ArbSys.arbBlockHash(refBlock) first (correct only on an Arbitrum
-    /// chain); staticcall so an out-of-window refBlock (ArbSys reverts) or a
-    /// non-Arbitrum chain (no contract at 0x64, so the call trivially "succeeds"
-    /// with empty returndata) falls through to native blockhash(refBlock) instead of
-    /// bricking register() -- same 256-block window, weaker only in that a stale
-    /// refBlock returns 0 here instead of reverting, exactly like blockhash() itself
-    /// does for any out-of-window block number.
-    function _refBlockHash(uint256 refBlock) private view returns (bytes32) {
+    /// On Arbitrum, ArbSys.arbBlockHash(refBlock) answers for the last 256 L2
+    /// blocks and reverts otherwise; that revert is final here. Native blockhash()
+    /// is used only where 0x64 has no code (the call "succeeds" with empty
+    /// returndata), i.e. off Arbitrum. On Arbitrum, EVM block.number is an L1
+    /// estimate, so falling back to blockhash() there would open a second, longer
+    /// window. Any zero hash reverts: it would make the nonce a constant.
+    function _refBlockHash(uint256 refBlock) private view returns (bytes32 h) {
         (bool ok, bytes memory data) = ARBSYS.staticcall(abi.encodeWithSelector(ARBSYS_ARBBLOCKHASH_SELECTOR, refBlock));
-        if (ok && data.length == 32) {
-            bytes32 h = abi.decode(data, (bytes32));
-            if (h != bytes32(0)) return h;
-        }
-        return blockhash(refBlock);
+        if (!ok) revert StaleRefBlock();
+        h = data.length == 32 ? abi.decode(data, (bytes32)) : blockhash(refBlock);
+        if (h == bytes32(0)) revert StaleRefBlock();
     }
 
     /// The nonce a quote fetched by `provider` must bind (report_data[32:64]) for
@@ -290,8 +302,8 @@ contract Assay is ReentrancyGuard, EIP712 {
     /// redeem against this channel (see redeem()). `requestedModelHash` pins the
     /// model redeemWithReceipt() will require a receipt's own requested and
     /// served model hashes to equal (see redeemWithReceipt()); pass
-    /// `keccak256(abi.encodePacked(modelId))` or, if this channel will only ever
-    /// use the legacy redeem() path, `bytes32(0)`.
+    /// `keccak256(abi.encodePacked(modelId))` to make the channel receipt-only,
+    /// or `bytes32(0)` for a legacy-only channel paid through redeem().
     function openChannel(address provider, uint128 amount, bytes32 measurement, bytes32 requestedModelHash)
         external
         nonReentrant
@@ -340,7 +352,8 @@ contract Assay is ReentrancyGuard, EIP712 {
             closeRequestedAt: 0,
             closed: false,
             measurement: measurement,
-            requestedModelHash: requestedModelHash
+            requestedModelHash: requestedModelHash,
+            agentIsContract: msg.sender.code.length != 0
         });
         emit ChannelOpened(channelId, msg.sender, provider, amount, requestedModelHash);
     }
@@ -361,6 +374,8 @@ contract Assay is ReentrancyGuard, EIP712 {
     ///   currently registered, unexpired, allowlisted-measurement signer: that is
     ///   the provenance check, independent of who is paying.
     ///
+    /// Only for a legacy-only channel (requestedModelHash == 0): the legacy
+    /// signature carries no model evidence, so a model-pinned channel refuses it.
     /// Both must verify, cumulativeAmount must increase and stay within deposit,
     /// the enclave signer's currently registered measurement must match the one
     /// this channel was opened with (see openChannel()), and (provider,
@@ -380,21 +395,14 @@ contract Assay is ReentrancyGuard, EIP712 {
         if (c.provider == address(0)) revert BadParams();
         if (msg.sender != c.provider) revert NotProvider();
         if (c.closed) revert ChannelClosedErr();
+        if (c.requestedModelHash != bytes32(0)) revert ModelMismatch();
         if (cumulativeAmount <= c.paid) revert AmountNotIncreasing();
         if (cumulativeAmount > c.deposit) revert AmountExceedsDeposit();
 
         bytes32 receiptKey = keccak256(abi.encode(c.provider, requestHash, responseHash));
         if (consumedReceipt[receiptKey]) revert ReceiptAlreadyConsumed();
 
-        bytes32 voucherDigest = _hashTypedDataV4(
-            keccak256(abi.encode(VOUCHER_TYPEHASH, channelId, cumulativeAmount, requestHash, responseHash))
-        );
-        // c.agent may be an EOA (ECDSA) or a smart account (ERC-1271, e.g. Safe,
-        // ZeroDev Kernel): SignatureChecker tries ECDSA.recover first, then falls
-        // back to calling isValidSignature(voucherDigest, payerSig) on c.agent's
-        // code, so a contract wallet's voucher signature is honored the same as
-        // an EOA's without changing behaviour for the common EOA case.
-        if (!SignatureChecker.isValidSignatureNow(c.agent, voucherDigest, payerSig)) revert PayerNotAgent();
+        if (!_payerSigValid(c, channelId, cumulativeAmount, requestHash, responseHash, payerSig)) revert PayerNotAgent();
 
         bytes32 enclaveDigest = MessageHashUtils.toEthSignedMessageHash(
             bytes.concat(_hex64(requestHash), ":", _hex64(responseHash))
@@ -428,12 +436,12 @@ contract Assay is ReentrancyGuard, EIP712 {
     /// claims off chain, because `servedModelHash` is read from bytes the TEE
     /// itself signed. `pubkey` must be currently registered (via
     /// registerReceiptKey()) to this channel's exact pinned `measurement`, mirroring
-    /// redeem()'s enclaveSigner check. Same replay space as redeem(): keyed on
-    /// (provider, requestHash, responseHash), so a receipt cannot be paid twice
-    /// either on this channel or across channels, nor after its (requestHash,
-    /// responseHash) pair was already paid via the legacy redeem() path or vice
-    /// versa. Pays only the delta over what was already paid; reverts once
-    /// finalizeClose() has run, exactly as redeem() does.
+    /// redeem()'s enclaveSigner check. `requestHash` and `responseHash` must equal
+    /// the receipt's own request.received and response.returned body hashes, so a
+    /// receipt pins its (requestHash, responseHash) pair; the replay key is that
+    /// pair per provider, so a receipt cannot be paid twice on this channel or
+    /// across channels. Pays only the delta over what was already paid; reverts
+    /// once finalizeClose() has run, exactly as redeem() does.
     function redeemWithReceipt(
         uint256 channelId,
         uint256 cumulativeAmount,
@@ -454,16 +462,19 @@ contract Assay is ReentrancyGuard, EIP712 {
         bytes32 receiptKey = keccak256(abi.encode(c.provider, requestHash, responseHash));
         if (consumedReceipt[receiptKey]) revert ReceiptAlreadyConsumed();
 
-        bytes32 voucherDigest = _hashTypedDataV4(
-            keccak256(abi.encode(VOUCHER_TYPEHASH, channelId, cumulativeAmount, requestHash, responseHash))
-        );
-        if (!SignatureChecker.isValidSignatureNow(c.agent, voucherDigest, payerSig)) revert PayerNotAgent();
+        if (!_payerSigValid(c, channelId, cumulativeAmount, requestHash, responseHash, payerSig)) revert PayerNotAgent();
 
-        (bool ok, bytes32 requestedModelHash, bytes32 servedModelHash, bytes32 receiptResponseHash) =
-            receiptVerifier.verifyReceipt(pubkey, receiptBytes, signature);
+        (
+            bool ok,
+            bytes32 requestedModelHash,
+            bytes32 servedModelHash,
+            bytes32 receiptRequestHash,
+            bytes32 receiptResponseHash
+        ) = receiptVerifier.verifyReceipt(pubkey, receiptBytes, signature);
         if (!ok) revert ReceiptInvalid();
         if (servedModelHash != c.requestedModelHash) revert ModelMismatch();
         if (requestedModelHash != c.requestedModelHash) revert ModelMismatch(); // defence in depth
+        if (receiptRequestHash != requestHash) revert RequestHashMismatch();
         if (receiptResponseHash != responseHash) revert ResponseHashMismatch();
 
         Signer storage rs = receiptSigners[pubkey];
@@ -481,6 +492,27 @@ contract Assay is ReentrancyGuard, EIP712 {
             channelId, pubkey, cumulativeAmount, delta, requestHash, responseHash, requestedModelHash, servedModelHash
         );
         _push(c.provider, delta);
+    }
+
+    /// payerSig over the EIP-712 Voucher, checked the way the channel's open-time
+    /// snapshot says: ECDSA against an EOA agent, ERC-1271 against a contract
+    /// agent. A contract agent's validity is still read at redeem time, so a smart
+    /// account that rotates its owner voids vouchers it has not had redeemed;
+    /// providers serving one should redeem each voucher as it arrives.
+    function _payerSigValid(
+        Channel storage c,
+        uint256 channelId,
+        uint256 cumulativeAmount,
+        bytes32 requestHash,
+        bytes32 responseHash,
+        bytes calldata payerSig
+    ) private view returns (bool) {
+        bytes32 digest = _hashTypedDataV4(
+            keccak256(abi.encode(VOUCHER_TYPEHASH, channelId, cumulativeAmount, requestHash, responseHash))
+        );
+        if (c.agentIsContract) return SignatureChecker.isValidERC1271SignatureNow(c.agent, digest, payerSig);
+        (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, payerSig);
+        return err == ECDSA.RecoverError.NoError && recovered == c.agent;
     }
 
     /// `bytes32` as 64 lowercase ASCII hex chars, no `0x`: exactly
