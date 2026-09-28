@@ -16,13 +16,22 @@ export const rpcUrl: string = (process.env.RPC_URL ?? '').trim() || RPC_URL;
 
 export const channelId: bigint = BigInt(process.env.ASSAY_CHANNEL_ID ?? '0');
 
-// Same env var name the contracts scripts already use (script/Deploy.s.sol,
-// README.md's redeploy commands): one funded key, agent and provider are the
-// same address on this deployment's channel 0.
+// The agent pays: it holds USDG, opens the channel and signs vouchers. Same env
+// var name the contracts scripts use (script/Deploy.s.sol).
 export function requirePrivateKey(): Hex {
-  const key = process.env.PRIVATE_KEY;
+  return requireKey('PRIVATE_KEY');
+}
+
+// The provider is paid: it registers the gateway's keys and submits redeems.
+// A separate wallet, so no channel pays its own agent.
+export function requireProviderKey(): Hex {
+  return requireKey('PROVIDER_PRIVATE_KEY');
+}
+
+function requireKey(name: string): Hex {
+  const key = process.env[name];
   if (!key) {
-    throw new Error('PRIVATE_KEY is not set. Put it in agent/.env or the repo root .env.');
+    throw new Error(`${name} is not set. Put it in agent/.env or the repo root .env.`);
   }
   return (key.startsWith('0x') ? key : `0x${key}`) as Hex;
 }

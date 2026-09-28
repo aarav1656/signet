@@ -1,5 +1,8 @@
 // CLI entrypoint: `refuse` demonstrates the live gateway-signer check against
 // a fresh, unregistered address (no PHALA_API_KEY needed, no payment).
+// `register` (provider wallet) registers Phala's gateway signer and receipt key
+// from fresh quotes bound to the contract's own nonce. `open` (agent wallet)
+// funds a channel to the provider wallet.
 // `pay` runs the real three-call paid flow (legacy ECDSA enclave signature),
 // but refuses before any network call if PHALA_API_KEY is absent.
 // `pay-receipt` runs the newer Phala canonical ACI receipt flow
@@ -18,11 +21,21 @@ import {
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { arbitrumSepolia } from 'viem/chains';
 import { assayAbi } from '../../web/src/abi/Assay.generated.ts';
-import { assay, channelId, phalaApiKey, phalaModel, requirePrivateKey, rpcUrl, usdg } from './config.ts';
+import {
+  assay,
+  channelId,
+  phalaApiKey,
+  phalaModel,
+  requirePrivateKey,
+  requireProviderKey,
+  rpcUrl,
+  usdg,
+} from './config.ts';
 import { checkGatewaySigner, explainRefusal } from './gateway-check.ts';
 import { enclaveDigest, modelHash, VOUCHER_TYPES, voucherDomain, voucherMessage } from './digest.ts';
 import {
   fetchAttestation,
+  fetchLegacyReport,
   fetchReceipt,
   fetchSignature,
   receiptSigningInput,
@@ -35,10 +48,115 @@ import {
 
 const erc20Abi = [
   { type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
+  { type: 'function', name: 'approve', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ type: 'bool' }], stateMutability: 'nonpayable' },
 ] as const;
 
 function chain() {
   return { ...arbitrumSepolia, rpcUrls: { default: { http: [rpcUrl] } } };
+}
+
+/// Agent signs vouchers; provider submits redeems (Assay requires msg.sender ==
+/// channel.provider). Refuses to run with one key in both roles.
+function parties() {
+  const agentAccount = privateKeyToAccount(requirePrivateKey());
+  const providerAccount = privateKeyToAccount(requireProviderKey());
+  if (agentAccount.address === providerAccount.address) {
+    console.error('REFUSING: PRIVATE_KEY and PROVIDER_PRIVATE_KEY are the same wallet; a channel must pay a different address.');
+    process.exit(1);
+  }
+  const publicClient = createPublicClient({ chain: chain(), transport: http(rpcUrl) });
+  const agentWallet = createWalletClient({ account: agentAccount, chain: chain(), transport: http(rpcUrl) });
+  const providerWallet = createWalletClient({ account: providerAccount, chain: chain(), transport: http(rpcUrl) });
+  return { agentAccount, providerAccount, publicClient, agentWallet, providerWallet };
+}
+
+/// A register nonce needs refBlock inside ArbSys's 256-block window (about
+/// 66 s on Arbitrum Sepolia), so read it, fetch the quote and send the tx in
+/// one go, then assert the post-condition only a successful register writes.
+async function runRegister(): Promise<void> {
+  const account = privateKeyToAccount(requireProviderKey());
+  const publicClient = createPublicClient({ chain: chain(), transport: http(rpcUrl) });
+  const wallet = createWalletClient({ account, chain: chain(), transport: http(rpcUrl) });
+
+  const freshNonce = async () => {
+    const refBlock = (await publicClient.getBlockNumber()) - 1n;
+    const nonce = await publicClient.readContract({
+      address: assay,
+      abi: assayAbi,
+      functionName: 'nextRegisterNonce',
+      args: [account.address, refBlock],
+    });
+    return { refBlock, nonce: nonce as Hex };
+  };
+
+  const legacyNonce = await freshNonce();
+  const legacy = await fetchLegacyReport(legacyNonce.nonce.slice(2));
+  console.log(`legacy quote fetched for nonce ${legacyNonce.nonce} (refBlock ${legacyNonce.refBlock}), signing_address ${legacy.signingAddress}`);
+  const regTx = await wallet.writeContract({
+    address: assay,
+    abi: assayAbi,
+    functionName: 'register',
+    args: [legacy.quote, legacyNonce.refBlock],
+  });
+  const regRcpt = await publicClient.waitForTransactionReceipt({ hash: regTx });
+  if (regRcpt.status !== 'success') throw new Error(`register() tx ${regTx} reverted`);
+  const signer = await checkGatewaySigner(publicClient, legacy.signingAddress);
+  if (!signer.ok) throw new Error(`register() mined but signer is not usable: ${explainRefusal(signer)}`);
+  console.log(`register() tx=${regTx} block=${regRcpt.blockNumber}: signers(${legacy.signingAddress}) measurement=${signer.measurement} expiry=${signer.expiry}`);
+
+  const aciNonce = await freshNonce();
+  const aci = await fetchAttestation(aciNonce.nonce.slice(2));
+  for (const key of aci.receiptSigningKeys.filter((k) => k.algo === 'ed25519')) {
+    const pubkey = (key.publicKeyHex.startsWith('0x') ? key.publicKeyHex : `0x${key.publicKeyHex}`) as Hex;
+    const tx = await wallet.writeContract({
+      address: assay,
+      abi: assayAbi,
+      functionName: 'registerReceiptKey',
+      args: [aci.quote, `0x${Buffer.from(aci.keysetBytes).toString('hex')}`, aciNonce.refBlock, pubkey],
+    });
+    const rcpt = await publicClient.waitForTransactionReceipt({ hash: tx });
+    if (rcpt.status !== 'success') throw new Error(`registerReceiptKey() tx ${tx} reverted`);
+    const [measurement, expiry] = await publicClient.readContract({
+      address: assay,
+      abi: assayAbi,
+      functionName: 'receiptSigners',
+      args: [pubkey],
+    });
+    if (measurement !== signer.measurement) throw new Error(`receiptSigners(${pubkey}) measurement ${measurement} != ${signer.measurement}`);
+    console.log(`registerReceiptKey() tx=${tx} block=${rcpt.blockNumber}: receiptSigners(${key.keyId}=${pubkey}) measurement=${measurement} expiry=${expiry}`);
+    // One quote registers one key (usedQuote); Phala's keyset has one ed25519 receipt key.
+    break;
+  }
+}
+
+/// `open [legacy]`: the agent approves and opens a channel to the provider
+/// wallet, pinned to the provider's registered measurement and, unless
+/// `legacy`, to PHALA_MODEL's hash (a receipt-only channel).
+async function runOpen(): Promise<void> {
+  const { agentAccount, providerAccount, publicClient, agentWallet } = parties();
+  const legacy = process.argv[3] === 'legacy';
+  const amount = BigInt(process.env.DEPOSIT ?? '2000000');
+  const approvedMeasurement = process.env.APPROVED_MEASUREMENT as Hex | undefined;
+  if (!approvedMeasurement) throw new Error('APPROVED_MEASUREMENT is not set (the measurement Assay was deployed with).');
+  const requestedModelHash = legacy ? (`0x${'0'.repeat(64)}` as Hex) : modelHash(phalaModel);
+
+  const approveTx = await agentWallet.writeContract({ address: usdg, abi: erc20Abi, functionName: 'approve', args: [assay, amount] });
+  await publicClient.waitForTransactionReceipt({ hash: approveTx });
+  const id = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channelCount' });
+  const tx = await agentWallet.writeContract({
+    address: assay,
+    abi: assayAbi,
+    functionName: 'openChannel',
+    args: [providerAccount.address, amount, approvedMeasurement, requestedModelHash],
+  });
+  const rcpt = await publicClient.waitForTransactionReceipt({ hash: tx });
+  if (rcpt.status !== 'success') throw new Error(`openChannel() tx ${tx} reverted`);
+  const ch = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channels', args: [id] });
+  if (ch[0] !== agentAccount.address || ch[1] !== providerAccount.address || ch[2] !== amount) {
+    throw new Error(`channels(${id}) does not match the open: ${ch.slice(0, 3).join(', ')}`);
+  }
+  console.log(`openChannel() tx=${tx} block=${rcpt.blockNumber}: channel ${id} agent=${ch[0]} provider=${ch[1]} deposit=${ch[2]} requestedModelHash=${ch[9]}${legacy ? ' (legacy-only)' : ` (${phalaModel})`}`);
+  console.log(`Set ASSAY_CHANNEL_ID=${id} for pay${legacy ? '' : '-receipt'}.`);
 }
 
 async function runRefuse(): Promise<void> {
@@ -62,13 +180,23 @@ async function runPay(): Promise<void> {
     process.exit(1);
   }
 
-  const account = privateKeyToAccount(requirePrivateKey());
-  const publicClient = createPublicClient({ chain: chain(), transport: http(rpcUrl) });
-  const walletClient = createWalletClient({ account, chain: chain(), transport: http(rpcUrl) });
+  const { agentAccount: account, publicClient, agentWallet: walletClient, providerWallet } = parties();
 
   const chBefore = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channels', args: [channelId] });
   const provider = chBefore[1];
   const paidBefore = chBefore[3];
+  if (chBefore[0] !== account.address || provider !== providerWallet.account.address) {
+    console.error(`REFUSING: channel ${channelId} is agent=${chBefore[0]} provider=${provider}; configured keys are agent=${account.address} provider=${providerWallet.account.address}.`);
+    process.exit(1);
+  }
+  if (chBefore[0] !== account.address || provider !== providerWallet.account.address) {
+    console.error(`REFUSING: channel ${channelId} is agent=${chBefore[0]} provider=${provider}; configured keys are agent=${account.address} provider=${providerWallet.account.address}.`);
+    process.exit(1);
+  }
+  if (chBefore[9] !== `0x${'0'.repeat(64)}`) {
+    console.error(`REFUSING: channel ${channelId} is model-pinned (receipt-only); Assay.redeem() reverts ModelMismatch on it. Use "pay-receipt".`);
+    process.exit(1);
+  }
   const providerBalBefore = await publicClient.readContract({ address: usdg, abi: erc20Abi, functionName: 'balanceOf', args: [provider] });
   console.log(`Channel ${channelId}: agent=${chBefore[0]} provider=${provider} deposit=${chBefore[2]} paid=${paidBefore}`);
   console.log(`Provider USDG balance before: ${providerBalBefore}`);
@@ -112,7 +240,7 @@ async function runPay(): Promise<void> {
       message: voucherMessage(channelId, cumulativeAmount, sig.requestHash, sig.responseHash),
     });
 
-    const txHash = await walletClient.writeContract({
+    const txHash = await providerWallet.writeContract({
       address: assay,
       abi: assayAbi,
       functionName: 'redeem',
@@ -120,6 +248,7 @@ async function runPay(): Promise<void> {
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
     console.log(`redeem() tx=${txHash} status=${receipt.status} block=${receipt.blockNumber}`);
+    if (receipt.status !== 'success') throw new Error(`redeem() tx ${txHash} reverted`);
   }
 
   const chAfter = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channels', args: [channelId] });
@@ -155,9 +284,7 @@ async function runPayReceipt(): Promise<void> {
     process.exit(1);
   }
 
-  const account = privateKeyToAccount(requirePrivateKey());
-  const publicClient = createPublicClient({ chain: chain(), transport: http(rpcUrl) });
-  const walletClient = createWalletClient({ account, chain: chain(), transport: http(rpcUrl) });
+  const { agentAccount: account, publicClient, agentWallet: walletClient, providerWallet } = parties();
 
   const chBefore = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channels', args: [channelId] });
   const provider = chBefore[1];
@@ -262,7 +389,7 @@ async function runPayReceipt(): Promise<void> {
     const receiptBytesHex = `0x${Buffer.from(receiptSigningInput(receipt)).toString('hex')}` as Hex;
     const signatureHex = (receipt.signature.startsWith('0x') ? receipt.signature : `0x${receipt.signature}`) as Hex;
 
-    const txHash = await walletClient.writeContract({
+    const txHash = await providerWallet.writeContract({
       address: assay,
       abi: assayAbi,
       functionName: 'redeemWithReceipt',
@@ -270,6 +397,7 @@ async function runPayReceipt(): Promise<void> {
     });
     const txReceipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
     console.log(`redeemWithReceipt() tx=${txHash} status=${txReceipt.status} block=${txReceipt.blockNumber}`);
+    if (txReceipt.status !== 'success') throw new Error(`redeemWithReceipt() tx ${txHash} reverted`);
   }
 
   const chAfter = await publicClient.readContract({ address: assay, abi: assayAbi, functionName: 'channels', args: [channelId] });
@@ -290,11 +418,15 @@ async function runPayReceipt(): Promise<void> {
 const mode = process.argv[2];
 if (mode === 'refuse') {
   await runRefuse();
+} else if (mode === 'register') {
+  await runRegister();
+} else if (mode === 'open') {
+  await runOpen();
 } else if (mode === 'pay') {
   await runPay();
 } else if (mode === 'pay-receipt') {
   await runPayReceipt();
 } else {
-  console.error('Usage: node src/index.ts <refuse|pay|pay-receipt>');
+  console.error('Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt>');
   process.exit(1);
 }

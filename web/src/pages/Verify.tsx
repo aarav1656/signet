@@ -134,8 +134,11 @@ export function Verify() {
     providerOk,
   );
 
-  const contractNonce = nonceSnap.data?.value.nonce;
-  const contractRefBlock = nonceSnap.data?.value.refBlock;
+  // The live read refetches every 15 s; a quote binds the nonce of one refBlock, so the
+  // nonce is pinned when its URL is taken and every later step uses that pinned pair.
+  const [pinned, setPinned] = useState<{ nonce: Hex; refBlock: bigint } | null>(null);
+  const contractNonce = pinned?.nonce ?? nonceSnap.data?.value.nonce;
+  const contractRefBlock = pinned?.refBlock ?? nonceSnap.data?.value.refBlock;
   const phalaUrl = contractNonce ? `https://inference.phala.com/v1/attestation/report?nonce=${normHex(contractNonce)}` : '';
 
   const { parsed, error: parseError } = text.trim() ? parseReport(text) : { parsed: undefined, error: undefined };
@@ -160,7 +163,9 @@ export function Verify() {
   }
 
   function fillContractNonceUrl() {
-    if (phalaUrl) setUrl(phalaUrl);
+    if (!phalaUrl || !contractNonce || contractRefBlock === undefined) return;
+    setPinned({ nonce: contractNonce, refBlock: contractRefBlock });
+    setUrl(phalaUrl);
   }
 
   async function dryRunVerify() {
@@ -319,6 +324,10 @@ export function Verify() {
             <dl className="kv">
               <dt>nextRegisterNonce</dt>
               <dd className="mono">{contractNonce}</dd>
+              <dt>refBlock</dt>
+              <dd className="mono">
+                {contractRefBlock?.toString()} {pinned ? '(pinned)' : '(live, updates every 15 s)'}
+              </dd>
               <dt>Fetch URL</dt>
               <dd className="mono">
                 <a href={phalaUrl} target="_blank" rel="noreferrer">{phalaUrl}</a>
@@ -326,7 +335,17 @@ export function Verify() {
             </dl>
             <div className="actions">
               <button className="btn ghost" onClick={fillContractNonceUrl} type="button">Use this URL for the fetch</button>
+              {pinned && (
+                <button className="btn ghost" onClick={() => setPinned(null)} type="button">Unpin</button>
+              )}
             </div>
+            {pinned && (
+              <p className="note">
+                Pinned to block {pinned.refBlock.toString()}. Arbitrum answers for that block hash only for the next 256
+                blocks, about 66 seconds on Arbitrum Sepolia, so the register transaction has to land inside that window.
+                The agent CLI does all three steps in one run: <code>npm run register</code>.
+              </p>
+            )}
             <p className="note">
               The nonce in the URL has no 0x prefix. The quote returned binds it at report_data[32:64] with
               report_data[20:32] zeroed, and register() must arrive from {short(effectiveProvider)} before any other

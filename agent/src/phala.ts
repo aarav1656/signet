@@ -119,6 +119,11 @@ export type ReceiptSigningKey = { keyId: string; algo: string; publicKeyHex: str
 export type AttestationResult = {
   workloadKeysetDigest: string;
   receiptSigningKeys: ReceiptSigningKey[];
+  /// TDX quote whose report_data commits to sha256 of the JCS statement
+  /// {keyset_digest, nonce, purpose}; what Assay.registerReceiptKey verifies.
+  quote: Hex;
+  /// JCS bytes of attestation.workload_keyset: the preimage of keyset_digest.
+  keysetBytes: Uint8Array;
 };
 
 /// spec/aci.md: `GET /v1/aci/attestation?nonce=<fresh-client-nonce>`. No
@@ -132,14 +137,40 @@ export async function fetchAttestation(nonce: string): Promise<AttestationResult
   }
   const body = (await res.json()) as {
     workload_keyset_digest: string;
-    attestation: { workload_keyset: { receipt_signing_keys: { key_id: string; algo: string; public_key: string }[] } };
+    attestation: {
+      workload_keyset: { receipt_signing_keys: { key_id: string; algo: string; public_key: string }[] };
+      evidence: { quote: string };
+    };
   };
   const receiptSigningKeys = body.attestation.workload_keyset.receipt_signing_keys.map((k) => ({
     keyId: k.key_id,
     algo: k.algo,
     publicKeyHex: k.public_key,
   }));
-  return { workloadKeysetDigest: body.workload_keyset_digest, receiptSigningKeys };
+  const keysetBytes = new TextEncoder().encode(canonicalizeValue(body.attestation.workload_keyset));
+  const expectedDigest = `sha256:${sha256Hex(keysetBytes)}`;
+  if (expectedDigest !== body.workload_keyset_digest) {
+    throw new Error(`canonicalized keyset hashes to ${expectedDigest}, response says ${body.workload_keyset_digest}`);
+  }
+  const q = body.attestation.evidence.quote;
+  return {
+    workloadKeysetDigest: body.workload_keyset_digest,
+    receiptSigningKeys,
+    quote: (q.startsWith('0x') ? q : `0x${q}`) as Hex,
+    keysetBytes,
+  };
+}
+
+/// Legacy `GET /v1/attestation/report?nonce=<hex64>`: the TDX quote whose
+/// report_data is signing_address(20) || zero(12) || nonce(32), what
+/// Assay.register verifies. No API key needed.
+export async function fetchLegacyReport(nonceHex: string): Promise<{ quote: Hex; signingAddress: Hex }> {
+  const url = `${phalaBaseUrl}/v1/attestation/report?nonce=${encodeURIComponent(nonceHex)}&signing_algo=ecdsa`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Phala legacy attestation fetch failed: HTTP ${res.status} ${await res.text()}`);
+  const body = (await res.json()) as { intel_quote: string; signing_address: string };
+  const q = body.intel_quote;
+  return { quote: (q.startsWith('0x') ? q : `0x${q}`) as Hex, signingAddress: body.signing_address as Hex };
 }
 
 export function resolveReceiptKey(attestation: AttestationResult, keyId: string): ReceiptSigningKey {

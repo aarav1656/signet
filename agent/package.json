@@ -5,9 +5,11 @@
   "type": "module",
   "description": "An AI agent client that buys open-weight model inference per call through Chiron on Arbitrum Sepolia, paying only against receipts signed by a registered, unexpired, allowlisted-measurement enclave key.",
   "scripts": {
-    "refuse": "node --env-file-if-exists=.env src/index.ts refuse",
-    "pay": "node --env-file-if-exists=.env src/index.ts pay",
-    "pay-receipt": "node --env-file-if-exists=.env src/index.ts pay-receipt",
+    "refuse": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts refuse",
+    "register": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts register",
+    "open": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts open",
+    "pay": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts pay",
+    "pay-receipt": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts pay-receipt",
     "test": "node --env-file-if-exists=.env --test test/*.test.ts"
   },
   "dependencies": {
