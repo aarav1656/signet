@@ -274,7 +274,7 @@ Fix: to support this case, fall back to ERC-1271 when `c.agent.code.length != 0`
 
 ## ChironGate review 2026-09-29
 
-**FIX FIRST.** One High: a payer can void every CallAck it has signed, at the cost of gas, so the provider can end up collecting nothing. The accounting in the shared gate and the pin binding held up. So did the reentrancy guard and the CREATE2 script.
+**DEPLOY** (updated after the G-1 fix in 8c305af; the original verdict was FIX FIRST). The one High, a payer voiding every CallAck it signed through a throwaway channel, is fixed and re-verified below. G-2 and G-3 remain as disclosed Lows. The accounting in the shared gate and the pin binding held up. So did the reentrancy guard and the CREATE2 script.
 
 Scope: branch `x402-gate` (3ca2317..2141866), `contracts/src/ChironGate.sol`, run against the vendored x402BatchSettlement at a9955ae5. All review tests are in `/tmp/gate-review/review/contracts/test/GateReview.t.sol` and inherit the builder's `ChironGateTest` fixtures. Each one asserts the safe property, so red means the finding is live.
 
@@ -372,3 +372,12 @@ Fix: disclose it. If it matters, deploy one gate per provider.
 ### G-1 fix, 2026-09-29
 
 `ChironGate.consumed` is now keyed on the x402 `channelId` instead of `providerPayout` (`contracts/src/ChironGate.sol`, the `consumed` mapping and its two uses in `claimWithReceipt`). The payer's CallAck signs the channelId, so a receipt still pays at most once on any channel the payer acknowledged it on, and a throwaway channel can no longer burn it. The reviewer's `test_R1_payerCannotBurnSignedAckViaThrowawayChannel` and `test_R1b_exposureIsOneCall` are in `contracts/test/ChironGateReview.t.sol` and pass. Putting the provider-wide key back turns both red, and restoring the fix returns the suite to 39 of 39 green. G-2 (expiry checked at claim time) and G-3 (a token freeze or pause at the gate blocks every provider, while payers can still exit) are disclosed and not fixed.
+
+Reviewer confirmation of the fix, 2026-09-29. I read `git diff HEAD~1` on 8c305af, which touches only `consumed` and its two uses. Keying per channel opens no new replay path.
+
+- **Cross-channel reuse.** For a receipt to pay on a second channel B, `_payerSigned` needs a CallAck over B's `channelId`, and only the payer side can sign one. Acking the same call on two channels is the payer paying twice by its own choice, not a replay.
+- **Same-channel retry.** This is still blocked (`test_fixKeepsSameChannelReplayBlocked`, `test_receiptReplay_reverts`).
+- **Test.** `test_X_oneReceiptCannotPayTwoChannelsOfSamePayer` is in `/tmp/gate-review/fix/contracts/test/CrossChannel.t.sol`. One payer holds two channels to one provider. After a paid claim on A, the provider presents the same receipt on B, first with A's ack and then with a provider-signed ack. Both revert with `BadCallAck`, the payout stays at 30e6, and `consumed` is true for A and false for B.
+- **Proof the test can fail.** With the `_payerSigned` check removed, the test goes red: the claim on B pays. With the check restored it goes green.
+- **Suites on 8c305af.** `ChironGate.t.sol` passes 35 of 35 and `ChironGateReview.t.sol` passes 39 of 39.
+
