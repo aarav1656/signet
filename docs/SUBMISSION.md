@@ -85,7 +85,7 @@ One `redeemWithReceipt` is roughly 300,000 gas on Arbitrum Sepolia, composed fro
 
 ## Question for the Arbitrum team
 
-Chiron pays an inference provider in USDG only when Phala's TEE gateway signs a receipt naming the model served, and x402's own payment-channel contract (`x402BatchSettlement`, `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003`) is already deployed on Arbitrum One with 3 transactions ever. Would you introduce us to Coinbase's x402 batch-settlement team and to Phala/RedPill so receipt-gated claims ship as an x402 extension with Arbitrum as its first live network, and to Virtuals or Olas to route open-weight inference jobs through it?
+Chiron pays an inference provider in USDG only when Phala's TEE gateway signs a receipt naming the model served. x402's own payment-channel contract, `x402BatchSettlement` (`0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003`, listed in the x402 Foundation's `contracts/evm/README.md`), is deployed on Arbitrum One with 3 transactions to date, all from one address within nine seconds (Blockscout, read 2026-09-29). Would you introduce us to the x402 Foundation's batch-settlement maintainers and to Phala/RedPill, so receipt-gated claims can ship as an x402 extension with Arbitrum as its first live network, and to Virtuals or Olas to route open-weight inference jobs through it?
 
 ## Team
 
