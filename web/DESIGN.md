@@ -133,13 +133,15 @@ first time they appear. Hashes, addresses and the contract-order checks sit behi
 
 ```
 Overview
-[ title block: network | read live at block N | VERDICT: Payment refused (magenta fill) ]
-[ one sentence, display 44                  ]   [ gloss: sealed gateway, receipt ]
-[                                           ]   [ Open a channel pinned to a model ]
+[ title block: network | contract | VERDICT: Payment refused (magenta fill) ]
+[ one sentence, display 44, full width ]
+[ gloss: sealed gateway, receipt (it does not prove which weights ran) ]
+[ Open a channel pinned to a model ]
 [ caption: this receipt names a different model than the one channel 0 was opened for ... ]
-[ CHANNEL 0 WAS OPENED FOR      ]  --//--  [ TEST RECEIPT SAYS IT SERVED ]
-[ meta-llama/llama-3.3-70b-...  ]  magenta [ served-model                ]
-[ 1.00 USDG struck: not paid. It stays in channel 0. A read-only call. ]
+[ CHANNEL 0 (folded sheet)       ]  --//--   [ TEST RECEIPT (folded sheet) ]
+[ opened for the model           ] no match  [ says it served the model    ]
+[ meta-llama/llama-3.3-70b-...   ] check 7/9 [ served-model (magenta)      ]
+[ 1.00 USDG struck: not paid. It stays in channel 0. A live, read-only demo call at block N. ]
 [ + Inspect the call: the full sheet, voucher, call, callouts 1-9, legend, receipt bytes ]
 then channels and keys as specification lines, what the proof covers, contract constants
 
