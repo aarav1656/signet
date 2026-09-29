@@ -17,7 +17,7 @@
 import { createHash } from 'node:crypto';
 import { ed25519 } from '@noble/curves/ed25519.js';
 import { hexToBytes, type Hex } from 'viem';
-import { phalaApiKey, phalaBaseUrl, phalaModel } from './config.ts';
+import { phalaApiKey, phalaBaseUrl, phalaMaxTokens, phalaModel } from './config.ts';
 import { modelHash } from './digest.ts';
 
 export type CompletionResult = {
@@ -51,6 +51,8 @@ export async function requestCompletion(prompt: string, nonce: string): Promise<
   const bodyObj = {
     model: phalaModel,
     messages: [{ role: 'user', content: `${prompt}\n\n[nonce:${nonce}]` }],
+    // The receipt, not the answer, is what gets paid for; keep each call's credit cost small.
+    max_tokens: phalaMaxTokens,
   };
   const requestBody = new TextEncoder().encode(JSON.stringify(bodyObj));
   const res = await fetch(`${phalaBaseUrl}/v1/chat/completions`, {

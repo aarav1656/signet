@@ -43,3 +43,5 @@ export function phalaApiKey(): string | undefined {
 
 export const phalaBaseUrl: string = (process.env.PHALA_BASE_URL ?? '').trim() || 'https://inference.phala.com';
 export const phalaModel: string = (process.env.PHALA_MODEL ?? '').trim() || 'meta-llama/llama-3.3-70b-instruct';
+
+export const phalaMaxTokens: number = Number((process.env.PHALA_MAX_TOKENS ?? '').trim() || '8');

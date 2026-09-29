@@ -10,7 +10,7 @@
 // Ed25519, same bytes IReceiptVerifier.verifyReceipt checks onchain), and
 // refuses -- before ever signing a voucher -- if the receipt's served model
 // differs from what was requested. Same PHALA_API_KEY precondition as `pay`.
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import {
   createPublicClient,
   createWalletClient,
@@ -322,7 +322,7 @@ async function runPayReceipt(): Promise<void> {
     console.log(`chat_id=${completion.chatId} receipt_id=${completion.receiptId}`);
 
     const receipt = await fetchReceipt(completion.receiptId);
-    const attestationNonce = randomUUID();
+    const attestationNonce = randomBytes(32).toString('hex');
     const attestation = await fetchAttestation(attestationNonce);
     if (receipt.workload_keyset_digest !== attestation.workloadKeysetDigest) {
       console.error(
