@@ -1,6 +1,6 @@
 # Chiron
 
-Hosted app: [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) . Repo: [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron) . Video: link pending upload.
+Hosted app: [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) . Repo: [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron).
 
 Named for the one trustworthy centaur: the attested provider among substitutes.
 
