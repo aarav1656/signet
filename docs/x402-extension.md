@@ -25,15 +25,20 @@ The seller's 402 response advertises these fields in `accepts[].extra`, alongsid
 | `receiptVerifier` | address | The contract whose `verifyReceipt(pubkey, receiptBytes, signature)` the gate calls. Informational: the gate reads it from `receiptRegistry` at construction, and a client can use it to check a receipt offchain before acking. |
 | `receiptRegistry` | address | The registry whose `receiptSigners(pubkey)` returns `(measurement, expiry)` for an attested receipt-signing key (the Assay contract). |
 | `requiredMeasurement` | bytes32 | The TEE image measurement the receipt key must be registered under. |
-| `modelHash` | bytes32 | `keccak256(utf8(modelId))`. Both the model the receipt says was requested and the model it says was served must equal this. Nonzero. |
+| `modelHash` | bytes32 | `keccak256(utf8(modelId))` of the model id the buyer requests. The receipt's requested model must equal this. Nonzero. |
+| `acceptedServedLabels` | bytes32[4] | `keccak256(utf8(label))` of up to four served-model labels the buyer accepts, zero-padded. The receipt's served model (`upstream.verified` `model_id`) must equal one nonzero entry. At least one entry is nonzero; a zero entry never matches. |
 | `providerPayout` | address | Where claimed funds go. Nonzero, and not the gate. |
 | `gateNonce` | bytes32 | Any value; lets one buyer hold several channels with identical pins. |
 
 The channel salt is
 
 ```
-salt = keccak256(abi.encode(modelHash, requiredMeasurement, providerPayout, gateNonce))
+salt = keccak256(abi.encode(modelHash, acceptedServedLabels, requiredMeasurement, providerPayout, gateNonce))
 ```
+
+`acceptedServedLabels` is a static `bytes32[4]`, so it encodes inline as four 32-byte words: the preimage is eight words in all.
+
+Why a set: a gateway can report the upstream model under its own name. A live RedPill call requesting `meta-llama/llama-3.3-70b-instruct` returned a genuine receipt whose served `model_id` is `llama3-3-70b`, Tinfoil's label for the same model, while `phala/qwen3.8-27b-uncensored` reports served == requested. Requiring equality would refuse the honest Llama call, so the buyer names the labels it accepts when opening the channel, for example `[keccak256("meta-llama/llama-3.3-70b-instruct"), keccak256("llama3-3-70b"), 0, 0]`. The set is fixed by the salt for the channel's life; widening it means a new channel.
 
 A client MUST build `ChannelConfig{payer, payerAuthorizer, receiver: gate, receiverAuthorizer: gate, token, withdrawDelay, salt}` from these values and MUST NOT deposit if `payTo != gate`.
 
@@ -53,9 +58,9 @@ The voucher alone is not enough because it binds no request, and a TEE gateway's
 
 `claimWithReceipt(voucherClaim, pin, requestHash, responseHash, callAckSig, pubkey, receiptBytes, receiptSig)` pays if and only if all of these hold, and otherwise reverts with no state change:
 
-1. `channel.receiver == channel.receiverAuthorizer == gate`, and `channel.salt` equals the salt of `pin`; `pin.modelHash != 0` and `pin.providerPayout != 0`.
+1. `channel.receiver == channel.receiverAuthorizer == gate`, and `channel.salt` equals the salt of `pin`; `pin.modelHash != 0`, `pin.providerPayout != 0`, and `pin.acceptedServedLabels` has at least one nonzero entry.
 2. `callAckSig` is a valid `CallAck` for `(channelId, voucherClaim.totalClaimed, requestHash, responseHash)` by the payer side.
-3. `verifyReceipt(pubkey, receiptBytes, receiptSig)` returns `ok`, requested model hash `== pin.modelHash`, served model hash `== pin.modelHash`, and body hashes equal to `requestHash` and `responseHash`.
+3. `verifyReceipt(pubkey, receiptBytes, receiptSig)` returns `ok`, requested model hash `== pin.modelHash`, served model hash nonzero and equal to one entry of `pin.acceptedServedLabels`, and body hashes equal to `requestHash` and `responseHash`.
 4. `receiptSigners(pubkey)` is registered, its measurement `== pin.requiredMeasurement`, and `block.timestamp <= expiry`.
 5. `(requestHash, responseHash)` has never been paid to `pin.providerPayout`.
 6. `voucherClaim.totalClaimed` exceeds the channel's recorded `totalClaimed`; `x402BatchSettlement.claim` accepts it; the gate's settled balance rises by exactly the increment; `providerPayout`'s balance rises by exactly the increment.
