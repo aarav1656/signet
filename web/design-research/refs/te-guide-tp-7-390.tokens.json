@@ -1,0 +1,81 @@
+{
+ "title": "TP\u20137 guide - teenage engineering",
+ "h1": null,
+ "h2": null,
+ "h3": null,
+ "body": {
+  "text": "checkout\n0\nmenu\nTP\u20137\nfield\u00a0\nrecorder\nuser guide\n\u30ac\u30a4\u30c9\n\n\nnotice",
+  "font": "te-20, Unicode, sans-serif",
+  "size": "16px",
+  "weight": "300",
+  "tracking": "normal",
+  "leading": "24px",
+  "color": "rgb(0, 0, 0)",
+  "bg": "rgb(240, 239, 234)",
+  "radius": "0px",
+  "padding": "0px",
+  "border": "0px none rgb(0, 0, 0)",
+  "transform": "none",
+  "features": "normal"
+ },
+ "p": {
+  "text": "copyright \u00a92026",
+  "font": "te-20, Unicode, sans-serif",
+  "size": "10.3469px",
+  "weight": "300",
+  "tracking": "normal",
+  "leading": "11.9388px",
+  "color": "rgb(245, 245, 245)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "border": "0px none rgb(245, 245, 245)",
+  "transform": "none",
+  "features": "normal"
+ },
+ "a": {
+  "text": "checkout\n0",
+  "font": "te-20, Unicode, sans-serif",
+  "size": "16px",
+  "weight": "300",
+  "tracking": "normal",
+  "leading": "24px",
+  "color": "rgb(0, 0, 0)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "border": "0px none rgb(0, 0, 0)",
+  "transform": "none",
+  "features": "normal"
+ },
+ "button": {
+  "text": "menu",
+  "font": "te-20, Unicode, sans-serif",
+  "size": "16px",
+  "weight": "300",
+  "tracking": "normal",
+  "leading": "24px",
+  "color": "rgb(77, 77, 77)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "border": "0px none rgb(77, 77, 77)",
+  "transform": "none",
+  "features": "normal"
+ },
+ "input": null,
+ "loadedFonts": [
+  "te-20",
+  "te-40",
+  "Unicode"
+ ],
+ "htmlBg": "rgb(240, 239, 234)",
+ "textLen": 11330,
+ "height": 38977,
+ "url": "https://teenage.engineering/guides/tp-7",
+ "viewport": [
+  390,
+  844
+ ],
+ "lumaStddev": 20.2
+}
