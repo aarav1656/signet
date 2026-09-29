@@ -40,6 +40,8 @@ Chiron catches one thing exactly: a response whose signed receipt names a differ
 - **TDX verification and Ed25519 verification as Stylus contracts.** Verifying a TDX DCAP quote chain costs 2,304,195 gas on the deployed Stylus verifier (`cast estimate` on a fresh Phala quote, Arbitrum Sepolia block 313704492). Registration runs once per key; the per-call path only verifies an Ed25519 signature.
 - **Freshness from Arbitrum itself.** The registration nonce includes an `ArbSys.arbBlockHash` value, so every quote is at most about 66 seconds older than the block that accepts it.
 
+- **Receipt-gated claims on x402's own payment channel.** `ChironGate` makes the x402 Foundation's `x402BatchSettlement` pay only against a Phala receipt naming the buyer's pinned model, without changing x402: the gate is the channel's receiver and the only party allowed to claim. Live on Arbitrum Sepolia: one x402 channel opened and one claim paid through the gate against a real receipt.
+
 Compared with nearby work: x402 settles a payment for an HTTP request but carries no evidence of what computed the answer. Automata's DCAP contracts verify TDX quotes as a standalone service without gating a payment. Chiron composes both halves for one job: paying for inference only when the served model is the one agreed.
 
 ## Stack
@@ -58,6 +60,9 @@ Compared with nearby work: x402 settles a payment for an HTTP request but carrie
 | Verifier (Stylus) | [0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c](https://sepolia.arbiscan.io/address/0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c) |
 | ReceiptVerifier (Stylus) | [0x9af7d9c3b27c4a8a11fb879041b931c38b712380](https://sepolia.arbiscan.io/address/0x9af7d9c3b27c4a8a11fb879041b931c38b712380) |
 | USDG (Paxos) | [0xFFC95faa3d63Cde504a05B567C600B78C0b41892](https://sepolia.arbiscan.io/address/0xFFC95faa3d63Cde504a05B567C600B78C0b41892) |
+| ChironGate (x402 extension) | [0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e](https://sepolia.arbiscan.io/address/0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e) (Sourcify exact match) |
+| x402BatchSettlement | [0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003](https://sepolia.arbiscan.io/address/0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003): the official x402 bytecode, redeployed by us at its canonical CREATE2 address |
+| x402 ERC3009DepositCollector | [0x4020806089470a89826cB9fB1f4059150b550004](https://sepolia.arbiscan.io/address/0x4020806089470a89826cB9fB1f4059150b550004): the official x402 bytecode, redeployed by us at its canonical CREATE2 address |
 
 ## Live transactions
 
@@ -72,6 +77,8 @@ Compared with nearby work: x402 settles a payment for an HTTP request but carrie
 | Paid call 1, `redeemWithReceipt` against a real Phala receipt | [0x16270367...a55d](https://sepolia.arbiscan.io/tx/0x16270367e3c3e563bd4433d9cb33d9bdf5db84d44fb25fd0f44679aad681a55d) |
 | Paid call 2 | [0x4c83cf96...43b7](https://sepolia.arbiscan.io/tx/0x4c83cf961efedc3678c00d18e332aa502ac71e583ec3f5c42f24a1a5589043b7) |
 | Paid call 3; channel 2 paid 900000 (0.90 USDG), provider balance 0 to 900000 | [0x4ed9077a...f868](https://sepolia.arbiscan.io/tx/0x4ed9077a367495ddfb1acf4a3bbc54bf4b79b0d9898e4614fbe9148ec12cf868) |
+| x402 channel opened with ChironGate as receiver, 1 USDG | [0x2e35e165...d347](https://sepolia.arbiscan.io/tx/0x2e35e16523145ae25f7525321c6ccce71dc005facbb0fbe7806e67c31d89d347) |
+| Claim through ChironGate against a real Phala receipt, 0.30 USDG to the provider | [0xbfbd454e...82eb](https://sepolia.arbiscan.io/tx/0xbfbd454e9dff5623677d26b29e402f0390aa1bd53160b0ffa88cb803f60a82eb) |
 
 The agent (`0x2aD1...5DEF`) and the provider (`0x93e8...EE5A`) are separate wallets. `docs/e2e/chiron.md` lists every command and the post-condition read after it.
 

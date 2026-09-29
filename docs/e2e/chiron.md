@@ -79,3 +79,15 @@ of block 313704451: the two Verifier txs, the two ReceiptVerifier txs, the Assay
 provider funding tx, the two `register`/`registerReceiptKey` txs, and both `openChannel` txs.
 All ten returned `status=true` and the block numbers already recorded above, with no
 discrepancy from the original evidence.
+
+## x402 extension: ChironGate
+
+| Step | Command | Result | Transaction |
+|---|---|---|---|
+| Canonical x402BatchSettlement, redeployed by us at its CREATE2 address | `FOUNDRY_PROFILE=x402 forge script script/x402/DeployX402BatchSettlement.s.sol --broadcast` | status true, block 314008428; init code matches Arbitrum One, runtime differs only in the two chain-bound EIP-712 values | [0x20128b66...9fa2](https://sepolia.arbiscan.io/tx/0x20128b66fcff76804baf86db74558c74d23d9897016359a6f471a18c93aa9fa2) |
+| Canonical ERC3009DepositCollector, redeployed by us | `FOUNDRY_PROFILE=x402 forge script script/x402/DeployX402ERC3009Collector.s.sol --broadcast` | status true, block 314009761; runtime identical to Arbitrum One | [0x37ebf09d...1723](https://sepolia.arbiscan.io/tx/0x37ebf09d0b08815002ec18088dc2a136ada7b87fed0b57a56452d671fc491723) |
+| ChironGate | `forge script script/DeployGate.s.sol --broadcast` | status true, block 314009316; `x402()`, `registry()`, `receiptVerifier()` read back; Sourcify exact match | [0xb07d013c...cbcf9](https://sepolia.arbiscan.io/tx/0xb07d013c006ece1837cfdcb24cb6f23bc7ac691c078f31a381c074065d1cbcf9) |
+| Open x402 channel with the gate as receiver, 1 USDG via ERC-3009 | `agent` `npm run gate-open` | status true, block 314016727; channel balance 1000000 | [0x2e35e165...d347](https://sepolia.arbiscan.io/tx/0x2e35e16523145ae25f7525321c6ccce71dc005facbb0fbe7806e67c31d89d347) |
+| Claim through the gate against a real Phala receipt | `agent` `npm run gate-pay` | status true, gas 347,363, block 314016788; provider USDG +300000; `totalClaimed` 300000; `ClaimedWithReceipt` emitted | [0xbfbd454e...82eb](https://sepolia.arbiscan.io/tx/0xbfbd454e9dff5623677d26b29e402f0390aa1bd53160b0ffa88cb803f60a82eb) |
+| Claim with a receipt naming another model | `agent` `npm run gate-refuse` (eth_call) | reverts `ModelMismatch` | n/a |
+

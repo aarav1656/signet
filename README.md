@@ -46,6 +46,20 @@ Each paid call was a real completion from Phala's gateway (via RedPill), whose r
 
 The agent wallet (`0x2aD1...5DEF`) pays and the provider wallet (`0x93e8...EE5A`) is paid; the two are different addresses. `docs/e2e/chiron.md` lists every command and post-condition.
 
+## x402 extension: receipt-gated claims on x402's own payment channel
+
+x402's batch-settlement contract lets a buyer stream cumulative vouchers to a seller, but a claim needs no evidence of what was served. `ChironGate` (`contracts/src/ChironGate.sol`) adds that condition without changing x402: the buyer opens a normal x402 channel whose `receiver` and `receiverAuthorizer` are the gate, so the seller can only be paid through `ChironGate.claimWithReceipt`, which requires the buyer's signature over the exact request and response, a Phala receipt whose requested model is the pinned one and whose served model is in the buyer's accepted set, and a receipt key registered in Assay under the pinned measurement. The pins are committed in the x402 channel's own `salt`. Proposed extension fields: `docs/x402-extension.md`.
+
+| Contract | Address |
+|---|---|
+| ChironGate | [`0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e`](https://sepolia.arbiscan.io/address/0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e) (Sourcify exact match) |
+| x402BatchSettlement | [`0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003`](https://sepolia.arbiscan.io/address/0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003): the official x402 bytecode, redeployed by us on Arbitrum Sepolia at its canonical CREATE2 address. Same init code as the Arbitrum One deployment; the runtime differs only in the two EIP-712 values bound to the chain id. |
+| ERC3009DepositCollector | [`0x4020806089470a89826cB9fB1f4059150b550004`](https://sepolia.arbiscan.io/address/0x4020806089470a89826cB9fB1f4059150b550004): the official x402 bytecode, redeployed by us at its canonical address; runtime identical to Arbitrum One. |
+
+Live through the gate: the agent deposited 1 USDG into an x402 channel with the gate as receiver ([`0x2e35e165...d347`](https://sepolia.arbiscan.io/tx/0x2e35e16523145ae25f7525321c6ccce71dc005facbb0fbe7806e67c31d89d347)), and the provider claimed 0.30 USDG against a real Phala receipt through `claimWithReceipt` ([`0xbfbd454e...82eb`](https://sepolia.arbiscan.io/tx/0xbfbd454e9dff5623677d26b29e402f0390aa1bd53160b0ffa88cb803f60a82eb), 347,363 gas, `ClaimedWithReceipt` emitted). The same claim with a receipt naming another model reverts `ModelMismatch` (`npm run gate-refuse`, an eth_call). A channel can accept up to four served labels because upstreams label models differently: RedPill routes `meta-llama/llama-3.3-70b-instruct` to an upstream whose receipt says `llama3-3-70b`.
+
+The gate went through an independent review (one High found and fixed: the replay record is keyed per channel, so a buyer cannot burn a receipt on a throwaway channel) and a second review of the label set; both ended DEPLOY (`docs/security/assay-usdg-review.md`). 26 of 26, then 31 of 31, guards fail the tests when removed.
+
 ## Keeping keys fresh
 
 `attestationValidity` is immutable at 86400 seconds (24 hours), so a registered signer expires on a fixed clock. A `launchd` job (`com.chiron.keeper.register`, outside `~/Desktop` because launchd cannot read files under `~/Desktop`) re-runs `npm run register` every 20 hours, so a judge opening the app days after submission still sees an unexpired gateway signer and receipt key. Kill it after judging with `launchctl unload ~/Library/LaunchAgents/com.chiron.keeper.register.plist`.
