@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup B: model diff and check strip</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+  .tb { grid-template-columns: repeat(4, 1fr); }
+  .hero { padding: 48px 0 0; }
+  .hero h1 { font: 300 22px/28px var(--display); letter-spacing: -0.01em; color: var(--graphite); }
+  .diff { margin-top: 24px; border-top: 1px solid var(--ink); }
+  .line { display: grid; grid-template-columns: 220px 1fr 260px; align-items: baseline; padding: 20px 0; border-bottom: 1px solid var(--rule); }
+  .big { font: 300 52px/56px var(--display); letter-spacing: -0.035em; }
+  .big.sig { position: relative; }
+  .big.sig::after { content: ''; position: absolute; left: -12px; right: -12px; top: 58%; border-top: 2px solid var(--signal); }
+  .aside { font-size: 13px; color: var(--graphite); text-align: right; }
+  .pay { display: flex; gap: 32px; align-items: baseline; padding: 20px 0; border-bottom: 1px solid var(--ink); }
+  .pay .amt { font: 400 28px/32px var(--display); letter-spacing: -0.02em; }
+  .strip { position: relative; display: grid; grid-template-columns: repeat(9, 1fr); margin-top: 40px; }
+  .strip::before { content: ''; position: absolute; left: 5.5%; right: 5.5%; top: 11px; border-top: 1px solid var(--ink); }
+  .st { position: relative; text-align: center; padding: 0 8px; font-size: 13px; line-height: 18px; }
+  .st .num { position: relative; } .st .num:not(.fill):not(.bad) { background: var(--ground); }
+  .st p { margin-top: 12px; }
+  .st.x p { color: var(--signal); }
+  .st.s p { color: var(--graphite); }
+  .note { margin-top: 32px; max-width: 80ch; }
+</style></head>
+<body>
+<div class="wrap">
+  <header class="top"><span class="mark">Chiron</span>
+    <nav class="nav"><a class="on" href="#">Refusal</a><a href="#">Channels</a><a href="#">Verify a gateway</a></nav>
+    <button class="btn">Connect wallet</button></header>
+  <div class="tb">
+    <div><span class="lab">Contract</span><span class="val">Assay <span class="hex">0x3500…FfCC</span></span></div>
+    <div><span class="lab">Network</span><span class="val">Arbitrum Sepolia, 421614</span></div>
+    <div><span class="lab">Read at</span><span class="val">block 313,814,703</span></div>
+    <div><span class="lab">Call</span><span class="val">eth_call redeemWithReceipt from 0x93e8…EE5A</span></div>
+  </div>
+  <section class="hero">
+    <h1>A swapped model is not paid. Live on channel 0:</h1>
+    <div class="diff">
+      <div class="line"><span class="lab">Channel 0 pins</span><span class="big">meta-llama/llama-3.3-70b-instruct</span><span class="aside">channels(0).requestedModelHash</span></div>
+      <div class="line"><span class="lab sig">The receipt served</span><span class="big sig" style="justify-self:start">served-model</span><span class="aside">test receipt, test key, upstream.verified</span></div>
+    </div>
+    <div class="pay"><span class="lab">Payment</span><span class="amt strike">1.00 USDG</span><span class="sig">refused: ModelMismatch() <span class="hex">0xa407e5f7</span></span><span class="small" style="margin-left:auto">stays in channel 0, which holds 2.00</span></div>
+  </section>
+  <section class="strip">
+    <div class="st"><span class="num fill">1</span><p>Channel open</p></div>
+    <div class="st"><span class="num fill">2</span><p>Caller is provider</p></div>
+    <div class="st"><span class="num fill">3</span><p>Amount within deposit</p></div>
+    <div class="st"><span class="num fill">4</span><p>Receipt unused</p></div>
+    <div class="st"><span class="num fill">5</span><p>Agent signed voucher</p></div>
+    <div class="st"><span class="num fill">6</span><p>Receipt signature valid</p></div>
+    <div class="st x"><span class="num bad">7</span><p>Served model equals pinned</p></div>
+    <div class="st s"><span class="num skip">8</span><p>Hashes match, not reached</p></div>
+    <div class="st s"><span class="num skip">9</span><p>Key registered, not reached</p></div>
+  </section>
+  <p class="small note">The receipt is the model_swap test vector, signed by a test key. Its served model is the string “served-model”. It is offered to live channel 0 with a real voucher from the channel’s agent. No real llama call was swapped.</p>
+</div>
+</body></html>

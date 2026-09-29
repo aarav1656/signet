@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup A: inspection sheet</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+  .tb { grid-template-columns: 1.2fr 1fr 1.3fr 1fr 1.2fr; margin-top: 0; }
+  .head { padding: 40px 0 24px; display: grid; grid-template-columns: 1fr 380px; gap: 48px; align-items: end; }
+  .fig { padding: 24px 0 8px; }
+  svg { width: 100%; height: auto; display: block; overflow: visible; }
+  svg text { font-family: 'B612', sans-serif; fill: var(--ink); }
+  .d { fill: var(--ground); stroke: var(--ink); stroke-width: 1.25; }
+  .rl { stroke: var(--rule); stroke-width: 1; }
+  .ll { stroke: var(--ink); stroke-width: 1; fill: none; }
+  .ls { stroke: var(--graphite); stroke-width: 1; stroke-dasharray: 3 4; fill: none; }
+  .lx { stroke: var(--signal); stroke-width: 1.5; fill: none; }
+  .t-lab { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; fill: var(--graphite); }
+  .t-v { font-size: 13px; }
+  .t-h { font-family: 'B612 Mono', monospace !important; font-size: 12px; }
+  .t-d { font-family: 'Red Hat Display', sans-serif !important; font-size: 17px; font-weight: 500; letter-spacing: -0.01em; }
+  .c { fill: var(--ground); stroke: var(--ink); stroke-width: 1; }
+  .cf { fill: var(--ink); } .cx { fill: var(--signal); } .cs { fill: var(--ground); stroke: var(--graphite); stroke-dasharray: 2 2; }
+  .cn { font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+  .legend { border-top: 1px solid var(--ink); margin-top: 16px; }
+  .row { display: grid; grid-template-columns: 40px 1fr 1fr 220px; gap: 16px; align-items: center; min-height: 52px; border-bottom: 1px solid var(--rule); }
+  .row .res { text-align: right; font-size: 13px; }
+  .row.x { color: var(--signal); }
+  .row.s { color: var(--graphite); }
+  .note { max-width: 78ch; margin-top: 12px; }
+</style></head>
+<body>
+<div class="wrap">
+  <header class="top"><span class="mark">Chiron</span>
+    <nav class="nav"><a class="on" href="#">Refusal</a><a href="#">Channels</a><a href="#">Verify a gateway</a></nav>
+    <button class="btn">Connect wallet</button></header>
+  <div class="tb">
+    <div><span class="lab">Contract</span><span class="val">Assay <span class="hex">0x3500…FfCC</span></span></div>
+    <div><span class="lab">Network</span><span class="val">Arbitrum Sepolia, 421614</span></div>
+    <div><span class="lab">Call</span><span class="val">redeemWithReceipt, from the provider</span></div>
+    <div><span class="lab">Read at</span><span class="val">block 313,814,703</span></div>
+    <div><span class="lab">Verdict</span><span class="val sig">Refused, ModelMismatch()</span></div>
+  </div>
+  <section class="head">
+    <h1 class="display">A swapped model<br>is not paid.</h1>
+    <p class="lede">Channel 0 pins <b>meta-llama/llama-3.3-70b-instruct</b>. Offered a receipt whose served model is the string “served-model”, the contract refuses to pay. The call below is a live eth_call; nothing is sent.</p>
+  </section>
+  <section class="fig dots">
+    <svg viewBox="-14 -14 1228 404" role="img" aria-label="Voucher, channel 0 and receipt with the nine contract checks numbered on the fields they read">
+      <!-- voucher -->
+      <rect class="d" x="0" y="40" width="330" height="250"/>
+      <text class="t-lab" x="16" y="64">VOUCHER</text><text class="t-v" x="16" y="84" style="fill:var(--graphite);font-size:12px">EIP-712, signed by the channel agent</text>
+      <line class="rl" x1="0" x2="330" y1="96" y2="96"/>
+      <text class="t-lab" x="16" y="114">CHANNEL</text><text class="t-v" x="314" y="114" text-anchor="end">0</text>
+      <line class="rl" x1="0" x2="330" y1="126" y2="126"/>
+      <text class="t-lab" x="16" y="146">SIGNED BY</text><text class="t-h" x="314" y="146" text-anchor="end">0x2aD1…5DEF</text>
+      <line class="rl" x1="0" x2="330" y1="158" y2="158"/>
+      <text class="t-lab" x="16" y="181">AMOUNT</text><text class="t-v" x="314" y="181" text-anchor="end">1.00 USDG</text>
+      <line class="lx" x1="240" x2="316" y1="177" y2="177"/>
+      <line class="rl" x1="0" x2="330" y1="194" y2="194"/>
+      <text class="t-lab" x="16" y="216">REQUEST</text><text class="t-h" x="314" y="216" text-anchor="end">0xaaaa…aaaa</text>
+      <line class="rl" x1="0" x2="330" y1="228" y2="228"/>
+      <text class="t-lab" x="16" y="251">RESPONSE</text><text class="t-h" x="314" y="251" text-anchor="end">0xcccc…cccc</text>
+      <!-- channel -->
+      <rect class="d" x="435" y="0" width="330" height="300" style="stroke-width:1.75"/>
+      <text class="t-lab" x="451" y="24">CHANNEL 0, LIVE STATE</text><text class="t-v" x="451" y="44" style="fill:var(--graphite);font-size:12px">Assay.channels(0)</text>
+      <line class="rl" x1="435" x2="765" y1="56" y2="56"/>
+      <text class="t-lab" x="451" y="76">PINS</text><text class="t-d" x="451" y="100">meta-llama/llama-3.3-70b-instruct</text>
+      <line class="rl" x1="435" x2="765" y1="120" y2="120"/>
+      <text class="t-lab" x="451" y="141">AGENT</text><text class="t-h" x="749" y="141" text-anchor="end">0x2aD1…5DEF</text>
+      <line class="rl" x1="435" x2="765" y1="154" y2="154"/>
+      <text class="t-lab" x="451" y="176">PROVIDER</text><text class="t-h" x="749" y="176" text-anchor="end">0x93e8…EE5A</text>
+      <line class="rl" x1="435" x2="765" y1="188" y2="188"/>
+      <text class="t-lab" x="451" y="211">DEPOSIT</text><text class="t-v" x="749" y="211" text-anchor="end">2.00 USDG</text>
+      <line class="rl" x1="435" x2="765" y1="224" y2="224"/>
+      <text class="t-lab" x="451" y="246">PAID</text><text class="t-v" x="749" y="246" text-anchor="end">0.00 USDG</text>
+      <line class="rl" x1="435" x2="765" y1="258" y2="258"/>
+      <text class="t-lab" x="451" y="281">CLOSED</text><text class="t-v" x="749" y="281" text-anchor="end">no</text>
+      <!-- receipt with torn top -->
+      <path class="d" d="M870 50 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l10 -10 l10 10 l0 240 l-330 0 z"/>
+      <text class="t-lab" x="886" y="74">RECEIPT, TEST VECTOR</text><text class="t-v" x="886" y="92" style="fill:var(--graphite);font-size:12px">signed by a test key</text>
+      <line class="rl" x1="870" x2="1200" y1="104" y2="104"/>
+      <text class="t-lab" x="886" y="124">REQUESTED</text><text class="t-v" x="1184" y="124" text-anchor="end">requested-model</text>
+      <line class="rl" x1="870" x2="1200" y1="136" y2="136"/>
+      <text class="t-lab sig" x="886" y="158" style="fill:var(--signal)">SERVED</text><text class="t-d" x="1184" y="159" text-anchor="end" style="fill:var(--signal)">served-model</text>
+      <line class="rl" x1="870" x2="1200" y1="172" y2="172"/>
+      <text class="t-lab" x="886" y="194">REQUEST BODY</text><text class="t-h" x="1184" y="194" text-anchor="end">sha256:aaaa…</text>
+      <line class="rl" x1="870" x2="1200" y1="206" y2="206"/>
+      <text class="t-lab" x="886" y="228">RESPONSE BODY</text><text class="t-h" x="1184" y="228" text-anchor="end">sha256:cccc…</text>
+      <line class="rl" x1="870" x2="1200" y1="240" y2="240"/>
+      <text class="t-lab" x="886" y="263">KEY</text><text class="t-h" x="1184" y="263" text-anchor="end">0x2152…db12</text>
+      <!-- connectors -->
+      <line class="ll" x1="330" y1="142" x2="435" y2="137"/>
+      <line class="ll" x1="330" y1="177" x2="435" y2="207"/>
+      <line class="lx" x1="870" y1="154" x2="846" y2="138"/>
+      <line class="lx" x1="790" y1="104" x2="765" y2="96"/>
+      <path class="ls" d="M165 290 V352 H1035 V290"/>
+      <!-- callouts -->
+      <circle class="c" cx="765" cy="277" r="11"/><text class="cn" x="765" y="277">1</text>
+      <circle class="c" cx="435" cy="172" r="11"/><text class="cn" x="435" y="172">2</text>
+      <circle class="c" cx="382" cy="192" r="11"/><text class="cn" x="382" y="192">3</text>
+      <circle class="c" cx="1200" cy="211" r="11"/><text class="cn" x="1200" y="211">4</text>
+      <circle class="c" cx="382" cy="139" r="11"/><text class="cn" x="382" y="139">5</text>
+      <circle class="c" cx="870" cy="259" r="11"/><text class="cn" x="870" y="259">6</text>
+      <circle class="cx" cx="818" cy="121" r="13"/><text class="cn" x="818" y="121" style="fill:#fff">7</text>
+      <circle class="cs" cx="600" cy="352" r="11"/><text class="cn" x="600" y="352" style="fill:var(--graphite)">8</text>
+      <circle class="cs" cx="1200" cy="259" r="11"/><text class="cn" x="1200" y="259" style="fill:var(--graphite)">9</text>
+    </svg>
+  </section>
+  <p class="small note">The receipt is the model_swap test vector, signed by a test key <span class="hex">0x2152…db12</span>. Its served model is the string “served-model”. It is offered to live channel 0 with a real voucher from the channel’s agent. No real llama call was swapped; this is what the contract does when the served model differs.</p>
+  <section class="legend">
+    <div class="row"><span class="num fill">1</span><span>Channel 0 exists and is open</span><span class="small">channels(0).closed is false</span><span class="res">passed</span></div>
+    <div class="row"><span class="num fill">2</span><span>The caller is the channel’s provider</span><span class="small">0x93e8…EE5A calls</span><span class="res">passed</span></div>
+    <div class="row"><span class="num fill">3</span><span>1.00 USDG is above paid and within the deposit</span><span class="small">paid 0.00 of 2.00</span><span class="res">passed</span></div>
+    <div class="row"><span class="num fill">4</span><span>This receipt was not paid before</span><span class="small">consumedReceipt is false</span><span class="res">passed</span></div>
+    <div class="row"><span class="num fill">5</span><span>The voucher is signed by the channel agent</span><span class="small">recovers to 0x2aD1…5DEF</span><span class="res">passed</span></div>
+    <div class="row"><span class="num fill">6</span><span>The receipt signature verifies, Ed25519</span><span class="small">verifyReceipt ok is true</span><span class="res">passed</span></div>
+    <div class="row x"><span class="num bad">7</span><span>The served model equals the pinned model</span><span class="small sig">served-model is not meta-llama/llama-3.3-70b-instruct</span><span class="res">refused, ModelMismatch() <span class="hex">0xa407e5f7</span></span></div>
+    <div class="row s"><span class="num skip">8</span><span>Request and response hashes match the voucher</span><span class="small">not evaluated</span><span class="res">not reached</span></div>
+    <div class="row s"><span class="num skip">9</span><span>The receipt key is registered under the channel measurement</span><span class="small">the test key is not, and would stop here too</span><span class="res">not reached</span></div>
+  </section>
+</div>
+</body></html>

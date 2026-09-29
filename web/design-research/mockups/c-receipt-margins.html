@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup C: the receipt with margin notes</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+  .grid { display: grid; grid-template-columns: 360px 440px 1fr; gap: 48px; padding-top: 40px; }
+  .intro h1 { margin-bottom: 20px; }
+  .intro .kv { margin-top: 24px; border-top: 1px solid var(--ink); }
+  .intro .kv div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
+  .tape { position: relative; background: var(--ground); border-left: 1.25px solid var(--ink); border-right: 1.25px solid var(--ink); padding: 28px 24px; }
+  .tape::before, .tape::after { content: ''; position: absolute; left: -1px; right: -1px; height: 10px;
+    background: linear-gradient(135deg, transparent 6px, var(--ink) 6px, var(--ink) 7px, transparent 7px) 0 0 / 14px 10px repeat-x,
+                linear-gradient(225deg, transparent 6px, var(--ink) 6px, var(--ink) 7px, transparent 7px) 0 0 / 14px 10px repeat-x; }
+  .tape::before { top: -5px; } .tape::after { bottom: -5px; transform: scaleY(-1); }
+  .ln { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px dashed var(--rule); font-size: 13px; }
+  .ln b { font-weight: 400; color: var(--graphite); }
+  .ln.x { color: var(--signal); border-bottom-color: var(--signal); }
+  .ln.x span { font: 400 20px/24px var(--display); letter-spacing: -0.01em; }
+  .tape h3 { font: 700 11px/14px var(--body); letter-spacing: .08em; text-transform: uppercase; text-align: center; margin-bottom: 12px; }
+  .marg .m { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 13px; line-height: 20px; }
+  .marg .m.x { color: var(--signal); border-bottom: 1px solid var(--signal); }
+  .marg .m.s { color: var(--graphite); }
+  .verdict { margin-top: 24px; padding: 16px 0; border-top: 2px solid var(--signal); font: 350 26px/32px var(--display); letter-spacing: -0.02em; color: var(--signal); }
+</style></head>
+<body>
+<div class="wrap">
+  <header class="top"><span class="mark">Chiron</span>
+    <nav class="nav"><a class="on" href="#">Refusal</a><a href="#">Channels</a><a href="#">Verify a gateway</a></nav>
+    <button class="btn">Connect wallet</button></header>
+  <div class="grid">
+    <section class="intro">
+      <h1 class="title">The receipt says another model served the call. The contract does not pay.</h1>
+      <p>A live eth_call of redeemWithReceipt on Assay, from channel 0’s provider, with a real voucher and a test receipt.</p>
+      <div class="kv">
+        <div><span class="lab">Channel 0 pins</span><span>meta-llama/llama-3.3-70b-instruct</span></div>
+        <div><span class="lab">Voucher</span><span class="strike">1.00 USDG</span></div>
+        <div><span class="lab">Read at</span><span>block 313,814,703</span></div>
+        <div><span class="lab">Contract</span><span class="hex">0x3500…FfCC</span></div>
+      </div>
+    </section>
+    <section class="tape">
+      <h3>Gateway receipt, test vector</h3>
+      <div class="ln"><b>endpoint</b><span>/v1/chat/completions</span></div>
+      <div class="ln"><b>model requested</b><span>requested-model</span></div>
+      <div class="ln"><b>request.received</b><span class="hex">sha256:aaaa…</span></div>
+      <div class="ln x"><b style="color:inherit">upstream.verified model_id</b><span>served-model</span></div>
+      <div class="ln"><b>response.returned</b><span class="hex">sha256:cccc…</span></div>
+      <div class="ln"><b>key</b><span class="hex">0x2152…db12</span></div>
+      <div class="ln"><b>signature</b><span class="hex">0x68b2…4f00</span></div>
+      <p class="small" style="margin-top:16px">Signed by a test key. The served model is the string “served-model”. No real llama call was swapped.</p>
+    </section>
+    <section class="marg">
+      <div class="m"><span class="num fill">1</span><span>Channel 0 is open</span></div>
+      <div class="m"><span class="num fill">2</span><span>Caller 0x93e8…EE5A is the provider</span></div>
+      <div class="m"><span class="num fill">3</span><span>1.00 USDG is above paid 0.00, within 2.00</span></div>
+      <div class="m"><span class="num fill">4</span><span>Receipt not paid before</span></div>
+      <div class="m"><span class="num fill">5</span><span>Voucher signed by agent 0x2aD1…5DEF</span></div>
+      <div class="m"><span class="num fill">6</span><span>Receipt signature verifies</span></div>
+      <div class="m x"><span class="num bad">7</span><span>served-model is not the pinned meta-llama/llama-3.3-70b-instruct</span></div>
+      <div class="m s"><span class="num skip">8</span><span>Hashes match voucher: not reached</span></div>
+      <div class="m s"><span class="num skip">9</span><span>Key registered: not reached</span></div>
+      <div class="verdict">Refused. ModelMismatch() <span class="hex">0xa407e5f7</span></div>
+    </section>
+  </div>
+</div>
+</body></html>
