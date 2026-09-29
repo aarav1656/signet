@@ -31,6 +31,25 @@
     "USDG": {
       "address": "0xFFC95faa3d63Cde504a05B567C600B78C0b41892",
       "decimals": 6
+    },
+    "ChironGate": {
+      "address": "0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e",
+      "deployTx": "0xb07d013c006ece1837cfdcb24cb6f23bc7ac691c078f31a381c074065d1cbcf9",
+      "constructorArgs": {
+        "x402_": "0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003",
+        "registry_": "0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC"
+      },
+      "sourcify": "exact_match"
+    },
+    "x402BatchSettlement": {
+      "address": "0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003",
+      "deployTx": "0x20128b66fcff76804baf86db74558c74d23d9897016359a6f471a18c93aa9fa2",
+      "note": "The official x402BatchSettlement bytecode (x402-foundation/x402), redeployed by us on Arbitrum Sepolia at its canonical CREATE2 address. Same init code as the Arbitrum One deployment; the runtime differs only in the two EIP-712 immutables bound to the chain id."
+    },
+    "x402ERC3009DepositCollector": {
+      "address": "0x4020806089470a89826cB9fB1f4059150b550004",
+      "deployTx": "0x37ebf09d0b08815002ec18088dc2a136ada7b87fed0b57a56452d671fc491723",
+      "note": "The official ERC3009DepositCollector bytecode, redeployed by us at its canonical CREATE2 address; runtime identical to Arbitrum One."
     }
   },
   "liveCycle": {
