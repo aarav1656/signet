@@ -292,12 +292,17 @@ export function Verify() {
     <main>
       <TitleBlock
         cells={[
-          { label: 'Registering', value: providerOk ? <HexValue value={effectiveProvider} /> : 'no address yet', lead: true },
-          { label: 'Nonce', value: contractNonce ? (pinned ? `pinned to block ${pinned.refBlock.toLocaleString('en-US')}` : 'live, re-read every 15 s') : '--' },
-          {
-            label: 'Read at',
-            value: nonceSnap.data ? <>block <a href={explorer.block(nonceSnap.data.block)} target="_blank" rel="noreferrer">{nonceSnap.data.block.toLocaleString('en-US')}</a></> : 'not read yet',
-          },
+          { label: 'Network', value: 'Arbitrum Sepolia, live' },
+          { label: 'Registering', value: providerOk ? <HexValue value={effectiveProvider} /> : 'choose in step 1', lead: true },
+          ...(contractNonce && nonceSnap.data
+            ? [
+                { label: 'Nonce', value: pinned ? `pinned to block ${pinned.refBlock.toLocaleString('en-US')}` : 'live, re-read every 15 s' },
+                {
+                  label: 'Read at',
+                  value: <>block <a href={explorer.block(nonceSnap.data.block)} target="_blank" rel="noreferrer">{nonceSnap.data.block.toLocaleString('en-US')}</a></>,
+                },
+              ]
+            : []),
         ]}
       />
 
@@ -306,12 +311,20 @@ export function Verify() {
         <p className="gloss" style={{ maxWidth: '84ch', marginBottom: 0 }}>
           <b>Attestation report:</b> a report signed by the gateway&apos;s TEE hardware (an Intel TDX quote) saying which
           software it runs and which key it holds. <b>Nonce:</b> a one-time number the contract issues, so an old report
-          cannot be reused. Every check here is a read-only call; nothing is sent until you transact. The agent CLI does
-          all three steps in one run: <Code>cd agent &amp;&amp; npm run register</Code>.
+          cannot be reused. Every check here is a read-only call; nothing is sent until you transact.
         </p>
+        <div className="actions">
+          <a className="btn" href="#v-nonce" onClick={() => setProvider(demo.provider)}>Read the nonce for the live provider</a>
+        </div>
       </header>
 
-      <section aria-label="Register a gateway key">
+      <KeysSection title="Keys registered on Assay now" drawn />
+
+
+      <section className="section" aria-labelledby="v-steps">
+        <div className="section-head">
+          <h2 id="v-steps" className="t-section">Register a gateway key in three steps</h2>
+        </div>
       <ol className="steps">
         <li className="step" aria-labelledby="v-nonce">
           <Num n={1} mark={contractNonce ? 'pass' : 'plain'} />
@@ -345,9 +358,10 @@ export function Verify() {
             </div>
             {!providerOk && (
               <div className="actions">
-                <button className="btn" type="button" onClick={() => setProvider(demo.provider)}>
-                  Use the live provider {short(demo.provider)}
+                <button className="btn line" type="button" onClick={() => setProvider(demo.provider)}>
+                  Use the live provider
                 </button>
+                <span className="hex">{short(demo.provider)}</span>
               </div>
             )}
             {providerOk && nonceSnap.isPending && <p className="small" aria-busy="true">Reading nextRegisterNonce.</p>}
@@ -372,7 +386,7 @@ export function Verify() {
                   <dt>refBlock</dt>
                   <dd>{contractRefBlock?.toLocaleString('en-US')} <span className="small">{pinned ? 'pinned' : 'live, updates every 15 s'}</span></dd>
                   <dt>Report URL</dt>
-                  <dd><a className="hex" href={phalaUrl} target="_blank" rel="noreferrer" style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{phalaUrl}</a></dd>
+                  <dd><a href={phalaUrl} target="_blank" rel="noreferrer" style={{ overflowWrap: 'anywhere', fontSize: 13 }}>{phalaUrl}</a></dd>
                 </dl>
                 <div className="actions">
                   <button className="btn line" onClick={fillContractNonceUrl} type="button">Pin this nonce and use the URL</button>
@@ -402,7 +416,7 @@ export function Verify() {
             <div className="fields">
               <div className="field">
                 <label className="label" htmlFor="v-url">Report URL, optional</label>
-                <input id="v-url" className="hexin" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" spellCheck={false} />
+                <input id="v-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" spellCheck={false} />
                 <span className="hint">Use the nonce URL from step 1, never a reused or random nonce.</span>
               </div>
             </div>
@@ -527,8 +541,6 @@ export function Verify() {
       </ol>
       </section>
 
-      <KeysSection title="Keys registered on Assay now" drawn />
-
       <section className="section" aria-labelledby="v-reg">
         <div className="section-head">
           <h2 id="v-reg" className="t-section">How registration works</h2>
@@ -543,6 +555,9 @@ export function Verify() {
           expiry of now plus the validity. Anyone may call it for any provider, since the signer comes from the quote
           itself. A stale quote reverts <Code>NonceMismatch</Code> and consumes nothing. The live registration ran in{' '}
           <a href={explorer.tx(REGISTER_TX)} target="_blank" rel="noreferrer">this transaction</a>.
+        </p>
+        <p className="section-intro">
+          The agent CLI does all three steps inside the 256-block window in one run: <Code>cd agent &amp;&amp; npm run register</Code>.
         </p>
       </section>
 

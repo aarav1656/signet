@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -270,8 +270,17 @@ function Refusal() {
         ? { label: 'Verdict', value: 'Payment refused', tone: 'signal' as const, lead: true }
         : { label: 'Verdict', value: r.revert.reverted ? 'Refused for another reason' : 'Not refused', tone: 'alarm' as const, lead: true };
 
+  const gloss = (
+    <>
+      <b>Sealed gateway:</b> the provider&apos;s server runs inside a TEE (Intel TDX), hardware that reports a
+      fingerprint of its software; the contract checks it against an allowlist. <b>Receipt:</b> a statement that
+      gateway signs for each call, naming the model that answered.
+    </>
+  );
+
   return (
     <>
+      <div className="opener">
       <TitleBlock
         cells={[
           { label: 'Network', value: `${assayChain.name}, live`, mobileHide: true },
@@ -295,11 +304,7 @@ function Refusal() {
           Your agent only pays when the provider&apos;s sealed gateway signs a receipt naming the model you picked.
         </h1>
         <div className="lede">
-          <p className="gloss">
-            <b>Sealed gateway:</b> the provider&apos;s server runs inside a TEE (Intel TDX), hardware that reports a
-            fingerprint of its software; the contract checks it against an allowlist. <b>Receipt:</b> a statement that
-            gateway signs for each call, naming the model that answered.
-          </p>
+          <p className="gloss gloss-top">{gloss}</p>
           <Link className="btn" to="/channel">Open a channel pinned to a model</Link>
         </div>
       </header>
@@ -369,6 +374,7 @@ function Refusal() {
             </span>
           </span>
         </div>
+        <p className="gloss gloss-bottom">{gloss}</p>
       </figure>
 
       <details className="inspect" onToggle={(e) => setInspectOpen((e.target as HTMLDetailsElement).open)}>
@@ -499,11 +505,12 @@ function Refusal() {
         </details>
       )}
       </details>
+      </div>
     </>
   );
 }
 
-function ChannelsSection() {
+export function ChannelsSection() {
   const q = useAtBlock(['overview-channels', ASSAY], async (c, block) => {
     const count = (await c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'channelCount', blockNumber: block })) as bigint;
     const rows = await Promise.all(
@@ -520,7 +527,7 @@ function ChannelsSection() {
     <section className="section" aria-labelledby="ch-h">
       <div className="section-head">
         <h2 id="ch-h" className="t-section">Channels on this contract</h2>
-        {q.data && <span className="small">channelCount {q.data.value.count.toString()}</span>}
+        {q.data && <span className="small">{q.data.value.count.toString()} {q.data.value.count === 1n ? 'channel' : 'channels'}</span>}
         {q.data && <Stamp block={q.data.block} />}
       </div>
       {q.isPending && <p className="section-intro small" aria-busy="true">Reading channelCount and every channel.</p>}
@@ -600,8 +607,8 @@ export function KeysSection({ title = 'Registered gateway keys', drawn = false }
 
   const rows = q.data
     ? [
-        { kind: 'Gateway signer', algo: 'ECDSA; pays the legacy redeem()', call: 'signers', key: SEED_SIGNER as string, m: q.data.value.signer[0], exp: q.data.value.signer[1], tx: txs.data?.s ?? null },
-        { kind: 'Receipt key', algo: 'Ed25519; pays redeemWithReceipt', call: 'receiptSigners', key: RECEIPT_KEY as string, m: q.data.value.receipt[0], exp: q.data.value.receipt[1], tx: txs.data?.r ?? null },
+        { kind: 'Gateway signer', plain: 'signs the older per-response payments', algo: 'ECDSA; pays the legacy redeem()', call: 'signers', key: SEED_SIGNER as string, m: q.data.value.signer[0], exp: q.data.value.signer[1], tx: txs.data?.s ?? null },
+        { kind: 'Receipt key', plain: 'signs the per-call receipts that name the model', algo: 'Ed25519; pays redeemWithReceipt', call: 'receiptSigners', key: RECEIPT_KEY as string, m: q.data.value.receipt[0], exp: q.data.value.receipt[1], tx: txs.data?.r ?? null },
       ]
     : [];
 
@@ -623,38 +630,49 @@ export function KeysSection({ title = 'Registered gateway keys', drawn = false }
         </div>
       )}
       {q.data && drawn && (
-        <div className="board" style={{ marginTop: 8 }}>
-          <div className="pair">
-            {rows.map((k) => {
-              const now = Number(q.data.timestamp);
-              const unset = k.m === ZERO_HASH;
-              const live = !unset && now <= Number(k.exp);
-              return (
-                <div className="doc" key={k.kind}>
-                  <div className="doc-head">
-                    <span className="t-label">{k.kind}</span>
-                    <span className="small">{k.algo}</span>
+        <>
+          <div className="board" style={{ marginTop: 8 }}>
+            <div className="pair">
+              {rows.map((k) => {
+                const now = Number(q.data.timestamp);
+                const unset = k.m === ZERO_HASH;
+                const live = !unset && now <= Number(k.exp);
+                const allowed = APPROVED_MEASUREMENTS.some((a) => a.toLowerCase() === k.m.toLowerCase());
+                return (
+                  <div className="doc" key={k.kind}>
+                    <div className="doc-head">
+                      <span className="t-label">{k.kind}</span>
+                      <span className="small">{k.plain}</span>
+                    </div>
+                    <div className="doc-key">
+                      <span className="t-label">{unset ? 'Status' : live ? 'Can sign until' : 'Expired'}</span>
+                      <span className="t-subject">{unset ? 'not registered' : fmtStamp(k.exp)}</span>
+                      {!unset && <span className="small">{live ? `in ${fmtCountdown(Number(k.exp) - now)}` : fmtCountdown(Number(k.exp) - now)}</span>}
+                    </div>
+                    <div className="drow"><span className="t-label">Fingerprint</span><span className="v">{unset ? 'none' : allowed ? 'on the allowlist' : 'not on the allowlist'}</span></div>
                   </div>
-                  <div className="doc-key">
-                    <span className="t-label">{unset ? 'Status' : live ? 'Pays until' : 'Expired'}</span>
-                    <span className="t-subject">{unset ? 'not registered' : `${fmtStamp(k.exp)}`}</span>
-                    {!unset && <span className="small">{live ? `in ${fmtCountdown(Number(k.exp) - now)}` : fmtCountdown(Number(k.exp) - now)}</span>}
-                  </div>
-                  <div className="drow"><span className="t-label">Key</span><span className="v"><HexValue value={k.key} /></span></div>
-                  <div className="drow"><span className="t-label">Read</span><span className="v"><Code>{k.call}(…)</Code></span></div>
-                  <div className="drow">
-                    <span className="t-label">Measurement</span>
-                    <span className="v">{unset ? 'none' : <><HexValue value={k.m} /> {APPROVED_MEASUREMENTS.some((a) => a.toLowerCase() === k.m.toLowerCase()) ? 'on the allowlist' : 'not on the allowlist'}</>}</span>
-                  </div>
-                  <div className="drow">
-                    <span className="t-label">Registered in</span>
-                    <span className="v">{k.tx ? <HexValue value={k.tx} href={explorer.tx(k.tx)} /> : txs.isPending ? 'reading logs' : 'no registration log found'}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+          <details className="more">
+            <summary>Keys, fingerprints and registration transactions</summary>
+            <dl className="kvs">
+              {rows.map((k) => (
+                <Fragment key={k.kind}>
+                  <dt>{k.kind}</dt>
+                  <dd>
+                    <HexValue value={k.key} /> <span className="small">read with <Code>{k.call}(…)</Code>; {k.algo}</span>
+                    <br />
+                    <span className="small">fingerprint </span>{k.m === ZERO_HASH ? 'none' : <HexValue value={k.m} />}
+                    <span className="small">; registered in </span>
+                    {k.tx ? <HexValue value={k.tx} href={explorer.tx(k.tx)} /> : txs.isPending ? 'reading logs' : 'no registration log found'}
+                  </dd>
+                </Fragment>
+              ))}
+            </dl>
+          </details>
+        </>
       )}
       {q.data && !drawn &&
         rows.map((k) => {
@@ -705,10 +723,6 @@ export function Overview() {
   return (
     <main>
       <Refusal />
-
-      <ChannelsSection />
-
-      <KeysSection />
 
       <section className="section" aria-labelledby="covers-h">
         <div className="section-head">

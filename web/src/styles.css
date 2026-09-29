@@ -56,8 +56,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font: 700 11px/14px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--graphite);
 }
 .signal { color: var(--signal); }
-.hex, .code { font: 400 12px/16px var(--hex); letter-spacing: 0; }
-.code { color: inherit; white-space: nowrap; }
+.hex { font: 400 12px/16px var(--hex); letter-spacing: 0; }
+.code { font-family: var(--body); font-size: 0.94em; font-weight: 700; color: inherit; white-space: nowrap; }
 .hex { white-space: nowrap; }
 .copy {
   margin-left: 6px; padding: 0 4px; border: 0; background: none; cursor: pointer;
@@ -99,7 +99,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px;
   border: 0; border-radius: 2px; background: var(--ink); color: var(--ground); cursor: pointer; text-decoration: none;
-  font: 700 12px/1 var(--body); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  font: 700 13px/1 var(--body); letter-spacing: 0.01em; white-space: nowrap;
 }
 .btn.line { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .btn:hover:not(:disabled) { background: #2a2e37; }
@@ -127,6 +127,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .head .lede { max-width: 60ch; }
 .gloss { font-size: 13px; line-height: 20px; color: var(--graphite); margin-bottom: 18px; }
 .gloss b { color: var(--ink); font-weight: 700; }
+.gloss-bottom { display: none; }
+.opener { margin-bottom: 128px; }
+.opener > details.inspect { margin-top: 32px; }
+.doc.single { max-width: 760px; }
 
 /* the first-screen visual: what the channel was opened for, what the receipt says, and the refused payment */
 .board.verdict { padding: 24px 0 8px; }
@@ -345,6 +349,9 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule
   .gloss { font-size: 12px; line-height: 18px; }
   .tb-cell.m-hide { display: none; }
   .face .doc-head .small { display: none; }
+  .gloss-top { display: none; }
+  .gloss-bottom { display: block; margin: 20px 0 0; }
+  .opener { margin-bottom: 64px; }
   .face .t-diff { font-size: 20px; line-height: 24px; }
   .face .doc-key { padding-top: 8px; padding-bottom: 10px; }
   .face .connector { height: 48px; }

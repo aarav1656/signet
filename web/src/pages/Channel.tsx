@@ -18,6 +18,7 @@ import { assayAbi } from '../abi/Assay.generated';
 import { APPROVED_MEASUREMENTS, CHANNEL_TIMEOUT, USDG_ADDRESS } from '../lib/addresses.generated';
 import { fmtCountdown, fmtStamp, fmtUsdg, short } from '../lib/format';
 import { Code, HexValue, Num, Stamp, TitleBlock } from '../components/Stamp';
+import { ChannelsSection } from './Overview';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useOnChain } from '../components/Wallet';
 
@@ -279,7 +280,6 @@ export function Channel() {
   const finalizeAt = ch && ch.closeRequestedAt !== 0n ? Number(ch.closeRequestedAt) + challengeSecs : 0;
   const selfTest = !!ch && ch.agent.toLowerCase() === ch.provider.toLowerCase();
   const timedOut = !!ch && !ch.closed && snapshot.data !== undefined && Number(snapshot.data.timestamp) > deadline;
-  const statusText = ch ? (ch.closed ? 'closed' : timedOut ? 'timeout passed, closable' : 'open') : '';
 
   const legacyCh = !!ch && ch.requestedModelHash === ZERO_HASH;
   const pinnedName = ch && !legacyCh && ch.requestedModelHash.toLowerCase() === keccak256(toHex(DEFAULT_MODEL_ID)).toLowerCase() ? DEFAULT_MODEL_ID : null;
@@ -290,7 +290,6 @@ export function Channel() {
         cells={[
           { label: 'Channel', value: chanId === null ? 'not a channel id' : channelId.trim(), lead: true },
           { label: 'Path', value: snapshot.data && exists ? (legacyCh ? 'legacy signature' : 'receipt-only') : '--' },
-          { label: 'State', value: snapshot.data && exists ? statusText : snapshot.data ? 'never opened' : 'reading' },
           {
             label: 'Read at',
             value: snapshot.data ? <>block <a href={explorer.block(snapshot.data.block)} target="_blank" rel="noreferrer">{snapshot.data.block.toLocaleString('en-US')}</a></> : 'reading',
@@ -308,8 +307,11 @@ export function Channel() {
         <div className="actions">
           <a className="btn" href="#c-open">Open a new channel</a>
         </div>
+      </header>
+
+      <section aria-labelledby="c-lookup">
         <div className="picker" role="group" aria-label="Choose a channel">
-          <span className="t-label">Channel</span>
+          <span className="t-label" id="c-lookup">Showing channel</span>
           {channelCountSnap.data &&
             Array.from({ length: Number(channelCountSnap.data.value) }, (_, i) => String(i)).map((id) => (
               <button key={id} type="button" aria-pressed={id === channelId.trim()} onClick={() => setChannelId(id)}>
@@ -326,22 +328,10 @@ export function Channel() {
             aria-describedby="c-id-hint"
           />
           <span className="small" id="c-id-hint">
-            {channelCountSnap.data ? (
-              <>
-                {channelCountSnap.data.value.toString()} {channelCountSnap.data.value === 1n ? 'channel' : 'channels'} opened on this contract so far,{' '}
-                <Stamp block={channelCountSnap.data.block} />
-              </>
-            ) : (
-              'reading channelCount'
-            )}
+            {channelCountSnap.data
+              ? `${channelCountSnap.data.value.toString()} ${channelCountSnap.data.value === 1n ? 'channel' : 'channels'} on this contract`
+              : 'counting channels'}
           </span>
-        </div>
-      </header>
-
-      <section className="section" style={{ marginTop: 16 }} aria-labelledby="c-lookup">
-        <div className="section-head">
-          <h2 id="c-lookup" className="t-section">Channel {channelId.trim() || '?'}, live</h2>
-          {snapshot.data && <Stamp block={snapshot.data.block} />}
         </div>
         {snapshot.isPending && <p className="section-intro small" aria-busy="true">Reading channel {channelId}.</p>}
         {snapshot.isError && snapshot.error.message !== 'bad-id' && (
@@ -356,62 +346,47 @@ export function Channel() {
         {snapshot.data && exists && ch && (
           <>
             {selfTest && <p className="section-intro note warn">Self-test channel: the agent and the provider are the same wallet, {short(ch.agent)}.</p>}
-            <div className="board" style={{ marginTop: 16 }}>
-              <div className="pair">
-                <div className="doc">
-                  <div className="doc-head">
-                    <span className="t-label">Channel {channelId.trim()}, live state</span>
-                    <span className="small"><Code>{`Assay.channels(${channelId.trim()})`}</Code></span>
-                  </div>
-                  <div className="doc-key">
-                    <span className="t-label">{legacyCh ? 'Pins no model' : 'Pins'}</span>
-                    {legacyCh ? (
-                      <span className="small">
-                        The requested model hash is zero: only the legacy <Code>redeem()</Code> can pay it, and{' '}
-                        <Code>redeemWithReceipt</Code> can never match.
-                      </span>
-                    ) : (
-                      <>
-                        <span className="t-diff">{pinnedName ?? 'an unrecognised model id'}</span>
-                        <span className="small">Only a receipt naming this model can pay it.</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="drow"><span className="t-label">Deposit</span><span className="v">{fmtUsdg(ch.deposit)} USDG</span></div>
-                  <div className="drow"><span className="t-label">Paid</span><span className="v">{fmtUsdg(ch.paid)} USDG</span></div>
-                  <div className="drow"><span className="t-label">Remaining</span><span className="v">{fmtUsdg(ch.deposit - ch.paid)} USDG</span></div>
+            <div className="board" style={{ marginTop: 12 }}>
+              <div className="doc single">
+                <div className="doc-head">
+                  <span className="t-label">Channel {channelId.trim()}</span>
+                  <span className="small">live, read from the contract at the block in the title bar</span>
                 </div>
-                <div className="doc">
-                  <div className="doc-head">
-                    <span className="t-label">Clock</span>
-                    <span className="small">when this channel can be closed and refunded</span>
-                  </div>
-                  <div className="doc-key">
-                    <span className="t-label">State</span>
-                    <span className="t-subject">{statusText}</span>
-                  </div>
-                  <div className="drow"><span className="t-label">Last activity</span><span className="v">{fmtStamp(lastActivity)}</span></div>
-                  <div className="drow"><span className="t-label">Close opens</span><span className="v">{fmtStamp(BigInt(deadline))}, {fmtCountdown(deadline - Number(snapshot.data.timestamp))}</span></div>
-                  <div className="drow">
-                    <span className="t-label">Close asked</span>
-                    <span className="v">
-                      {ch.closeRequestedAt !== 0n
-                        ? `${fmtStamp(ch.closeRequestedAt)}; finalize after ${fmtStamp(BigInt(finalizeAt))}, ${ch.closed ? 'finalized' : fmtCountdown(finalizeAt - Number(snapshot.data.timestamp))}`
-                        : 'not requested'}
+                <div className="doc-key">
+                  <span className="t-label">{legacyCh ? 'Pins no model' : 'Pays only for'}</span>
+                  {legacyCh ? (
+                    <span className="small">
+                      Its model hash is zero, so a receipt can never match it; only the older signature-only path can pay it.
                     </span>
-                  </div>
+                  ) : (
+                    <span className="t-diff">{pinnedName ?? 'an unrecognised model id'}</span>
+                  )}
                 </div>
+                <div className="drow"><span className="t-label">Left to pay</span><span className="v">{fmtUsdg(ch.deposit - ch.paid)} of {fmtUsdg(ch.deposit)} USDG</span></div>
+                <div className="drow"><span className="t-label">State</span><span className="v">{ch.closed ? 'closed' : timedOut ? 'open; idle long enough that the agent may close it' : 'open'}</span></div>
               </div>
             </div>
             <details className="more">
-              <summary>Addresses, the model hash and the enclave fingerprint</summary>
+              <summary>Clock, addresses, the model hash and the enclave fingerprint</summary>
               <dl className="kvs">
+                <dt>Paid so far</dt>
+                <dd>{fmtUsdg(ch.paid)} USDG</dd>
+                <dt>Last activity</dt>
+                <dd>{fmtStamp(lastActivity)}</dd>
+                <dt>Close opens</dt>
+                <dd>{fmtStamp(BigInt(deadline))}, {fmtCountdown(deadline - Number(snapshot.data.timestamp))}</dd>
+                <dt>Close requested</dt>
+                <dd>
+                  {ch.closeRequestedAt !== 0n
+                    ? `${fmtStamp(ch.closeRequestedAt)}; finalize after ${fmtStamp(BigInt(finalizeAt))}, ${ch.closed ? 'finalized' : fmtCountdown(finalizeAt - Number(snapshot.data.timestamp))}`
+                    : 'not requested'}
+                </dd>
                 <dt>Agent</dt>
                 <dd><HexValue value={ch.agent} href={explorer.address(ch.agent)} /> <span className="small">signs vouchers, may close</span></dd>
                 <dt>Provider</dt>
                 <dd><HexValue value={ch.provider} href={explorer.address(ch.provider)} /> <span className="small">the only address that may redeem</span></dd>
                 <dt>Model hash</dt>
-                <dd>{legacyCh ? 'zero: no model pinned' : <><HexValue value={ch.requestedModelHash} /> <span className="small">keccak256 of the model id</span></>}</dd>
+                <dd>{legacyCh ? 'zero: no model pinned' : <><HexValue value={ch.requestedModelHash} /> <span className="small">keccak256 of the model id, read from <Code>{`channels(${channelId.trim()})`}</Code></span></>}</dd>
                 <dt>Measurement</dt>
                 <dd>
                   <HexValue value={ch.measurement} />{' '}
@@ -425,8 +400,8 @@ export function Channel() {
               </dl>
             </details>
             {!legacyCh && (
-              <div style={{ marginTop: 32 }}>
-                <h3 className="t-subject">Paid through receipts</h3>
+              <div className="section">
+                <div className="section-head"><h2 className="t-section">Paid through receipts</h2></div>
                 <p className="section-intro">
                   Each row is a <Code>RedeemedWithReceipt</Code> event. <Code>redeemWithReceipt</Code> reverts{' '}
                   <Code>ModelMismatch()</Code> before it can emit one whose served model differs from the pinned model, so
@@ -463,6 +438,8 @@ export function Channel() {
           </>
         )}
       </section>
+
+      <ChannelsSection />
 
       <section className="section" aria-labelledby="c-open">
         <div className="section-head">
