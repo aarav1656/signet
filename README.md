@@ -1,10 +1,18 @@
 # Chiron
 
+Hosted app: [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) . Repo: [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron) . Video: link pending upload.
+
 Named for the one trustworthy centaur: the attested provider among substitutes.
 
 Chiron is a USDG payment channel on Arbitrum for AI agents that buy inference per call. The agent's money moves only against proof checked onchain: a Stylus contract verifies the provider gateway's Intel TDX attestation, and a second Stylus contract verifies the gateway's signed receipt for each response. A channel pinned to a model pays only when the receipt says that model was served. If the gateway routed the call to a different model, the payment reverts.
 
 The contract is `Assay` (`contracts/src/Assay.sol`).
+
+## What the receipt proves, and what it does not
+
+Proves: a TEE running the allowlisted image measurement signed a receipt naming the model it served and hashes of the exact request and response bytes, so a swapped model or an unattested gateway never gets paid. Does not prove: that the answer is correct. Chiron makes model substitution unprofitable; it makes no claim about output quality. Only the redeemed call's receipt is checked onchain: the highest voucher wins per channel, so a provider who serves one bad call among many good ones and never gets that specific call redeemed is not caught by this contract. Earlier calls in a session rely on the agent's own local check (see "What the agent does before it signs anything"), not an onchain one.
+
+Attestations are valid 24 hours by design (`attestationValidity` is immutable at 86400 seconds). The provider re-registers its keys daily; see "Keeping keys fresh" below.
 
 ## Live on Arbitrum Sepolia
 
@@ -27,6 +35,14 @@ Live transactions on this deployment:
 | Open channel 1, legacy signature path | [`0xb06dae37...2652`](https://sepolia.arbiscan.io/tx/0xb06dae3711bce5b151ea7fb6af0b30a94d37186cd00bb4b06cd7e9460bfd2652), block 313676207 | deposit 2.000000 USDG |
 
 The agent wallet (`0x2aD1...5DEF`) pays and the provider wallet (`0x93e8...EE5A`) is paid; the two are different addresses. `docs/e2e/chiron.md` lists every command and post-condition.
+
+## Keeping keys fresh
+
+`attestationValidity` is immutable at 86400 seconds (24 hours), so a registered signer expires on a fixed clock. A `launchd` job (`com.chiron.keeper.register`, outside `~/Desktop` because launchd cannot read files under `~/Desktop`) re-runs `npm run register` every 20 hours, so a judge opening the app days after submission still sees an unexpired gateway signer and receipt key. Kill it after judging with `launchctl unload ~/Library/LaunchAgents/com.chiron.keeper.register.plist`.
+
+## Arbitrum technology
+
+Both verifier contracts are Stylus (Rust, WASM), not Solidity, because the checks they run are too expensive in the EVM: `Verifier` parses an Intel TDX DCAP quote chain and checks two P-384 and P-256 ECDSA signature chains against Intel's root in one transaction (`cast estimate` measured 2,304,195 gas on a fresh Phala quote, tx `0xaf4218b9...0d59` for the full register call at 2,346,274 gas); `ReceiptVerifier` checks an Ed25519 signature over the receipt's canonical JSON bytes. Neither op is available as an EVM precompile on Arbitrum Sepolia, and a pure-Solidity P-384/TDX-parsing implementation would blow past the block gas limit. Stylus compiles the same logic to WASM and runs it at near-native speed inside the same Arbitrum Sepolia transaction that Assay uses to pay, so the attestation check and the payment share one atomic call.
 
 ## The problem
 
