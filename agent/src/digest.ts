@@ -62,3 +62,23 @@ export function voucherMessage(channelId: bigint, cumulativeAmount: bigint, requ
 export function modelHash(modelId: string): Hex {
   return keccak256(toBytes(modelId));
 }
+
+/// ERC-3009 `receiveWithAuthorization`, the EIP-712 type USDG signs for
+/// ERC3009DepositCollector (test/vendor/x402/src/periphery/ERC3009DepositCollector.sol):
+/// gasless pull into escrow. USDG's own domain is ("Global Dollar","1",chainId,usdgAddress),
+/// not this repo's own EIP712 domains (confirmed live: selector 0x88b7ab63, the
+/// `bytes signature` variant IERC3009 declares).
+export const RECEIVE_AUTH_TYPES = {
+  ReceiveWithAuthorization: [
+    { name: 'from', type: 'address' },
+    { name: 'to', type: 'address' },
+    { name: 'value', type: 'uint256' },
+    { name: 'validAfter', type: 'uint256' },
+    { name: 'validBefore', type: 'uint256' },
+    { name: 'nonce', type: 'bytes32' },
+  ],
+} as const;
+
+export function usdgDomain(chainId: number, usdgAddress: Address) {
+  return { name: 'Global Dollar', version: '1', chainId, verifyingContract: usdgAddress } as const;
+}

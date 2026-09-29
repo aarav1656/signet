@@ -16,6 +16,17 @@ export const rpcUrl: string = (process.env.RPC_URL ?? '').trim() || RPC_URL;
 
 export const channelId: bigint = BigInt(process.env.ASSAY_CHANNEL_ID ?? '0');
 
+// ChironGate / x402BatchSettlement / ERC3009DepositCollector: live Arbitrum Sepolia
+// deployment (the official x402 bytecode, redeployed by us at its CREATE2 address).
+// `assay` above doubles as the ChironGate `registry` (same contract, same
+// receiptSigners/receiptVerifier the old redeemWithReceipt path used).
+export const gate: Address = ((process.env.GATE_ADDRESS ?? '').trim() || '0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e') as Address;
+export const x402: Address = ((process.env.X402_ADDRESS ?? '').trim() || '0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003') as Address;
+export const erc3009Collector: Address = ((process.env.COLLECTOR_ADDRESS ?? '').trim() || '0x4020806089470a89826cB9fB1f4059150b550004') as Address;
+// The measurement Assay was deployed with (APPROVED_MEASUREMENTS[0] in
+// web/src/lib/addresses.generated.ts); ChironGate pins claims to it.
+export const gateMeasurement: Hex = '0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149';
+
 // The agent pays: it holds USDG, opens the channel and signs vouchers. Same env
 // var name the contracts scripts use (script/Deploy.s.sol).
 export function requirePrivateKey(): Hex {

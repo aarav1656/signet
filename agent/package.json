@@ -10,6 +10,9 @@
     "open": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts open",
     "pay": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts pay",
     "pay-receipt": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts pay-receipt",
+    "gate-open": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts gate-open",
+    "gate-pay": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts gate-pay",
+    "gate-refuse": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts gate-refuse",
     "test": "node --env-file-if-exists=.env --test test/*.test.ts"
   },
   "dependencies": {
