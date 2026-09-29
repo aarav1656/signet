@@ -2,7 +2,7 @@
 
 ## Tagline
 
-Pay per AI call only when a TEE-signed receipt proves the model you paid for
+Pay per AI call only when a sealed gateway signs a receipt naming your model
 
 ## Description
 
@@ -38,7 +38,7 @@ Phala's confidential gateway already runs in a TEE and signs a receipt per respo
 ## What is new here
 
 - **The attestation check and the payment happen in the same transaction.** Phala's verifier and every client-side receipt check run after the caller has paid or been billed. In Chiron, the transaction that pays the provider is the one that verifies the receipt.
-- **Hardware-rooted model pinning per call.** The payment condition is a TEE-signed statement about which model served this specific request, bound to the exact request and response bytes. A measurement allowlist alone proves which image is running; the receipt proves what that image served.
+- **Model pinning per call, signed inside the TEE.** The payment condition is a TEE-signed statement about which model served this specific request, bound to the exact request and response bytes. A measurement allowlist alone says which gateway image is running; the receipt, signed inside that image, names the model the upstream answered with. It carries the upstream's own model label, not a hash of the weights.
 - **TDX verification and Ed25519 verification as Stylus contracts.** Verifying a TDX DCAP quote chain costs 2,304,195 gas on the deployed Stylus verifier (`cast estimate` on a fresh Phala quote, Arbitrum Sepolia block 313704492). Registration runs once per key; the per-call path only verifies an Ed25519 signature.
 - **Freshness from Arbitrum itself.** The registration nonce includes an `ArbSys.arbBlockHash` value, so every quote is at most about 66 seconds older than the block that accepts it.
 

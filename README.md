@@ -81,7 +81,7 @@ The served model is read from bytes the gateway's TEE signed, not from anything 
 
 It proves the gateway's key lives in a TDX guest whose nine-field measurement is on Assay's allowlist, under a certificate chain that ends at Intel's root and was valid at the block that checked it. RTMR3 carries the hash of the deployed compose file, so a changed serving image shows up as a changed measurement.
 
-The receipt proves which model the gateway says the upstream served for this one request and response. Phala records that in the receipt's `upstream.verified` event from the live response. The measurement does not say which weights a model provider loaded behind that; the receipt carries the upstream's own model label.
+The receipt is the gateway's signed statement, made inside the TEE, of which model the upstream served for this one request and response. Phala records that in the receipt's `upstream.verified` event from the live response. The measurement does not say which weights a model provider loaded behind that; the receipt carries the upstream's own model label.
 
 Assay checks certificate dates but does not read Intel's TCB status, QE identity or PCK revocation list. Those need Intel's live collateral, which a contract cannot fetch. The allowlist carries a single measurement so that a TCB decision is made once, by whoever deploys, rather than inferred per quote.
 
