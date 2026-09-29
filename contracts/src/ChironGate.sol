@@ -61,8 +61,12 @@ contract ChironGate is EIP712, ReentrancyGuard {
     IReceiptKeyRegistry public immutable registry;
     IReceiptVerifier public immutable receiptVerifier;
 
-    /// providerPayout => keccak256(abi.encode(requestHash, responseHash)) => paid
-    mapping(address => mapping(bytes32 => bool)) public consumed;
+    /// x402 channelId => keccak256(abi.encode(requestHash, responseHash)) => paid. Keyed per
+    /// channel, not per provider: anyone can open a channel with a provider's pins and anyone can
+    /// submit a claim, so a provider-wide key would let a payer burn a receipt on a throwaway
+    /// channel and void the provider's real claim. The payer's CallAck signs the channelId, so a
+    /// receipt still pays at most once per channel the payer acknowledged it on.
+    mapping(bytes32 => mapping(bytes32 => bool)) public consumed;
 
     event ClaimedWithReceipt(
         bytes32 indexed channelId,
@@ -144,8 +148,8 @@ contract ChironGate is EIP712, ReentrancyGuard {
         if (block.timestamp > expiry) revert AttestationExpired();
 
         bytes32 callKey = keccak256(abi.encode(requestHash, responseHash));
-        if (consumed[pin.providerPayout][callKey]) revert ReceiptAlreadyConsumed();
-        consumed[pin.providerPayout][callKey] = true;
+        if (consumed[channelId][callKey]) revert ReceiptAlreadyConsumed();
+        consumed[channelId][callKey] = true;
 
         paid = _claimAndForward(vc, channelId, c.token, pin.providerPayout);
 

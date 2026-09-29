@@ -271,3 +271,104 @@ Fix: to support this case, fall back to ERC-1271 when `c.agent.code.length != 0`
 - The invariant handler still never calls `redeemWithReceipt` or `openChannelWithPermit`.
 - The 7702 tests model delegation with `vm.etch` under Prague. On chain, 7702 was confirmed only by gas estimation.
 - The Stylus contracts are mocked in every Solidity test. The 5-tuple ABI was checked by reading the code, not by calling a deployed Stylus build.
+
+## ChironGate review 2026-09-29
+
+**FIX FIRST.** One High: a payer can void every CallAck it has signed, at the cost of gas, so the provider can end up collecting nothing. The accounting in the shared gate and the pin binding held up. So did the reentrancy guard and the CREATE2 script.
+
+Scope: branch `x402-gate` (3ca2317..2141866), `contracts/src/ChironGate.sol`, run against the vendored x402BatchSettlement at a9955ae5. All review tests are in `/tmp/gate-review/review/contracts/test/GateReview.t.sol` and inherit the builder's `ChironGateTest` fixtures. Each one asserts the safe property, so red means the finding is live.
+
+### High
+
+**G-1. `consumed` is keyed by provider, not by channel, so anyone who holds a receipt can burn it through a throwaway channel.** Location: `ChironGate.sol:146-148`.
+
+Anyone may open a channel with the victim's pins, because the salt is just a hash the opener computes. Anyone may also call `claimWithReceipt`. The payer holds every receipt and every (requestHash, responseHash) as soon as it is served. So after signing the CallAck for call n on channel A, the payer opens channel B:
+- B has the same `providerPayout`, model and measurement, and a different `gateNonce`;
+- B's token is worthless (any ERC-20, deposited through any collector);
+- B's deposit is 1 unit.
+
+The payer acks the same call on B at a total of 1 and submits it with the real receipt. The provider is paid 1 unit of junk, and `consumed[payout][keccak(req, resp)]` is set. The provider's real claim on A then reverts `ReceiptAlreadyConsumed`. Repeated for each outstanding call, this leaves the provider unable to claim anything, and the payer then exits through `initiateWithdraw`/`finalizeWithdraw`.
+
+This breaks the documented seller rule in `docs/x402-extension.md` ("Require the ack for call n before serving call n+1; exposure is one call"). The rule only holds if the provider lands an onchain claim after every call, and at that point it is no longer batch settlement.
+
+A third party can mount the same attack with any receipt that has become public, for example from the calldata of a provider claim that reverted for a transient reason such as a USDG pause.
+
+Assay's `redeemWithReceipt` is immune, because only `c.provider` may call it. The gate dropped that restriction and kept the per-provider key.
+
+Tests:
+- `test_R1_payerCannotBurnSignedAckViaThrowawayChannel` is RED (`ReceiptAlreadyConsumed()`).
+- `test_R1b_exposureIsOneCall` is RED. The payer burns three acked calls, and the provider collects 0 of the 30e6 it is owed.
+
+Minimal fix: bind the replay key to the channel.
+
+    bytes32 callKey = keccak256(abi.encode(channelId, requestHash, responseHash));
+
+Cross-channel reuse already needs a payer CallAck on each channel, because the ack binds `channelId`. So the per-provider key adds no protection and only creates this burn. I applied the fix on scratch and got these results:
+- `test_R1` and `test_R1b` go green.
+- The builder's same-channel retry case (`test_fixKeepsSameChannelReplayBlocked`, which mirrors `test_receiptReplay_reverts`) stays green.
+- 34 of the builder's 35 tests pass. The one failure is `test_honestClaim_paysProviderExactDelta`, which asserts the old `consumed(payoutA, keccak(req, resp))` layout and needs its two `consumed` asserts updated.
+
+Rename the mapping to `consumed[channelId][keccak(req, resp)]` if you want the view to read naturally. Also update the "(requestHash, responseHash) has never been paid to providerPayout" line in `docs/x402-extension.md`.
+
+### Medium
+
+None found.
+
+### Low
+
+**G-2. Key expiry is checked at claim time, not at the time the receipt was served.** Location: `ChironGate.sol:144`.
+
+Live `attestationValidity` is 86400 (`cast call 0x3500...FfCC attestationValidity()` on Arbitrum Sepolia, block 313936979). A receipt served while the key was valid becomes unclaimable once the registration lapses, and the payer then withdraws.
+
+Anyone can re-register the key with a fresh quote while Phala still serves it (`Assay.sol:277`), so this is an operational obligation rather than theft. But it is a second clock the seller has to beat, on top of `withdrawDelay`.
+
+Test: `test_R2_receiptServedBeforeExpiryStaysClaimable` is RED (`AttestationExpired()`).
+
+Fix: document it under Seller obligations ("re-register the receipt key before expiry, or claim first"), and have the provider watch the `ReceiptKeyRegistered` expiry. The verifier returns no receipt timestamp, so the contract cannot check time of service.
+
+**G-3. The shared receiver concentrates token-level freeze and pause risk.** If USDG freezes the gate address, `x402.settle(gate, USDG)` reverts and every provider on every gate channel stops being paid. A pause does the same.
+
+Payers are not harmed, because x402 exits never touch the gate.
+
+Tests:
+- `test_R3_gateFreezeDoesNotBlockUnrelatedChannels` is RED (`frozen`). It is a design property with no one-line fix.
+- `test_R3_control_payerExitsWhileGateFrozen` is GREEN.
+
+Fix: disclose it. If it matters, deploy one gate per provider.
+
+**G-4. Test gaps (no exploit on the current code).** These come from extra mutants I ran on scratch.
+- Changing `vc.totalClaimed <= claimedBefore` to `<` SURVIVES. That mutant would let a zero-pay claim consume a receipt, which is another burn path. Add a test where an equal-total claim reverts `NothingToClaim` and leaves `consumed` false.
+- Calling `verifyReceipt(bytes32(0), ...)` instead of `pubkey` is killed only incidentally, by `test_reentrantToken_blocked`, because of a `vm.mockCall` argument mismatch. `MockReceiptVerifier.setNext` ignores its inputs, so nothing asserts that the verified key is the key looked up in the registry. Make the mock return `ok` only for `receiptPubkey`.
+- Changing expiry `>` to `>=` SURVIVES (boundary only).
+
+### Info
+
+- Neither the token nor `withdrawDelay` is pinned in the salt. The seller must check both, and `providerPayout`, off chain before serving; a payer can open a junk-token channel with the right pins. `docs/x402-extension.md` should say so under Seller obligations.
+- The docs say `providerPayout` is "not the gate", but the code does not check this. `ForwardShort` catches it (`test_payoutIsGate_reverts`), so this is only a docs and code mismatch.
+- `DeployGate.s.sol` has no chain-id check and defaults `ASSAY` to the Sepolia address. On any other chain it reverts unless `ASSAY` is set, which is safe but worth a line in the header.
+- Foreign funds flushed into the gate are stranded forever, by design.
+
+### What held (with evidence)
+
+- **Shared accounting (a).** Between the flush settle and the measured settle, the only external call is `x402.claim`. Its only outbound call is an ERC-1271 staticcall. So the second settle equals this channel's `claimDelta` exactly, and another channel's money cannot be forwarded. I found no way for a griefer to make `settle(gate, token)` revert short of a token-level freeze or pause (G-3).
+- **Pins and signatures (b, c).** The salt uses fixed-width `abi.encode`, so there are no collisions. `channelId` binds the salt, the token, the payer and the x402 domain. The CallAck domain is the gate's own EIP-712 domain. `tryRecover` rejects high-s signatures, and no state is keyed by the signature. The payerAuthorizer/payer rule matches x402's `_processVoucherClaim`.
+- **x402 exits (d).** `claimWithSignature` and `refundWithSignature` both fail against the gate (`test_x402SignatureRoutesCannotBypassGate`).
+- **Reentrancy (e).** The gate is `nonReentrant` and x402 uses a transient guard. The registry read is a staticcall.
+- **Mutation runner.** `contracts/test/mutation/chiron_gate_mutations.py`, run on a scratch copy: baseline green, 26 of 26 KILLED, restored green, exit 0. The builder's claim holds.
+- **Suites.** `test/ChironGate.t.sol` passes 35 of 35. `test/ChironGateFork.t.sol` passes 7 of 7 against the live Sepolia registry.
+- **CREATE2 script (f).**
+  - `run()` broadcasts one call, `CREATE2_DEPLOYER.call(BATCH_SALT ++ creationCode)`. It is gated by `require(addr == CANONICAL)`, computed from the same `type(x402BatchSettlement).creationCode` expression.
+  - I proved the guard can fail: under the default profile (via_ir) the script reverts with "init code does not reproduce", computing address 0x6De7...4614. Under `FOUNDRY_PROFILE=x402` it computes 0x4020074e...0003.
+  - `compareWithArbitrumOne()` reports MATCH, 11175 bytes. The runtime keccak `0xf54eb932...c421` equals `keccak(cast code 0x4020...0003)` on Arbitrum One.
+  - Arbitrum Sepolia has no code at 0x4020...0003 yet (the code hash is empty), so `DeployGate` will refuse there until the x402 script is broadcast.
+
+### Blind spots
+
+- The unit tests run x402 compiled under the default profile (via_ir, prague), not the canonical cancun build. The source is identical, but the gate has not been exercised against the exact deployed bytecode.
+- The Stylus verifier is mocked everywhere. The fork test serves real `verifyReceipt` answers through `vm.mockCall`, and no receipt signed by the live Phala key has been claimed.
+- The live verifier (0x9AF7...2380, Stylus prefix `0xeff000`) is immutable in the gate. I did not check its Stylus activation expiry. If the program needs reactivation, every claim reverts until someone reactivates it.
+- Real USDG freeze and pause semantics were modeled with a local token, not forked.
+
+### G-1 fix, 2026-09-29
+
+`ChironGate.consumed` is now keyed on the x402 `channelId` instead of `providerPayout` (`contracts/src/ChironGate.sol`, the `consumed` mapping and its two uses in `claimWithReceipt`). The payer's CallAck signs the channelId, so a receipt still pays at most once on any channel the payer acknowledged it on, and a throwaway channel can no longer burn it. The reviewer's `test_R1_payerCannotBurnSignedAckViaThrowawayChannel` and `test_R1b_exposureIsOneCall` are in `contracts/test/ChironGateReview.t.sol` and pass. Putting the provider-wide key back turns both red, and restoring the fix returns the suite to 39 of 39 green. G-2 (expiry checked at claim time) and G-3 (a token freeze or pause at the gate blocks every provider, while payers can still exit) are disclosed and not fixed.

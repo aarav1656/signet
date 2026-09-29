@@ -222,8 +222,8 @@ contract ChironGateTest is AssayTestBase {
         assertEq(_submit(_honest(p, address(usdg), 45e6, REQ2, RESP2)), 15e6);
         assertEq(usdg.balanceOf(payoutA), 45e6);
         assertEq(usdg.balanceOf(address(gate)), 0);
-        assertTrue(gate.consumed(payoutA, keccak256(abi.encode(REQ1, RESP1))));
-        assertTrue(gate.consumed(payoutA, keccak256(abi.encode(REQ2, RESP2))));
+        assertTrue(gate.consumed(cid, keccak256(abi.encode(REQ1, RESP1))));
+        assertTrue(gate.consumed(cid, keccak256(abi.encode(REQ2, RESP2))));
     }
 
     /// x402 vouchers carry a ceiling; the claim, the ack and the payout use the claimed total.
@@ -525,7 +525,7 @@ contract ChironGateTest is AssayTestBase {
         _receipt(REQ1, RESP1);
         vm.expectRevert(x402BatchSettlement.ClaimExceedsBalance.selector);
         _submit(cl);
-        assertFalse(gate.consumed(payoutA, keccak256(abi.encode(REQ1, RESP1))));
+        assertFalse(gate.consumed(x402.getChannelId(c), keccak256(abi.encode(REQ1, RESP1))));
     }
 
     // ---------------------------------------------------------------- isolation
