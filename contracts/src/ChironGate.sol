@@ -28,14 +28,20 @@ interface IReceiptKeyRegistry {
 /// contract, which forwards the exact per-claim delta to the provider in the same call.
 ///
 /// The channel's `salt` commits to the pins: keccak256(abi.encode(requestedModelHash,
-/// measurement, providerPayout, gateNonce)). Anyone may submit a claim with the preimage;
-/// money only ever moves to the pinned `providerPayout`. A claim pays iff:
+/// acceptedServedHashes, measurement, providerPayout, gateNonce)), where acceptedServedHashes is
+/// a bytes32[4] (encoded inline as four words) of keccak256(served label) values the payer
+/// accepts. A gateway may report the upstream model under its own label (RedPill serves
+/// "meta-llama/llama-3.3-70b-instruct" and Tinfoil's attested model_id reads "llama3-3-70b"),
+/// so served == requested would refuse honest calls; the payer names the labels instead.
+/// Unused slots are zero; at least one slot must be nonzero. Anyone may submit a claim with
+/// the preimage; money only ever moves to the pinned `providerPayout`. A claim pays iff:
 ///   - the payer's side (payerAuthorizer, or payer when that is zero, the same rule x402
 ///     applies to vouchers) signed a CallAck binding (channelId, totalClaimed, requestHash,
 ///     responseHash) under this contract's EIP-712 domain. The x402 voucher binds no
 ///     request, and a Phala receipt key is shared by every Phala customer, so without this
 ///     a provider could redeem the payer's voucher with some other customer's receipt;
-///   - the receipt verifies, its requested AND served model hash equal the pinned one, and
+///   - the receipt verifies, its requested model hash equals the pinned one, its served model
+///     hash is nonzero and equals one entry of the pinned accepted set, and
 ///     its request/response body hashes equal the acknowledged ones;
 ///   - the signing key is registered in Assay under exactly the pinned measurement and has
 ///     not expired;
@@ -49,6 +55,7 @@ contract ChironGate is EIP712, ReentrancyGuard {
 
     struct Pin {
         bytes32 requestedModelHash;
+        bytes32[4] acceptedServedHashes;
         bytes32 measurement;
         address providerPayout;
         bytes32 gateNonce;
@@ -105,7 +112,9 @@ contract ChironGate is EIP712, ReentrancyGuard {
     }
 
     function pinSalt(Pin calldata p) public pure returns (bytes32) {
-        return keccak256(abi.encode(p.requestedModelHash, p.measurement, p.providerPayout, p.gateNonce));
+        return keccak256(
+            abi.encode(p.requestedModelHash, p.acceptedServedHashes, p.measurement, p.providerPayout, p.gateNonce)
+        );
     }
 
     function callAckDigest(bytes32 channelId, uint128 totalClaimed, bytes32 requestHash, bytes32 responseHash)
@@ -130,6 +139,7 @@ contract ChironGate is EIP712, ReentrancyGuard {
         if (c.receiver != address(this) || c.receiverAuthorizer != address(this)) revert NotGateChannel();
         if (c.salt != pinSalt(pin)) revert PinMismatch();
         if (pin.requestedModelHash == bytes32(0) || pin.providerPayout == address(0)) revert BadPin();
+        if (_allZero(pin.acceptedServedHashes)) revert BadPin();
 
         bytes32 channelId = x402.getChannelId(c);
         bytes32 ack = callAckDigest(channelId, vc.totalClaimed, requestHash, responseHash);
@@ -138,7 +148,8 @@ contract ChironGate is EIP712, ReentrancyGuard {
         (bool ok, bytes32 requestedModel, bytes32 servedModel, bytes32 receiptRequest, bytes32 receiptResponse) =
             receiptVerifier.verifyReceipt(pubkey, receiptBytes, receiptSig);
         if (!ok) revert ReceiptInvalid();
-        if (requestedModel != pin.requestedModelHash || servedModel != pin.requestedModelHash) revert ModelMismatch();
+        if (requestedModel != pin.requestedModelHash) revert ModelMismatch();
+        if (!_accepts(pin.acceptedServedHashes, servedModel)) revert ModelMismatch();
         if (receiptRequest != requestHash) revert RequestHashMismatch();
         if (receiptResponse != responseHash) revert ResponseHashMismatch();
 
@@ -185,6 +196,20 @@ contract ChironGate is EIP712, ReentrancyGuard {
         uint256 providerBefore = IERC20(token).balanceOf(providerPayout);
         IERC20(token).safeTransfer(providerPayout, paid);
         if (IERC20(token).balanceOf(providerPayout) - providerBefore != paid) revert ForwardShort();
+    }
+
+    function _allZero(bytes32[4] calldata set) private pure returns (bool) {
+        return (set[0] | set[1] | set[2] | set[3]) == bytes32(0);
+    }
+
+    /// True iff `served` is nonzero and equals an entry of `set`. Zero slots are padding and
+    /// never match, even a receipt whose served hash is zero.
+    function _accepts(bytes32[4] calldata set, bytes32 served) private pure returns (bool) {
+        if (served == bytes32(0)) return false;
+        for (uint256 i; i < 4; ++i) {
+            if (set[i] == served) return true;
+        }
+        return false;
     }
 
     /// The same authorization rule x402 applies to the channel's vouchers: ECDSA by

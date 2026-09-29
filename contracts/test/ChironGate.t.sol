@@ -114,12 +114,28 @@ contract ChironGateTest is AssayTestBase {
 
     // ---------------------------------------------------------------- helpers
 
-    function _pin(address payout, bytes32 nonce) internal pure returns (ChironGate.Pin memory) {
-        return ChironGate.Pin(MODEL, APPROVED_MEASUREMENT, payout, nonce);
+    function _set(bytes32 a) internal pure returns (bytes32[4] memory s) {
+        s[0] = a;
     }
 
+    function _pin(address payout, bytes32 nonce) internal pure returns (ChironGate.Pin memory) {
+        return ChironGate.Pin(MODEL, _set(MODEL), APPROVED_MEASUREMENT, payout, nonce);
+    }
+
+    /// Independent of ChironGate.pinSalt: abi.encode inlines bytes32[4] as four words.
     function _salt(ChironGate.Pin memory p) internal pure returns (bytes32) {
-        return keccak256(abi.encode(p.requestedModelHash, p.measurement, p.providerPayout, p.gateNonce));
+        return keccak256(
+            abi.encodePacked(
+                p.requestedModelHash,
+                p.acceptedServedHashes[0],
+                p.acceptedServedHashes[1],
+                p.acceptedServedHashes[2],
+                p.acceptedServedHashes[3],
+                p.measurement,
+                bytes32(uint256(uint160(p.providerPayout))),
+                p.gateNonce
+            )
+        );
     }
 
     function _config(ChironGate.Pin memory p, address token)
@@ -282,10 +298,10 @@ contract ChironGateTest is AssayTestBase {
     }
 
     function test_zeroModelPin_reverts() public {
-        ChironGate.Pin memory p = ChironGate.Pin(bytes32(0), APPROVED_MEASUREMENT, payoutA, bytes32(0));
+        ChironGate.Pin memory p = ChironGate.Pin(bytes32(0), _set(MODEL), APPROVED_MEASUREMENT, payoutA, bytes32(0));
         _open(_config(p, address(usdg)), 100e6);
         Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
-        receiptVerifier.setNext(true, bytes32(0), bytes32(0), REQ1, RESP1);
+        receiptVerifier.setNext(true, bytes32(0), MODEL, REQ1, RESP1);
         vm.expectRevert(ChironGate.BadPin.selector);
         _submit(cl);
     }
@@ -400,7 +416,7 @@ contract ChironGateTest is AssayTestBase {
     }
 
     function test_wrongMeasurement_reverts() public {
-        ChironGate.Pin memory p = ChironGate.Pin(MODEL, APPROVED_MEASUREMENT_2, payoutA, bytes32(0));
+        ChironGate.Pin memory p = ChironGate.Pin(MODEL, _set(MODEL), APPROVED_MEASUREMENT_2, payoutA, bytes32(0));
         _open(_config(p, address(usdg)), 100e6);
         Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
         _receipt(REQ1, RESP1);
@@ -679,5 +695,113 @@ contract ChironGateTest is AssayTestBase {
         new ChironGate(IX402BatchSettlement(payoutA), IReceiptKeyRegistry(address(assay)));
         vm.expectRevert(ChironGate.BadParams.selector);
         new ChironGate(x402, IReceiptKeyRegistry(payoutA));
+    }
+
+    // ---------------------------------------------------------------- accepted served labels
+
+    /// Live RedPill traffic: requesting "meta-llama/llama-3.3-70b-instruct" yields a genuine
+    /// receipt whose upstream.verified model_id is Tinfoil's label "llama3-3-70b".
+    bytes32 internal constant LLAMA_REQUESTED = keccak256("meta-llama/llama-3.3-70b-instruct");
+    bytes32 internal constant LLAMA_TINFOIL = keccak256("llama3-3-70b");
+
+    function _llamaPin(address payout, bytes32 nonce) internal pure returns (ChironGate.Pin memory p) {
+        bytes32[4] memory accepted;
+        accepted[0] = LLAMA_REQUESTED;
+        accepted[1] = LLAMA_TINFOIL;
+        p = ChironGate.Pin(LLAMA_REQUESTED, accepted, APPROVED_MEASUREMENT, payout, nonce);
+    }
+
+    function _openLlama(address payout, bytes32 nonce) internal returns (ChironGate.Pin memory p) {
+        p = _llamaPin(payout, nonce);
+        _open(_config(p, address(usdg)), 100e6);
+    }
+
+    function test_tinfoilServedLabel_pays() public {
+        ChironGate.Pin memory p = _openLlama(payoutA, bytes32(uint256(20)));
+        Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
+        receiptVerifier.setNext(true, LLAMA_REQUESTED, LLAMA_TINFOIL, REQ1, RESP1);
+        assertEq(_submit(cl), 30e6);
+        assertEq(usdg.balanceOf(payoutA), 30e6);
+    }
+
+    function test_servedLabelNotInSet_reverts() public {
+        ChironGate.Pin memory p = _openLlama(payoutA, bytes32(uint256(21)));
+        Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
+        receiptVerifier.setNext(true, LLAMA_REQUESTED, keccak256("llama3-1-8b"), REQ1, RESP1);
+        vm.expectRevert(ChironGate.ModelMismatch.selector);
+        _submit(cl);
+        assertEq(usdg.balanceOf(payoutA), 0);
+    }
+
+    /// The served label is accepted, but the receipt's requested id is not the pinned one.
+    function test_requestedIdNotPinned_reverts() public {
+        ChironGate.Pin memory p = _openLlama(payoutA, bytes32(uint256(22)));
+        Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
+        receiptVerifier.setNext(true, LLAMA_TINFOIL, LLAMA_TINFOIL, REQ1, RESP1);
+        vm.expectRevert(ChironGate.ModelMismatch.selector);
+        _submit(cl);
+    }
+
+    /// Slots 2 and 3 of the set are zero; a receipt whose served hash is zero must not match them.
+    function test_zeroEntryNeverMatches() public {
+        ChironGate.Pin memory p = _openLlama(payoutA, bytes32(uint256(23)));
+        Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
+        receiptVerifier.setNext(true, LLAMA_REQUESTED, bytes32(0), REQ1, RESP1);
+        vm.expectRevert(ChironGate.ModelMismatch.selector);
+        _submit(cl);
+    }
+
+    function test_allZeroAcceptedSet_reverts() public {
+        ChironGate.Pin memory p = _pin(payoutA, bytes32(uint256(24)));
+        p.acceptedServedHashes[0] = bytes32(0);
+        _open(_config(p, address(usdg)), 100e6);
+        Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
+        receiptVerifier.setNext(true, MODEL, bytes32(0), REQ1, RESP1);
+        vm.expectRevert(ChironGate.BadPin.selector);
+        _submit(cl);
+    }
+
+    /// The last slot is live too, and a set whose only nonzero entry is the last slot is valid.
+    function test_servedLabelInLastSlot_pays() public {
+        ChironGate.Pin memory p = _pin(payoutA, bytes32(uint256(25)));
+        p.acceptedServedHashes[0] = bytes32(0);
+        p.acceptedServedHashes[3] = LLAMA_TINFOIL;
+        _open(_config(p, address(usdg)), 100e6);
+        Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
+        receiptVerifier.setNext(true, MODEL, LLAMA_TINFOIL, REQ1, RESP1);
+        assertEq(_submit(cl), 30e6);
+    }
+
+    /// Channel A accepts the Tinfoil label, channel B (same payer, same requested id) accepts only
+    /// the exact id. The same served label pays on A and is refused on B; B's escrow is untouched.
+    function test_differentSets_isolated() public {
+        ChironGate.Pin memory pa = _openLlama(payoutA, bytes32(uint256(26)));
+        ChironGate.Pin memory pb = ChironGate.Pin(
+            LLAMA_REQUESTED, _set(LLAMA_REQUESTED), APPROVED_MEASUREMENT, payoutB, bytes32(uint256(27))
+        );
+        bytes32 cidB = _open(_config(pb, address(usdg)), 100e6);
+
+        receiptVerifier.setNext(true, LLAMA_REQUESTED, LLAMA_TINFOIL, REQ1, RESP1);
+        assertEq(_submit(_honest(pa, address(usdg), 30e6, REQ1, RESP1)), 30e6);
+
+        Claim memory onB = _honest(pb, address(usdg), 30e6, REQ2, RESP2);
+        receiptVerifier.setNext(true, LLAMA_REQUESTED, LLAMA_TINFOIL, REQ2, RESP2);
+        vm.expectRevert(ChironGate.ModelMismatch.selector);
+        _submit(onB);
+
+        /// B's set cannot be widened by presenting A's set as B's preimage.
+        onB.pin.acceptedServedHashes = pa.acceptedServedHashes;
+        vm.expectRevert(ChironGate.PinMismatch.selector);
+        _submit(onB);
+
+        assertEq(usdg.balanceOf(payoutA), 30e6);
+        assertEq(usdg.balanceOf(payoutB), 0);
+        (, uint128 claimedB) = x402.channels(cidB);
+        assertEq(claimedB, 0);
+    }
+
+    function test_pinSaltMatchesIndependentEncoding() public view {
+        ChironGate.Pin memory p = _llamaPin(payoutA, bytes32(uint256(28)));
+        assertEq(gate.pinSalt(p), _salt(p));
     }
 }

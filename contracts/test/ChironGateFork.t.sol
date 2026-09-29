@@ -92,7 +92,9 @@ contract ChironGateForkTest is Test {
         internal
         returns (IX402BatchSettlement.VoucherClaim memory vc, ChironGate.Pin memory pin, bytes memory ack)
     {
-        pin = ChironGate.Pin(model, measurement, payout, bytes32(0));
+        bytes32[4] memory accepted;
+        accepted[0] = model;
+        pin = ChironGate.Pin(model, accepted, measurement, payout, bytes32(0));
         IX402BatchSettlement.ChannelConfig memory c = IX402BatchSettlement.ChannelConfig(
             payer, payer, address(gate), address(gate), address(usdg), 1 hours, gate.pinSalt(pin)
         );
