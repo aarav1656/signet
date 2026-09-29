@@ -25,6 +25,8 @@ Chain 421614, deployed 2026-09-28 from `0x2aD12a72362704367e99a344cFf5affDDF7f5D
 | ReceiptVerifier | [`0x9af7d9c3b27c4a8a11fb879041b931c38b712380`](https://sepolia.arbiscan.io/address/0x9af7d9c3b27c4a8a11fb879041b931c38b712380) | Stylus (Rust). Verifies one Ed25519-signed Phala inference receipt and returns the requested model, served model, request hash and response hash. |
 | USDG | [`0xFFC95faa3d63Cde504a05B567C600B78C0b41892`](https://sepolia.arbiscan.io/address/0xFFC95faa3d63Cde504a05B567C600B78C0b41892) | Paxos Global Dollar on Arbitrum Sepolia. Not deployed by this repo. |
 
+Assay is source verified (Sourcify, exact match). `Verifier` and `ReceiptVerifier` are Stylus contracts; Arbiscan's Stylus verification and `cargo stylus verify` both need a reproducible Docker build (`cargo-stylus 0.10.9`, `rustc 1.91.0`, target `wasm32-unknown-unknown`, pinned in each crate's `rust-toolchain.toml`). Docker Desktop would not stay up long enough to run that build here; a non-Docker local build of `verifier/` already mismatches the deployed bytecode by 176 bytes (`Verification failed: uncompressed wasm size mismatch (tx: 121531, build: 121707)`), which is exactly why the Docker-pinned build exists. Verifying both contracts needs a machine that can run Docker.
+
 Live transactions on this deployment:
 
 | Step | Transaction | Result read back |
@@ -157,6 +159,16 @@ APPROVED_MEASUREMENT=0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc22
 ASSAY_CHANNEL_ID=0 npm run pay-receipt
 npm run refuse                  # shows the agent refusing an unregistered gateway key
 ```
+
+**Paying against RedPill instead of a Phala Confidential AI key.** `api.redpill.ai` serves the same registered gateway signer and receipt key as Phala's own endpoint (confirmed unauthenticated: `GET /v1/attestation/report` returns `signing_address 0x79a5...6b79` and `receipt_signing_keys[0].public_key 110f3824...aa0a`, both already registered on Assay; `GET /v1/models` lists `meta-llama/llama-3.3-70b-instruct`, channel 0's pinned model). `agent/src/config.ts` reads the key from `PHALA_API_KEY` and the base URL from `PHALA_BASE_URL`, so a RedPill key drives the same channel with no code change:
+
+```
+cd agent
+PHALA_API_KEY=<redpill key> PHALA_BASE_URL=https://api.redpill.ai npm run register
+PHALA_API_KEY=<redpill key> PHALA_BASE_URL=https://api.redpill.ai ASSAY_CHANNEL_ID=0 npm run pay-receipt
+```
+
+Unverified without a key: whether `GET /v1/aci/receipts/{id}` serves a receipt back (an unauthenticated probe returned 404).
 
 Web app: `cd web && npm install && npm run dev`. It reads every figure it shows from the chain with the block it was read at.
 
