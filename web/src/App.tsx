@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { ASSAY, assayChain, explorer, wagmiConfig } from './chain';
 import { Wallet } from './components/Wallet';
 import { Overview } from './pages/Overview';
@@ -9,6 +9,19 @@ import { Channel } from './pages/Channel';
 
 const queryClient = new QueryClient();
 
+function Page() {
+  const loc = useLocation();
+  return (
+    <div className="route" key={loc.pathname}>
+      <Routes>
+        <Route path="/" element={<Overview />} />
+        <Route path="/verify" element={<Verify />} />
+        <Route path="/channel" element={<Channel />} />
+      </Routes>
+    </div>
+  );
+}
+
 export function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
@@ -16,33 +29,25 @@ export function App() {
         <BrowserRouter>
           <div className="shell">
             <header className="top">
-              <NavLink to="/" className="brand">
-                <span className="mark" aria-hidden="true">C</span>
-                Chiron <em>USDG channels gated on TEE receipts</em>
+              <NavLink to="/" className="wordmark">
+                Chiron
               </NavLink>
-              <nav className="pillnav" aria-label="Primary">
+              <nav className="nav" aria-label="Primary">
                 <NavLink to="/" end>
-                  Overview
+                  Refusal
                 </NavLink>
-                <NavLink to="/channel">Channel</NavLink>
-                <NavLink to="/verify">Verify</NavLink>
-                <a className="ext" href={explorer.address(ASSAY)} target="_blank" rel="noreferrer">
-                  Contract
-                </a>
+                <NavLink to="/channel">Channels</NavLink>
+                <NavLink to="/verify">Verify a gateway</NavLink>
               </nav>
               <Wallet />
             </header>
-            <Routes>
-              <Route path="/" element={<Overview />} />
-              <Route path="/verify" element={<Verify />} />
-              <Route path="/channel" element={<Channel />} />
-            </Routes>
+            <Page />
             <footer className="foot">
               <span>
-                Chiron on {assayChain.name} ({assayChain.id})
+                Chiron on {assayChain.name}, chain {assayChain.id}. Every figure is a chain read at the block shown beside it.
               </span>
               <a href={explorer.address(ASSAY)} target="_blank" rel="noreferrer">
-                Assay contract
+                Assay on the explorer
               </a>
             </footer>
           </div>

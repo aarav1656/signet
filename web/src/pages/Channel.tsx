@@ -17,7 +17,7 @@ import { ASSAY, assayChain, explorer } from '../chain';
 import { assayAbi } from '../abi/Assay.generated';
 import { APPROVED_MEASUREMENTS, CHANNEL_TIMEOUT, USDG_ADDRESS } from '../lib/addresses.generated';
 import { fmtCountdown, fmtStamp, fmtUsdg, short } from '../lib/format';
-import { Stamp } from '../components/Stamp';
+import { Code, HexValue, Num, Stamp, TitleBlock } from '../components/Stamp';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useOnChain } from '../components/Wallet';
 
@@ -281,28 +281,38 @@ export function Channel() {
   const timedOut = !!ch && !ch.closed && snapshot.data !== undefined && Number(snapshot.data.timestamp) > deadline;
   const statusText = ch ? (ch.closed ? 'closed' : timedOut ? 'timeout passed, closable' : 'open') : '';
 
+  const legacyCh = !!ch && ch.requestedModelHash === ZERO_HASH;
+  const pinnedName = ch && !legacyCh && ch.requestedModelHash.toLowerCase() === keccak256(toHex(DEFAULT_MODEL_ID)).toLowerCase() ? DEFAULT_MODEL_ID : null;
+
   return (
     <main>
-      <div className="ch-head">
-        <div>
-          <h1>Channel {channelId}</h1>
-          <p className="lede">
-            An agent locks USDG against one provider and pins a model. A receipt-only channel pays only through{' '}
-            <b>redeemWithReceipt</b>, against a TEE-signed receipt for that model; a legacy channel pays against the
-            enclave&apos;s per-response signature.
-          </p>
+      <TitleBlock
+        cells={[
+          { label: 'Channel', value: chanId === null ? 'not a channel id' : channelId.trim(), lead: true },
+          { label: 'Path', value: snapshot.data && exists ? (legacyCh ? 'legacy signature' : 'receipt-only') : '--' },
+          { label: 'State', value: snapshot.data && exists ? statusText : snapshot.data ? 'never opened' : 'reading' },
+          {
+            label: 'Read at',
+            value: snapshot.data ? <>block <a href={explorer.block(snapshot.data.block)} target="_blank" rel="noreferrer">{snapshot.data.block.toLocaleString('en-US')}</a></> : 'reading',
+          },
+        ]}
+      />
+
+      <header className="pagehead">
+        <h1 className="t-title">Lock USDG for one model, then pay per call</h1>
+        <p className="gloss" style={{ maxWidth: '84ch', marginBottom: 0 }}>
+          <b>Channel:</b> USDG an agent locks with one provider, who draws from it call by call. <b>Pinned model:</b>{' '}
+          the one model the channel pays for; every receipt is compared against it, and a receipt naming another model
+          is refused.
+        </p>
+        <div className="actions">
+          <a className="btn" href="#c-open">Open a new channel</a>
         </div>
         <div className="picker" role="group" aria-label="Choose a channel">
-          <span className="picker-lab">Channel</span>
+          <span className="t-label">Channel</span>
           {channelCountSnap.data &&
             Array.from({ length: Number(channelCountSnap.data.value) }, (_, i) => String(i)).map((id) => (
-              <button
-                key={id}
-                type="button"
-                className={id === channelId.trim() ? 'active' : ''}
-                aria-pressed={id === channelId.trim()}
-                onClick={() => setChannelId(id)}
-              >
+              <button key={id} type="button" aria-pressed={id === channelId.trim()} onClick={() => setChannelId(id)}>
                 {id}
               </button>
             ))}
@@ -312,124 +322,136 @@ export function Channel() {
             value={channelCountSnap.data && /^\d+$/.test(channelId.trim()) && BigInt(channelId.trim()) < channelCountSnap.data.value ? '' : channelId}
             onChange={(e) => setChannelId(e.target.value)}
             inputMode="numeric"
-            placeholder="other"
+            placeholder="other id"
             aria-describedby="c-id-hint"
           />
+          <span className="small" id="c-id-hint">
+            {channelCountSnap.data ? (
+              <>
+                {channelCountSnap.data.value.toString()} {channelCountSnap.data.value === 1n ? 'channel' : 'channels'} opened on this contract so far,{' '}
+                <Stamp block={channelCountSnap.data.block} />
+              </>
+            ) : (
+              'reading channelCount'
+            )}
+          </span>
         </div>
-      </div>
-      <p className="hint-line" id="c-id-hint">
-        {channelCountSnap.data
-          ? <><span className="num">{channelCountSnap.data.value.toString()}</span> {channelCountSnap.data.value === 1n ? 'channel' : 'channels'} opened on this contract so far. <Stamp block={channelCountSnap.data.block} /></>
-          : 'Reading channelCount…'}
-      </p>
+      </header>
 
-      <div className="ch-grid">
-      <section className="ch-main" aria-labelledby="c-lookup">
+      <section className="section" style={{ marginTop: 16 }} aria-labelledby="c-lookup">
         <div className="section-head">
-          <h2 id="c-lookup">Channel state</h2>
+          <h2 id="c-lookup" className="t-section">Channel {channelId.trim() || '?'}, live</h2>
           {snapshot.data && <Stamp block={snapshot.data.block} />}
         </div>
-        {snapshot.isPending && <div className="skel" aria-busy="true">Reading channel {channelId}…</div>}
+        {snapshot.isPending && <p className="section-intro small" aria-busy="true">Reading channel {channelId}.</p>}
         {snapshot.isError && snapshot.error.message !== 'bad-id' && (
-          <p className="note err" role="alert">Could not read this channel ({String(snapshot.error)}).</p>
+          <div className="alarm" role="alert" style={{ marginTop: 16 }}><b>Could not read this channel.</b> <span>{String(snapshot.error).slice(0, 200)}</span></div>
         )}
         {snapshot.data && !exists && (
-          <div className="empty">
-            <h3>Channel {channelId} does not exist</h3>
-            <p>No channel was ever opened under this id: the provider slot is still the zero address. Open one below, or check the id.</p>
-          </div>
+          <p className="section-intro">
+            No channel was ever opened under id {channelId}: its provider slot is still the zero address. Pick an id
+            above, or open one below.
+          </p>
         )}
         {snapshot.data && exists && ch && (
-          <div>
-            {selfTest && (
-              <p className="note" role="note">
-                Self-test channel: agent and provider are the same wallet ({short(ch.agent)}).
-              </p>
-            )}
-            <div className="tiles">
-              <div className="tile">
-                <div className="lab">Deposit</div>
-                <div className="val num">{fmtUsdg(ch.deposit)} <small>USDG</small></div>
-              </div>
-              <div className="tile">
-                <div className="lab">Paid</div>
-                <div className="val num">{fmtUsdg(ch.paid)} <small>USDG</small></div>
-              </div>
-              <div className="tile">
-                <div className="lab">Remaining</div>
-                <div className="val num">{fmtUsdg(ch.deposit - ch.paid)} <small>USDG</small></div>
-              </div>
-              <div className="tile">
-                <div className="lab">Path</div>
-                <div className="val">{ch.requestedModelHash === ZERO_HASH ? 'legacy signature' : 'receipt-only'}</div>
-              </div>
-              <div className="tile">
-                <div className="lab">Status</div>
-                <div className="val">{statusText}</div>
+          <>
+            {selfTest && <p className="section-intro note warn">Self-test channel: the agent and the provider are the same wallet, {short(ch.agent)}.</p>}
+            <div className="board" style={{ marginTop: 16 }}>
+              <div className="pair">
+                <div className="doc">
+                  <div className="doc-head">
+                    <span className="t-label">Channel {channelId.trim()}, live state</span>
+                    <span className="small"><Code>{`Assay.channels(${channelId.trim()})`}</Code></span>
+                  </div>
+                  <div className="doc-key">
+                    <span className="t-label">{legacyCh ? 'Pins no model' : 'Pins'}</span>
+                    {legacyCh ? (
+                      <span className="small">
+                        The requested model hash is zero: only the legacy <Code>redeem()</Code> can pay it, and{' '}
+                        <Code>redeemWithReceipt</Code> can never match.
+                      </span>
+                    ) : (
+                      <>
+                        <span className="t-diff">{pinnedName ?? 'an unrecognised model id'}</span>
+                        <span className="small">Only a receipt naming this model can pay it.</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="drow"><span className="t-label">Deposit</span><span className="v">{fmtUsdg(ch.deposit)} USDG</span></div>
+                  <div className="drow"><span className="t-label">Paid</span><span className="v">{fmtUsdg(ch.paid)} USDG</span></div>
+                  <div className="drow"><span className="t-label">Remaining</span><span className="v">{fmtUsdg(ch.deposit - ch.paid)} USDG</span></div>
+                </div>
+                <div className="doc">
+                  <div className="doc-head">
+                    <span className="t-label">Clock</span>
+                    <span className="small">when this channel can be closed and refunded</span>
+                  </div>
+                  <div className="doc-key">
+                    <span className="t-label">State</span>
+                    <span className="t-subject">{statusText}</span>
+                  </div>
+                  <div className="drow"><span className="t-label">Last activity</span><span className="v">{fmtStamp(lastActivity)}</span></div>
+                  <div className="drow"><span className="t-label">Close opens</span><span className="v">{fmtStamp(BigInt(deadline))}, {fmtCountdown(deadline - Number(snapshot.data.timestamp))}</span></div>
+                  <div className="drow">
+                    <span className="t-label">Close asked</span>
+                    <span className="v">
+                      {ch.closeRequestedAt !== 0n
+                        ? `${fmtStamp(ch.closeRequestedAt)}; finalize after ${fmtStamp(BigInt(finalizeAt))}, ${ch.closed ? 'finalized' : fmtCountdown(finalizeAt - Number(snapshot.data.timestamp))}`
+                        : 'not requested'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            <dl className="kv">
-              <dt>Agent</dt>
-              <dd className="mono"><a href={explorer.address(ch.agent)} target="_blank" rel="noreferrer">{ch.agent}</a></dd>
-              <dt>Provider</dt>
-              <dd className="mono"><a href={explorer.address(ch.provider)} target="_blank" rel="noreferrer">{ch.provider}</a></dd>
-              <dt>Timeout</dt>
-              <dd>requestClose after {fmtStamp(BigInt(deadline))} ({fmtCountdown(deadline - Number(snapshot.data.timestamp))})</dd>
-              <dt>Last activity</dt>
-              <dd>{fmtStamp(lastActivity)}</dd>
-              <dt>Close requested</dt>
-              <dd>
-                {ch.closeRequestedAt !== 0n
-                  ? `${fmtStamp(ch.closeRequestedAt)} (finalize after ${fmtStamp(BigInt(finalizeAt))}, ${ch.closed ? 'finalized' : fmtCountdown(finalizeAt - Number(snapshot.data.timestamp))})`
-                  : 'not requested'}
-              </dd>
-              <dt>Measurement (pinned at open)</dt>
-              <dd className="mono">{ch.measurement}</dd>
-              <dt>Requested model hash (pinned at open)</dt>
-              <dd className="mono">
-                {ch.requestedModelHash === ZERO_HASH
-                  ? 'unset. Legacy-only channel: redeem() can pay it, redeemWithReceipt can never match a zero hash.'
-                  : `${ch.requestedModelHash}. Receipt-only channel: only redeemWithReceipt can pay it, and redeem() reverts ModelMismatch.`}
-              </dd>
-            </dl>
-            {ch.requestedModelHash !== ZERO_HASH && (
-              <div style={{ marginTop: 12 }}>
-                <h3>Model-swap check, per receipt redeem</h3>
-                <p className="sub">
-                  Each row is a <b>RedeemedWithReceipt</b> event. <b>redeemWithReceipt</b> reverts <b>ModelMismatch</b>{' '}
-                  before it can emit one where the served model differs from the pinned one, so this list reads back
-                  payments that already passed the check. The live refusal is on the Overview.
+            <details className="more">
+              <summary>Addresses, the model hash and the enclave fingerprint</summary>
+              <dl className="kvs">
+                <dt>Agent</dt>
+                <dd><HexValue value={ch.agent} href={explorer.address(ch.agent)} /> <span className="small">signs vouchers, may close</span></dd>
+                <dt>Provider</dt>
+                <dd><HexValue value={ch.provider} href={explorer.address(ch.provider)} /> <span className="small">the only address that may redeem</span></dd>
+                <dt>Model hash</dt>
+                <dd>{legacyCh ? 'zero: no model pinned' : <><HexValue value={ch.requestedModelHash} /> <span className="small">keccak256 of the model id</span></>}</dd>
+                <dt>Measurement</dt>
+                <dd>
+                  <HexValue value={ch.measurement} />{' '}
+                  <span className="small">
+                    the enclave fingerprint this channel accepts;{' '}
+                    {APPROVED_MEASUREMENTS.some((m) => m.toLowerCase() === ch.measurement.toLowerCase()) ? 'on the allowlist' : 'not on the allowlist'}
+                  </span>
+                </dd>
+                <dt>Contract</dt>
+                <dd><HexValue value={ASSAY} href={explorer.address(ASSAY)} /> <span className="small">Assay</span></dd>
+              </dl>
+            </details>
+            {!legacyCh && (
+              <div style={{ marginTop: 32 }}>
+                <h3 className="t-subject">Paid through receipts</h3>
+                <p className="section-intro">
+                  Each row is a <Code>RedeemedWithReceipt</Code> event. <Code>redeemWithReceipt</Code> reverts{' '}
+                  <Code>ModelMismatch()</Code> before it can emit one whose served model differs from the pinned model, so
+                  this list reads back payments that already passed the check. The live refusal is on the Refusal page.
                 </p>
-                {receiptRedeems.isPending && <div className="skel" aria-busy="true">Reading receipt redemptions…</div>}
+                {receiptRedeems.isPending && <p className="small" aria-busy="true">Reading receipt redemptions.</p>}
                 {receiptRedeems.data && receiptRedeems.data.value.length === 0 && (
-                  <p className="note">No redeemWithReceipt payment on this channel yet: paid is 0.00.</p>
+                  <p className="note">No redeemWithReceipt payment on this channel yet: paid is {fmtUsdg(ch.paid)} USDG.</p>
                 )}
                 {receiptRedeems.data && receiptRedeems.data.value.length > 0 && (
-                  <table className="mono" style={{ width: '100%', fontSize: 13 }}>
+                  <table className="ledger">
                     <thead>
-                      <tr>
-                        <th style={{ textAlign: 'left' }}>Block</th>
-                        <th style={{ textAlign: 'left' }}>Requested model hash</th>
-                        <th style={{ textAlign: 'left' }}>Served model hash</th>
-                        <th style={{ textAlign: 'left' }}>Paid</th>
-                        <th style={{ textAlign: 'left' }}>Match</th>
-                      </tr>
+                      <tr><th>Block</th><th>Requested model</th><th>Served model</th><th>Paid</th><th>Match</th></tr>
                     </thead>
                     <tbody>
                       {receiptRedeems.data.value.map((log) => {
-                        const args = log.args as {
-                          requestedModelHash?: string;
-                          servedModelHash?: string;
-                          paidNow?: bigint;
-                        };
+                        const args = log.args as { requestedModelHash?: string; servedModelHash?: string; paidNow?: bigint };
                         const match = args.requestedModelHash === args.servedModelHash;
                         return (
                           <tr key={`${log.transactionHash}-${log.logIndex}`}>
-                            <td>{log.blockNumber?.toString()}</td>
-                            <td>{args.requestedModelHash}</td>
-                            <td>{args.servedModelHash}</td>
-                            <td>{args.paidNow !== undefined ? fmtUsdg(args.paidNow) : ''}</td>
-                            <td>{match ? 'match' : 'MISMATCH (should be impossible)'}</td>
+                            <td>{log.blockNumber?.toLocaleString('en-US')}</td>
+                            <td>{args.requestedModelHash ? <HexValue value={args.requestedModelHash} /> : '--'}</td>
+                            <td>{args.servedModelHash ? <HexValue value={args.servedModelHash} /> : '--'}</td>
+                            <td>{args.paidNow !== undefined ? `${fmtUsdg(args.paidNow)} USDG` : '--'}</td>
+                            <td className={match ? undefined : 'signal'}>{match ? 'match' : 'mismatch, which should be impossible'}</td>
                           </tr>
                         );
                       })}
@@ -438,132 +460,138 @@ export function Channel() {
                 )}
               </div>
             )}
-          </div>
+          </>
         )}
       </section>
 
-      <section className="ticket ch-ticket" aria-labelledby="c-open">
-        <h2 id="c-open">Open a channel</h2>
-        <p className="sub">
-            Real Paxos USDG, no test faucet in this app. Approve then open in two calls, or sign one EIP-2612 permit
-            and open in a single transaction with openChannelWithPermit.
-          </p>
-        {!chain.ready && <p className="note">{chain.reason}</p>}
+      <section className="section" aria-labelledby="c-open">
+        <div className="section-head">
+          <h2 id="c-open" className="t-section">Open a channel</h2>
+          {funds.data && <Stamp block={funds.data.block} />}
+        </div>
+        <p className="section-intro">
+          Real USDG, no test faucet in this app. Approve then open in two calls, or sign one EIP-2612 permit and open
+          in a single transaction with <Code>openChannelWithPermit</Code>.
+        </p>
+        {!chain.ready && <p className="note warn">{chain.reason}</p>}
         {funds.data && (
           <p className="note">
-            Balance <span className="num">{fmtUsdg(funds.data.value.bal)}</span> USDG. Allowance to Assay{' '}
-            <span className="num">{fmtUsdg(funds.data.value.allow)}</span> USDG. <Stamp block={funds.data.block} />
+            Wallet balance {fmtUsdg(funds.data.value.bal)} USDG. Allowance to Assay {fmtUsdg(funds.data.value.allow)} USDG.
           </p>
         )}
-        <div className="form">
+        <div className="fields" style={{ marginTop: 16 }}>
           <div className="field">
-            <label>Payment path</label>
-            <div className="mode-toggle" role="radiogroup" aria-label="Payment path">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={pinMode === 'receipt'}
-                className={pinMode === 'receipt' ? 'active' : ''}
-                onClick={() => setPinMode('receipt')}
-              >
-                Receipt-only, pinned to model
-                <small>Only redeemWithReceipt can pay this channel. A gateway-signed receipt whose served model differs from the pinned model is refused.</small>
+            <span className="label" id="c-path-l">Payment path</span>
+            <div className="choice" role="radiogroup" aria-labelledby="c-path-l">
+              <button type="button" role="radio" aria-checked={pinMode === 'receipt'} onClick={() => setPinMode('receipt')}>
+                <span className="dot" />
+                <span>Receipt-only, pinned to a model</span>
+                <small>Only redeemWithReceipt can pay this channel. A gateway receipt whose served model differs from the pinned model is refused.</small>
               </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={pinMode === 'legacy'}
-                className={pinMode === 'legacy' ? 'active' : ''}
-                onClick={() => setPinMode('legacy')}
-              >
-                Legacy signature only
+              <button type="button" role="radio" aria-checked={pinMode === 'legacy'} onClick={() => setPinMode('legacy')}>
+                <span className="dot" />
+                <span>Legacy signature only</span>
                 <small>Only the legacy redeem() ECDSA enclave signature can pay this channel. redeemWithReceipt can never match a zero model hash.</small>
               </button>
             </div>
           </div>
           {pinMode === 'receipt' && (
             <div className="field">
-              <label htmlFor="c-model">Model id</label>
-              <input id="c-model" value={modelId} onChange={(e) => setModelId(e.target.value)} spellCheck={false} />
-              <span className="hint">
-                Pinned as keccak256(utf8 modelId): <span className="mono">{requestedModelHash}</span>
-              </span>
+              <label className="label" htmlFor="c-model">Model id</label>
+              <input id="c-model" value={modelId} onChange={(e) => setModelId(e.target.value)} spellCheck={false} aria-invalid={!modelChoiceOk || undefined} />
+              <span className="hint">Pinned as keccak256 of the UTF-8 model id: <span className="hex" title={requestedModelHash}>{requestedModelHash.slice(0, 10)}…{requestedModelHash.slice(-8)}</span></span>
             </div>
           )}
           <div className="field">
-            <label htmlFor="c-provider">Provider address</label>
-            <input id="c-provider" value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="0x…" spellCheck={false} />
+            <label className="label" htmlFor="c-provider">Provider address</label>
+            <input id="c-provider" className="hexin" value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="0x…" spellCheck={false} />
             <span className="hint">The address allowed to call redeem on this channel.</span>
           </div>
           <div className="field">
-            <label htmlFor="c-deposit">Deposit (USDG)</label>
-            <input id="c-deposit" value={deposit} onChange={(e) => setDeposit(e.target.value)} inputMode="decimal" />
-            <span className="hint">Human units, 6 decimals.</span>
+            <label className="label" htmlFor="c-deposit">Deposit, USDG</label>
+            <input id="c-deposit" value={deposit} onChange={(e) => setDeposit(e.target.value)} inputMode="decimal" aria-invalid={!amountOk || undefined} />
+            <span className="hint">Whole USDG; 6 decimals are applied for you.</span>
           </div>
-          <div className="actions">
-            <button className="btn ghost" type="button" disabled={!chain.ready || writing || !amountOk}
-              onClick={() => run('Approve', () => writeContractAsync({ address: USDG_ADDRESS, abi: erc20Abi, functionName: 'approve', args: [ASSAY, amountWei as bigint] }))}>
-              Approve
-            </button>
-            <button className="btn" type="button" disabled={!chain.ready || writing || !isAddress(provider) || !amountOk || !modelChoiceOk}
-              onClick={() => run('Open channel', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'openChannel', args: [provider as Hex, amountWei as bigint, APPROVED_MEASUREMENTS[0], requestedModelHash] }))}>
-              Open channel
-            </button>
-            <button className="btn ghost" type="button" disabled={!chain.ready || writing || permitBusy || !isAddress(provider) || !amountOk || !modelChoiceOk}
-              onClick={openWithPermit}>
-              {permitBusy ? 'Signing permit…' : 'Open with permit (1 signature)'}
-            </button>
-          </div>
-          {!modelChoiceOk && <p className="note err" role="alert">Enter a model id, or switch to legacy signature only.</p>}
-          {amountWei !== null && funds.data && amountWei > funds.data.value.allow && (
-            <p className="note">Allowance is below this deposit; approve first.</p>
-          )}
         </div>
-      </section>
-      </div>
-
-      <VoucherPanel agent={exists && ch ? ch.agent : undefined} channelIdDefault={channelId} />
-
-      <RedeemPanel channelIdDefault={channelId} agent={exists && ch ? ch.agent : undefined} />
-
-      <section className="section" aria-labelledby="c-close">
-        <div className="section-head">
-          <h2 id="c-close"><span className="step-n">3.</span> Close channel</h2>
+        <div className="actions" style={{ marginTop: 20 }}>
+          <button className="btn line" type="button" disabled={!chain.ready || writing || !amountOk}
+            onClick={() => run('Approve', () => writeContractAsync({ address: USDG_ADDRESS, abi: erc20Abi, functionName: 'approve', args: [ASSAY, amountWei as bigint] }))}>
+            Approve
+          </button>
+          <button className="btn" type="button" disabled={!chain.ready || writing || !isAddress(provider) || !amountOk || !modelChoiceOk}
+            onClick={() => run('Open channel', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'openChannel', args: [provider as Hex, amountWei as bigint, APPROVED_MEASUREMENTS[0], requestedModelHash] }))}>
+            Open channel with {amountOk ? deposit.trim() : '?'} USDG
+          </button>
+          <button className="btn line" type="button" disabled={!chain.ready || writing || permitBusy || !isAddress(provider) || !amountOk || !modelChoiceOk}
+            onClick={openWithPermit}>
+            {permitBusy ? 'Signing permit' : 'Open with one signature (permit)'}
+          </button>
         </div>
-        <p className="sub">
-          Two steps, both agent only. First requestClose starts the challenge window once the timeout has passed
-          since the last redeem (or since opening if never redeemed). Then finalizeClose refunds the unredeemed
-          balance after the challenge window ({snapshot.data ? challengeSecs.toLocaleString('en-US') : '…'} seconds).
-          The provider may still redeem a pending voucher any time before finalize.
-        </p>
-        {snapshot.data && exists && ch && (
-          <p className="note" role="status">
-            {ch.closed
-              ? `Channel ${channelId} is finalized and closed.`
-              : ch.closeRequestedAt !== 0n
-                ? `Challenge window ends ${fmtStamp(BigInt(finalizeAt))} (${fmtCountdown(finalizeAt - Number(snapshot.data.timestamp))}).`
-                : `requestClose opens ${fmtStamp(BigInt(deadline))} (${fmtCountdown(deadline - Number(snapshot.data.timestamp))}).`}
-          </p>
+        {!modelChoiceOk && <p className="note warn" role="alert" style={{ marginTop: 12 }}>Enter a model id, or switch to legacy signature only.</p>}
+        {amountWei !== null && funds.data && amountWei > funds.data.value.allow && (
+          <p className="note" style={{ marginTop: 12 }}>The allowance is below this deposit; approve first, or open with the permit.</p>
         )}
-        <div className="actions">
-          <button className="btn ghost" type="button" disabled={!chain.ready || writing || chanId === null}
-            onClick={() => run('Request close', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'requestClose', args: [chanId as bigint] }))}>
-            Request close {channelId}
-          </button>
-          <button className="btn ghost" type="button" disabled={!chain.ready || writing || chanId === null}
-            onClick={() => run('Finalize close', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'finalizeClose', args: [chanId as bigint] }))}>
-            Finalize close {channelId}
-          </button>
+      </section>
+
+      <section className="section" aria-labelledby="c-pay">
+        <div className="section-head">
+          <h2 id="c-pay" className="t-section">Pay for a call, then close</h2>
         </div>
+        <ol className="steps" style={{ marginTop: 16 }}>
+          <VoucherPanel agent={exists && ch ? ch.agent : undefined} channelIdDefault={channelId} />
+          <RedeemPanel channelIdDefault={channelId} agent={exists && ch ? ch.agent : undefined} />
+          <li className="step" aria-labelledby="c-close">
+            <Num n={3} mark="plain" />
+            <div className="step-body">
+              <h3 id="c-close" className="t-section">Close the channel</h3>
+              <p className="prose">
+                Two calls, both from the agent. <Code>requestClose</Code> starts the challenge window once the timeout has
+                passed since the last redeem, or since opening if never redeemed. <Code>finalizeClose</Code> refunds the
+                unredeemed balance after the challenge window
+                ({snapshot.data ? challengeSecs.toLocaleString('en-US') : '…'} seconds). The provider may still redeem a
+                pending voucher any time before finalize.
+              </p>
+              {snapshot.data && exists && ch && (
+                <p className="note" role="status">
+                  {ch.closed
+                    ? `Channel ${channelId} is finalized and closed.`
+                    : ch.closeRequestedAt !== 0n
+                      ? `The challenge window ends ${fmtStamp(BigInt(finalizeAt))}, ${fmtCountdown(finalizeAt - Number(snapshot.data.timestamp))}.`
+                      : `requestClose opens ${fmtStamp(BigInt(deadline))}, ${fmtCountdown(deadline - Number(snapshot.data.timestamp))}.`}
+                </p>
+              )}
+              <div className="actions">
+                <button className="btn line" type="button" disabled={!chain.ready || writing || chanId === null}
+                  onClick={() => run('Request close', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'requestClose', args: [chanId as bigint] }))}>
+                  Request close
+                </button>
+                <button className="btn line" type="button" disabled={!chain.ready || writing || chanId === null}
+                  onClick={() => run('Finalize close', () => writeContractAsync({ address: ASSAY, abi: assayAbi, functionName: 'finalizeClose', args: [chanId as bigint] }))}>
+                  Finalize close
+                </button>
+              </div>
+            </div>
+          </li>
+        </ol>
       </section>
 
       {(txHash || actionError || receipt.isSuccess) && (
         <section className="section" aria-labelledby="c-tx">
           <div className="section-head">
-            <h2 id="c-tx">Last transaction</h2>
+            <h2 id="c-tx" className="t-section">Last transaction</h2>
           </div>
-          {txHash && <p className="note"><a className="tx" href={explorer.tx(txHash)} target="_blank" rel="noreferrer">{txHash}</a> {receipt.isSuccess ? '(mined)' : receipt.isError ? '(reverted onchain)' : '(pending…)'}</p>}
-          {actionError && <p className="note err" role="alert">{actionError}</p>}
+          {txHash && (
+            <div className="result">
+              <span className="rl">Transaction</span>
+              <span className="rv"><HexValue value={txHash} head={10} tail={8} href={explorer.tx(txHash)} /> {receipt.isSuccess ? 'mined' : receipt.isError ? 'reverted onchain' : 'pending'}</span>
+            </div>
+          )}
+          {actionError && (
+            <div className="result bad" role="alert">
+              <span className="rl">Refused</span>
+              <span className="rv">{actionError}</span>
+            </div>
+          )}
         </section>
       )}
     </main>
@@ -638,51 +666,55 @@ function VoucherPanel({ agent, channelIdDefault }: { agent?: string; channelIdDe
   }
 
   return (
-    <section className="section" aria-labelledby="c-voucher">
-      <div className="section-head">
-        <h2 id="c-voucher"><span className="step-n">1.</span> Sign the agent voucher</h2>
-      </div>
-      <p className="sub">
-        The connected wallet signs EIP-712 <b>Voucher</b> (Assay, version 1, this chain, this contract). Sign with
-        the channel&apos;s agent key; anyone else&apos;s signature fails the payer check.
-      </p>
-      {!chain.ready && <p className="note">{chain.reason}</p>}
-      <div className="form">
-        <div className="field">
-          <label htmlFor="v-cid">Channel id</label>
-          <input id="v-cid" value={cid} onChange={(e) => setCid(e.target.value)} inputMode="numeric" />
-          <span className="hint"> </span>
-        </div>
-        <div className="field">
-          <label htmlFor="v-cum">Cumulative amount (base units)</label>
-          <input id="v-cum" value={cumulative} onChange={(e) => setCumulative(e.target.value)} inputMode="numeric" placeholder="e.g. 50000000 for 50.00 USDG" />
-          <span className="hint">Must be above paid and at most the deposit.</span>
-        </div>
-        <div className="field">
-          <label htmlFor="v-req">requestHash (bytes32)</label>
-          <input id="v-req" value={req} onChange={(e) => setReq(e.target.value)} placeholder="0x…" spellCheck={false} />
-          <span className="hint"> </span>
-        </div>
-        <div className="field">
-          <label htmlFor="v-resp">responseHash (bytes32)</label>
-          <input id="v-resp" value={resp} onChange={(e) => setResp(e.target.value)} placeholder="0x…" spellCheck={false} />
-          <span className="hint">Must differ from the channel&apos;s last redeemed response hash.</span>
+    <li className="step" aria-labelledby="c-voucher">
+      <Num n={1} mark="plain" />
+      <div className="step-body">
+        <h3 id="c-voucher" className="t-section">Sign the agent voucher</h3>
+        <p className="prose">
+          The connected wallet signs an EIP-712 <Code>Voucher</Code> (Assay, version 1, this chain, this contract). Sign
+          with the channel&apos;s agent key; anyone else&apos;s signature fails the payer check.
+        </p>
+        {!chain.ready && <p className="note warn">{chain.reason}</p>}
+        <div className="fields">
+          <div className="field">
+            <label className="label" htmlFor="v-cid">Channel id</label>
+            <input id="v-cid" value={cid} onChange={(e) => setCid(e.target.value)} inputMode="numeric" />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="v-cum">Cumulative amount, base units</label>
+            <input id="v-cum" value={cumulative} onChange={(e) => setCumulative(e.target.value)} inputMode="numeric" placeholder="50000000 is 50.00 USDG" />
+            <span className="hint">Must be above what the channel has paid and at most its deposit.</span>
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="v-req">Request hash, bytes32</label>
+            <input id="v-req" className="hexin" value={req} onChange={(e) => setReq(e.target.value)} placeholder="0x…" spellCheck={false} />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="v-resp">Response hash, bytes32</label>
+            <input id="v-resp" className="hexin" value={resp} onChange={(e) => setResp(e.target.value)} placeholder="0x…" spellCheck={false} />
+            <span className="hint">Must differ from the channel&apos;s last redeemed response hash.</span>
+          </div>
         </div>
         <div className="actions">
           <button className="btn" type="button" disabled={!chain.ready || !valid || isPending} onClick={sign}>
-            {isPending ? 'Signing…' : 'Sign voucher'}
+            {isPending ? 'Signing' : 'Sign voucher'}
           </button>
         </div>
         {payerSig && (
           <div className="field">
-            <label htmlFor="v-sig">payerSig</label>
-            <input id="v-sig" value={payerSig} readOnly spellCheck={false} />
-            <span className="hint">Copy this into the redeem panel below.</span>
+            <label className="label" htmlFor="v-sig">Signature (payerSig)</label>
+            <input id="v-sig" className="hexin" value={payerSig} readOnly spellCheck={false} />
+            <span className="hint">Paste this into step 2.</span>
           </div>
         )}
-        {localCheck && <p className="note">{localCheck}</p>}
+        {localCheck && (
+          <div className="result">
+            <span className="rl">Checked</span>
+            <span className="rv">{localCheck}</span>
+          </div>
+        )}
       </div>
-    </section>
+    </li>
   );
 }
 
@@ -871,82 +903,64 @@ function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; ag
   }
 
   return (
-    <section className="section" aria-labelledby="c-redeem">
-      <div className="section-head">
-        <h2 id="c-redeem"><span className="step-n">2.</span> Redeem with both signatures</h2>
-      </div>
-      <p className="sub">
-        Diagnose recovers each signature locally and names the failing one. Simulate runs the exact call against
-        the chain without sending it. Send submits from the connected wallet, which must be the provider. This form
-        only builds the legacy redeem() call.
-      </p>
-      {pinExists && (
-        <p className={pinnedChannel ? 'note err' : 'note ok'} role={pinnedChannel ? 'alert' : 'status'}>
-          {pinnedChannel
-            ? 'This channel is model-pinned: it accepts redeemWithReceipt (Phala-signed receipt) only. The contract refuses a model-blind payment on a pinned channel, so redeem() below always reverts ModelMismatch. Send is disabled.'
-            : 'This channel is legacy-only: it accepts redeem() (ECDSA enclave signature) below, and can never be paid through redeemWithReceipt.'}
-          {' '}{pinCheck.data && <Stamp block={pinCheck.data.block} />}
+    <li className="step" aria-labelledby="c-redeem">
+      <Num n={2} mark="plain" />
+      <div className="step-body">
+        <h3 id="c-redeem" className="t-section">Redeem with both signatures</h3>
+        <p className="prose">
+          Diagnose recovers each signature locally and names the one that fails. Simulate runs the exact call against
+          the chain without sending it. Send submits from the connected wallet, which must be the provider. This form
+          builds the legacy <Code>redeem()</Code> call only.
         </p>
-      )}
-      <div className="form">
-        <div className="field">
-          <label htmlFor="r-cid">Channel id</label>
-          <input id="r-cid" value={cid} onChange={(e) => setCid(e.target.value)} inputMode="numeric" />
-          <span className="hint"> </span>
-        </div>
-        <div className="field">
-          <label htmlFor="r-cum">Cumulative amount (base units)</label>
-          <input id="r-cum" value={cumulative} onChange={(e) => setCumulative(e.target.value)} inputMode="numeric" />
-          <span className="hint"> </span>
-        </div>
-        <div className="field">
-          <label htmlFor="r-req">requestHash (bytes32)</label>
-          <input id="r-req" value={req} onChange={(e) => setReq(e.target.value)} placeholder="0x…" spellCheck={false} />
-          <span className="hint"> </span>
-        </div>
-        <div className="field">
-          <label htmlFor="r-resp">responseHash (bytes32)</label>
-          <input id="r-resp" value={resp} onChange={(e) => setResp(e.target.value)} placeholder="0x…" spellCheck={false} />
-          <span className="hint"> </span>
-        </div>
-        <div className="field">
-          <label htmlFor="r-payer">payerSig (EIP-712 voucher)</label>
-          <input id="r-payer" value={payerSig} onChange={(e) => setPayerSig(e.target.value)} placeholder="0x…" spellCheck={false} />
-          <span className="hint"> </span>
-        </div>
-        <div className="field">
-          <label htmlFor="r-enclave">enclaveSig (personal_sign receipt)</label>
-          <input id="r-enclave" value={enclaveSig} onChange={(e) => setEnclaveSig(e.target.value)} placeholder="0x…" spellCheck={false} />
-          <span className="hint">Phala legacy format over the text "requestHash:responseHash" as 64 lowercase hex chars each, no 0x.</span>
+        {pinExists && (
+          <p className={pinnedChannel ? 'note warn' : 'note'} role={pinnedChannel ? 'alert' : 'status'}>
+            {pinnedChannel
+              ? 'This channel is model-pinned: it accepts redeemWithReceipt only, with a gateway-signed receipt. The contract refuses a model-blind payment on a pinned channel, so redeem() below always reverts ModelMismatch. Send is disabled.'
+              : 'This channel is legacy-only: it accepts redeem() with an ECDSA enclave signature, and can never be paid through redeemWithReceipt.'}{' '}
+            {pinCheck.data && <Stamp block={pinCheck.data.block} />}
+          </p>
+        )}
+        <div className="fields">
+          <div className="field">
+            <label className="label" htmlFor="r-cid">Channel id</label>
+            <input id="r-cid" value={cid} onChange={(e) => setCid(e.target.value)} inputMode="numeric" />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="r-cum">Cumulative amount, base units</label>
+            <input id="r-cum" value={cumulative} onChange={(e) => setCumulative(e.target.value)} inputMode="numeric" />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="r-req">Request hash, bytes32</label>
+            <input id="r-req" className="hexin" value={req} onChange={(e) => setReq(e.target.value)} placeholder="0x…" spellCheck={false} />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="r-resp">Response hash, bytes32</label>
+            <input id="r-resp" className="hexin" value={resp} onChange={(e) => setResp(e.target.value)} placeholder="0x…" spellCheck={false} />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="r-payer">payerSig, the EIP-712 voucher</label>
+            <input id="r-payer" className="hexin" value={payerSig} onChange={(e) => setPayerSig(e.target.value)} placeholder="0x…" spellCheck={false} />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="r-enclave">enclaveSig, personal_sign</label>
+            <input id="r-enclave" className="hexin" value={enclaveSig} onChange={(e) => setEnclaveSig(e.target.value)} placeholder="0x…" spellCheck={false} />
+            <span className="hint">The legacy gateway format: a signature over the text &quot;requestHash:responseHash&quot;, 64 lowercase hex characters each, no 0x.</span>
+          </div>
         </div>
         <div className="actions">
-          <button className="btn ghost" type="button" disabled={busy} onClick={diagnose}>Diagnose signatures</button>
-          <button className="btn ghost" type="button" disabled={busy || !chain.ready} onClick={simulate}>Simulate redeem</button>
+          <button className="btn line" type="button" disabled={busy} onClick={diagnose}>Diagnose signatures</button>
+          <button className="btn line" type="button" disabled={busy || !chain.ready} onClick={simulate}>Simulate redeem</button>
           <button className="btn" type="button" disabled={isPending || busy || !chain.ready || pinnedChannel === true} onClick={send}>Send redeem</button>
         </div>
-        {pinnedChannel === true && (
-          <p className="hint">Send disabled: this channel is model-pinned and only redeemWithReceipt can pay it.</p>
-        )}
+        {pinnedChannel === true && <p className="note">Send is disabled: this channel is model-pinned and only redeemWithReceipt can pay it.</p>}
         {report && (
-          <div className="match">
-            <div className="side">
-              <div className="label">payerSig recovers to</div>
-              <div className="val">{payerSig ? 'agent address' : 'none yet'}</div>
-            </div>
-            <div className="arrow">&harr;</div>
-            <div className="side">
-              <div className="label">enclaveSig recovers to</div>
-              <div className="val">{enclaveSig ? 'signer address' : 'none yet'}</div>
-            </div>
-            <div className="verdict">
-              <span className={`verdict ${reportBad ? 'bad' : 'ok'}`}>
-                {reportBad ? 'Refused' : 'Match'}
-              </span>
-            </div>
+          <div className={reportBad ? 'result bad' : 'result'} role={reportBad ? 'alert' : 'status'}>
+            <span className="rl">{reportBad ? 'Reverts' : 'Result'}</span>
+            <span className="rv">{report}</span>
           </div>
         )}
-        {report && <p className={reportBad ? 'note err' : 'note ok'} role={reportBad ? 'alert' : 'status'}>{report}</p>}
       </div>
-    </section>
+    </li>
   );
 }
+

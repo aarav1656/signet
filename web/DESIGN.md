@@ -30,14 +30,15 @@ Genre: verification report. A title block with provenance, a figure, a keyed leg
 
 | Token | Face | Size / line | Weight | Tracking | Use |
 |---|---|---|---|---|---|
-| `--t-display` | Red Hat Display | 56 / 58 (mobile 36 / 40) | 300 | -0.035em | Overview title only |
+| `--t-display` | Red Hat Display | 44 / 50 (mobile 26 / 31) | 300 | -0.03em | the Overview's one sentence only |
 | `--t-title` | Red Hat Display | 36 / 40 (mobile 28 / 32) | 350 | -0.025em | Channel and Verify titles |
 | `--t-section` | Red Hat Display | 22 / 28 | 450 | -0.012em | section titles |
+| `--t-diff` | Red Hat Display | 30 / 34 (mobile 22 / 26) | 350 | -0.022em | only the pinned model, the served model and the refused amount on the Overview figure |
 | `--t-subject` | Red Hat Display | 18 / 24 | 500 | -0.008em | a channel or key as the subject of a line |
 | `--t-body` | B612 | 15 / 24 | 400 | 0 | prose, row text |
 | `--t-small` | B612 | 13 / 20 | 400 | 0.005em | hints, provenance |
 | `--t-label` | B612 | 11 / 14 | 700 | +0.08em, uppercase | title block labels, form labels, drawing labels |
-| `--t-hex` | B612 Mono | 12 / 16 | 400 | 0 | literal hex only |
+| `--t-hex` | B612 Mono | 12 / 16 | 400 | 0 | literal hex and code identifiers only (B612's parentheses are square, so `ModelMismatch()` is set in the mono) |
 
 Tabular figures (`font-variant-numeric: tabular-nums`) only inside tables and the legend's figure column.
 Headings are never italic. No weight above 700 anywhere; display never above 500.
@@ -80,7 +81,7 @@ of every route. Taken from Cloudflare's request-path ground (REFS 13) and the TE
   documents with their live values written inside them at body size (TE TP-7, REFS 15,
   `refs/te-guide-tp-7-1440.png`), and circled numbers 1 to 9 placed on the fields each check reads (TE
   OP-1 field, REFS 11, `refs/te-guide-1440.png`).
-- **Keyed legend** (Overview): one full-width 56px row per check, circled number, the check in words, what
+- **Keyed legend** (Overview): one full-width 44px row per check, circled number, the check in words, what
   was read, the result. Order is the contract's evaluation order. From the EP-133 index (REFS 14,
   `refs/te-guide-ep-133-1440.png`).
 - **Specification lines** (channels, keys, constants): subject in `--t-subject`, then one metadata line with
@@ -93,15 +94,16 @@ of every route. Taken from Cloudflare's request-path ground (REFS 13) and the TE
 
 ## Motion
 
-One orchestrated sequence, on the Overview only, and only after the chain read resolves:
-1. 0 to 400ms: the three documents' outlines draw (stroke-dashoffset), values fade in.
-2. 400 to 1500ms: callouts 1 to 6 light in contract order, 150ms apart; each draws its leader line and
-   ticks its legend row.
-3. 1500 to 1900ms: callout 7 draws the line from the channel's pinned model to the receipt's served model;
-   the line breaks with a magenta cut, the voucher's `1.00 USDG` gets its strike, row 7 turns magenta.
-4. 8 and 9 stay dotted graphite: not reached.
+One orchestrated sequence, on the Overview's first-screen visual, once the chain read resolves:
+1. 0 to 400ms: the two documents (what channel 0 was opened for, what the test receipt says) wipe in.
+2. 1300 to 1750ms: the leader between the two model names draws from both ends.
+3. 1600ms: the magenta cut lands in the gap and `served-model` turns magenta.
+4. 1700 to 2020ms: the strike runs through `1.00 USDG`.
 
-State transitions: route content fades 160ms; a submitted form row shows its result in place. Easing
+Opening "Inspect the call" runs the second half of the same sequence on the full sheet: callouts 1 to 6 fill in
+contract order 150ms apart and tick their legend rows; 7 is magenta; 8 and 9 stay dashed, not reached.
+
+State transitions: route content fades 160ms; a submitted form shows its result line in place. Easing
 `cubic-bezier(0.2, 0, 0, 1)`. No count-ups, no hover lifts, no scattered micro-animations.
 `prefers-reduced-motion: reduce` renders the final state with no animation.
 
@@ -109,8 +111,8 @@ State transitions: route content fades 160ms; a submitted form row shows its res
 
 - No cards, tiles, raised panels or rounded boxes; nothing nested inside a bordered box.
 - No pills, badges or status chips. State is a word in the row.
-- No big-number hero; no figure larger than `--t-subject`.
-- No mono outside literal hex. No full 64-character hash in running layout.
+- No big-number hero; no figure larger than `--t-subject`, except the three `--t-diff` strings that are the argument itself.
+- No mono outside literal hex and code identifiers. No full 64-character hash in running layout.
 - No green, red, blue, purple, teal, amber or orange. One accent, one job.
 - No gradients, glows, shadows, glass, neon.
 - No icons above headings; no decorative icons at all. Circled numbers are the only glyphs.
@@ -119,7 +121,28 @@ State transitions: route content fades 160ms; a submitted form row shows its res
 - No copy that implies a real llama call was swapped. The receipt is a test receipt signed by a test key,
   whose served model is the string `served-model`, offered to live channel 0.
 
-## Composition of the first screen
+## Composition of the first screen (phase 3 pick, `design-research/PICK.md`, then the Simplicity rule)
 
-Decided in phase 3 from three mockups (`web/design-research/mockups/`), recorded in
-`web/design-research/PICK.md`. The shipped Overview follows the pick.
+Every route: one sentence that names its job, one visual, one primary action. Terms get a one-line gloss the
+first time they appear. Hashes, addresses and the contract-order checks sit behind a click.
+
+```
+Overview
+[ title block: network | read live at block N | VERDICT: Payment refused (magenta fill) ]
+[ one sentence, display 44                  ]   [ gloss: sealed gateway, receipt ]
+[                                           ]   [ OPEN A CHANNEL PINNED TO A MODEL ]
+[ caption: this receipt names a different model than the one channel 0 was opened for ... ]
+[ CHANNEL 0 WAS OPENED FOR      ]  --//--  [ TEST RECEIPT SAYS IT SERVED ]
+[ meta-llama/llama-3.3-70b-...  ]  magenta [ served-model                ]
+[ 1.00 USDG struck: not paid. It stays in channel 0. A read-only call. ]
+[ + Inspect the call: the full sheet, voucher, call, callouts 1-9, legend, receipt bytes ]
+then channels and keys as specification lines, what the proof covers, contract constants
+
+Channels: title block | "Lock USDG for one model, then pay per call" + gloss + OPEN A NEW CHANNEL |
+  picker | the channel and its clock as two drawn documents | addresses behind a click | open form |
+  steps 1 to 3
+Verify: title block | "Verify a gateway, then register its key" + gloss | steps 1 to 3 |
+  the two registered keys as drawn documents | how registration works
+```
+
+Mobile stacks everything in one column; the first screen keeps the sentence, the visual and the action.

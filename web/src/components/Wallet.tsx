@@ -19,7 +19,7 @@ export function Wallet() {
           disabled={isPending || connectors.length === 0}
           onClick={() => (connectors.length === 1 ? connect({ connector: connectors[0] }) : setPickerOpen((v) => !v))}
         >
-          {isPending ? 'Connecting…' : 'Connect Wallet'}
+          {isPending ? 'Connecting' : 'Connect wallet'}
         </button>
         {pickerOpen && connectors.length > 1 && (
           <div className="wallet-menu" role="menu">
@@ -45,12 +45,12 @@ export function Wallet() {
   return (
     <div className="wallet">
       {wrong && (
-        <button className="pill warn" onClick={() => switchChain({ chainId: assayChain.id })}>
-          wrong network, switch to {assayChain.name}
+        <button className="btn line" onClick={() => switchChain({ chainId: assayChain.id })}>
+          Switch to {assayChain.name}
         </button>
       )}
-      <span className="tx">{conn.address ? short(conn.address) : 'reconnecting'}</span>
-      <button className="pill" onClick={() => disconnect()}>
+      <span className="hex">{conn.address ? short(conn.address) : 'reconnecting'}</span>
+      <button className="textbtn" onClick={() => disconnect()}>
         disconnect
       </button>
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { decodeFunctionResult, encodeFunctionData, isAddress, isAddressEqual, type Hex } from 'viem';
 import { usePublicClient } from 'wagmi';
-import { ASSAY, assayChain, explorer } from '../chain';
+import { ASSAY, explorer } from '../chain';
 import { assayAbi } from '../abi/Assay.generated';
 import {
   APPROVED_MEASUREMENTS,
@@ -10,7 +10,8 @@ import {
 } from '../lib/addresses.generated';
 import { short } from '../lib/format';
 import demo from '../lib/refusal-demo.json';
-import { Stamp } from '../components/Stamp';
+import { Code, HexValue, Num, Stamp, TitleBlock } from '../components/Stamp';
+import { KeysSection } from './Overview';
 import { useOnChain } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
 
@@ -289,288 +290,262 @@ export function Verify() {
 
   return (
     <main>
-      <div className="ov-head">
-        <div>
-          <h1>Verify an attestation</h1>
-          <p className="lede">
-            Take a gateway from a fresh Intel TDX quote to <b>register</b>. Every check below is a local{' '}
-            <b>eth_call</b>; nothing is submitted until you transact.
-          </p>
-        </div>
-      </div>
-      <div className="v-grid">
-        <div className="v-main">
-      <section className="section" aria-labelledby="v-nonce">
-        <div className="section-head">
-          <h2 id="v-nonce"><span className="step-n">1.</span> Contract-issued nonce</h2>
-        </div>
-        <p className="sub">
-          <b>nextRegisterNonce</b> binds the next quote this address may register. Each accepted register advances
-          the counter, so a quote fetched now can never be replayed later.
+      <TitleBlock
+        cells={[
+          { label: 'Registering', value: providerOk ? <HexValue value={effectiveProvider} /> : 'no address yet', lead: true },
+          { label: 'Nonce', value: contractNonce ? (pinned ? `pinned to block ${pinned.refBlock.toLocaleString('en-US')}` : 'live, re-read every 15 s') : '--' },
+          {
+            label: 'Read at',
+            value: nonceSnap.data ? <>block <a href={explorer.block(nonceSnap.data.block)} target="_blank" rel="noreferrer">{nonceSnap.data.block.toLocaleString('en-US')}</a></> : 'not read yet',
+          },
+        ]}
+      />
+
+      <header className="pagehead">
+        <h1 className="t-title">Verify a gateway, then register its key</h1>
+        <p className="gloss" style={{ maxWidth: '84ch', marginBottom: 0 }}>
+          <b>Attestation report:</b> a report signed by the gateway&apos;s TEE hardware (an Intel TDX quote) saying which
+          software it runs and which key it holds. <b>Nonce:</b> a one-time number the contract issues, so an old report
+          cannot be reused. Every check here is a read-only call; nothing is sent until you transact. The agent CLI does
+          all three steps in one run: <Code>cd agent &amp;&amp; npm run register</Code>.
         </p>
-        {!chain.ready && !provider.trim() && <p className="note">{chain.reason} Or paste any provider address below to read its nonce.</p>}
-        <div className="form">
-          <div className="field">
-            <label htmlFor="v-provider">Registering provider address</label>
-            <input
-              id="v-provider"
-              value={provider}
-              onChange={(e) => { setProvider(e.target.value); setDryRun(null); }}
-              placeholder={chain.address ?? '0x…'}
-              spellCheck={false}
-            />
-            <span className="hint">
-              {provider.trim()
-                ? (providerOk ? 'Reading the nonce for this address.' : 'Not a valid address yet.')
-                : chain.address
-                  ? 'Empty, so the connected wallet is used.'
-                  : 'Enter the address that will send register().'}
-            </span>
-          </div>
-        </div>
-        {providerOk && nonceSnap.isPending && <div className="skel" aria-busy="true">Reading nextRegisterNonce…</div>}
-        {providerOk && nonceSnap.isError && (
-          <p className="note err" role="alert">
-            {(() => {
-              const name = assayErrorName(nonceSnap.error);
-              return name && ASSAY_ERROR_HELP[name]
-                ? `${name}(). ${ASSAY_ERROR_HELP[name]}`
-                : `Could not read the nonce (${String(nonceSnap.error)}).`;
-            })()}{' '}
-            <button className="btn-ghost" onClick={() => nonceSnap.refetch()}>retry</button>
-          </p>
-        )}
-        {providerOk && nonceSnap.data && contractNonce && (
-          <div>
-            <div style={{ marginTop: 12 }}><Stamp block={nonceSnap.data.block} /></div>
-            <dl className="kv">
-              <dt>nextRegisterNonce</dt>
-              <dd className="mono">{contractNonce}</dd>
-              <dt>refBlock</dt>
-              <dd className="mono">
-                {contractRefBlock?.toString()} {pinned ? '(pinned)' : '(live, updates every 15 s)'}
-              </dd>
-              <dt>Fetch URL</dt>
-              <dd className="mono">
-                <a href={phalaUrl} target="_blank" rel="noreferrer">{phalaUrl}</a>
-              </dd>
-            </dl>
-            <div className="actions">
-              <button className="btn ghost" onClick={fillContractNonceUrl} type="button">Use this URL for the fetch</button>
-              {pinned && (
-                <button className="btn ghost" onClick={() => setPinned(null)} type="button">Unpin</button>
-              )}
-            </div>
-            {pinned && (
-              <p className="note">
-                Pinned to block {pinned.refBlock.toString()}. Arbitrum answers for that block hash only for the next 256
-                blocks, about 66 seconds on Arbitrum Sepolia, so the register transaction has to land inside that window.
-                The agent CLI does all three steps in one run: <code>npm run register</code>.
-              </p>
-            )}
-            <p className="note">
-              The nonce in the URL has no 0x prefix. The quote returned binds it at report_data[32:64] with
-              report_data[20:32] zeroed, and register() must arrive from {short(effectiveProvider)} before any other
-              register from that address consumes this counter value.
+      </header>
+
+      <section aria-label="Register a gateway key">
+      <ol className="steps">
+        <li className="step" aria-labelledby="v-nonce">
+          <Num n={1} mark={contractNonce ? 'pass' : 'plain'} />
+          <div className="step-body">
+            <h2 id="v-nonce" className="t-section">Read the contract-issued nonce</h2>
+            <p className="prose">
+              <Code>nextRegisterNonce</Code> binds the next quote this address may register. Each accepted register
+              advances the counter, so a quote fetched now can never be replayed later.
             </p>
-          </div>
-        )}
-        {!providerOk && (
-          <div className="actions">
-            <button className="btn ghost" type="button" onClick={() => setProvider(demo.provider)}>
-              Use live provider {short(demo.provider)}
-            </button>
-          </div>
-        )}
-      </section>
-
-      <section className="section" aria-labelledby="v-in">
-        <div className="section-head">
-          <h2 id="v-in"><span className="step-n">2.</span> Attestation report</h2>
-        </div>
-        <div className="form">
-          <div className="field">
-            <label htmlFor="v-url">Fetch from URL (optional)</label>
-            <input id="v-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" spellCheck={false} />
-            <span className="hint">Fetch with the nonce URL from step 1, never a reused or random nonce.</span>
-          </div>
-          <div className="actions">
-            <button className="btn ghost" onClick={fillContractNonceUrl} disabled={!phalaUrl} type="button">Use the nonce URL from step 1</button>
-            <button className="btn ghost" onClick={fetchFromUrl} type="button" disabled={!url.trim() || fetchState === 'loading'}>
-              {fetchState === 'loading' ? 'Fetching…' : 'Fetch'}
-            </button>
-          </div>
-          {fetchState === 'error' && <p className="note err" role="alert">{fetchError}</p>}
-          <div className="field">
-            <label htmlFor="v-json">Attestation JSON</label>
-            <textarea
-              id="v-json"
-              value={text}
-              onChange={(e) => { setText(e.target.value); setDryRun(null); }}
-              placeholder='Paste the endpoint response body here…'
-              spellCheck={false}
-              aria-invalid={parseError ? true : undefined}
-              aria-describedby="v-json-hint"
-            />
-            <span className="hint" id="v-json-hint">
-              {parseError ?? 'Parsed locally in your browser; nothing leaves this page until you dry-run.'}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {parsed && (
-        <section className="section" aria-labelledby="v-fields">
-          <div className="section-head">
-            <h2 id="v-fields">Parsed fields</h2>
-          </div>
-          <dl className="kv">
-            <dt>signing_address</dt>
-            <dd className="mono">
-              {parsed.signingAddress ?? <span style={{ color: 'var(--color-dim)' }}>absent</span>}
-              {parsed.signingAddress && (
-                <> <a href={explorer.address(parsed.signingAddress)} target="_blank" rel="noreferrer">{short(parsed.signingAddress)}</a></>
-              )}
-            </dd>
-            <dt>nonce</dt>
-            <dd className="mono">{parsed.nonce ?? <span style={{ color: 'var(--color-dim)' }}>absent (expected under nvidia_payload.nonce)</span>}</dd>
-            {reportNonceMatches !== undefined && (
+            {!chain.ready && !provider.trim() && <p className="note warn">{chain.reason} Or paste any provider address below to read its nonce.</p>}
+            <div className="fields">
+              <div className="field">
+                <label className="label" htmlFor="v-provider">Registering address</label>
+                <input
+                  id="v-provider"
+                  className="hexin"
+                  value={provider}
+                  onChange={(e) => { setProvider(e.target.value); setDryRun(null); }}
+                  placeholder={chain.address ?? '0x…'}
+                  spellCheck={false}
+                  aria-invalid={provider.trim() && !providerOk ? true : undefined}
+                />
+                <span className="hint">
+                  {provider.trim()
+                    ? (providerOk ? 'Reading the nonce for this address.' : 'Not a valid address yet.')
+                    : chain.address
+                      ? 'Empty, so the connected wallet is used.'
+                      : 'The address that will send register().'}
+                </span>
+              </div>
+            </div>
+            {!providerOk && (
+              <div className="actions">
+                <button className="btn" type="button" onClick={() => setProvider(demo.provider)}>
+                  Use the live provider {short(demo.provider)}
+                </button>
+              </div>
+            )}
+            {providerOk && nonceSnap.isPending && <p className="small" aria-busy="true">Reading nextRegisterNonce.</p>}
+            {providerOk && nonceSnap.isError && (
+              <div className="alarm" role="alert">
+                <span>
+                  {(() => {
+                    const name = assayErrorName(nonceSnap.error);
+                    return name && ASSAY_ERROR_HELP[name]
+                      ? `${name}(). ${ASSAY_ERROR_HELP[name]}`
+                      : `Could not read the nonce (${String(nonceSnap.error)}).`;
+                  })()}
+                </span>
+                <button className="textbtn" onClick={() => nonceSnap.refetch()}>Read again</button>
+              </div>
+            )}
+            {providerOk && nonceSnap.data && contractNonce && (
               <>
-                <dt>nonce matches step 1</dt>
-                <dd className={reportNonceMatches ? 'sig-ok' : 'sig-bad'}>
-                  {reportNonceMatches
-                    ? 'yes. This report was fetched with the current contract nonce.'
-                    : 'NO. This report binds a different nonce and register() would revert NonceMismatch. Fetch again with the URL in step 1.'}
-                </dd>
+                <dl className="kvs">
+                  <dt>nextRegisterNonce</dt>
+                  <dd><HexValue value={contractNonce} head={10} tail={8} /></dd>
+                  <dt>refBlock</dt>
+                  <dd>{contractRefBlock?.toLocaleString('en-US')} <span className="small">{pinned ? 'pinned' : 'live, updates every 15 s'}</span></dd>
+                  <dt>Report URL</dt>
+                  <dd><a className="hex" href={phalaUrl} target="_blank" rel="noreferrer" style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{phalaUrl}</a></dd>
+                </dl>
+                <div className="actions">
+                  <button className="btn line" onClick={fillContractNonceUrl} type="button">Pin this nonce and use the URL</button>
+                  {pinned && <button className="btn line" onClick={() => setPinned(null)} type="button">Unpin</button>}
+                </div>
+                {pinned && (
+                  <p className="note warn">
+                    Pinned to block {pinned.refBlock.toLocaleString('en-US')}. Arbitrum answers for that block hash only for
+                    the next 256 blocks, about 66 seconds on Arbitrum Sepolia, so the register transaction has to land
+                    inside that window. The agent CLI does all three steps in one run: <Code>npm run register</Code>.
+                  </p>
+                )}
+                <p className="note">
+                  The nonce in the URL has no 0x prefix. The returned quote binds it at report_data[32:64] with
+                  report_data[20:32] zeroed, and register() must arrive from {short(effectiveProvider)} before any other
+                  register from that address consumes this counter value.
+                </p>
               </>
             )}
-            <dt>measurement</dt>
-            <dd>
-              Not a field of this JSON. The measurement is <b>keccak256(MRTD ‖ RTMR0..3)</b> derived onchain by the
-              verifier from the quote bytes below, and is only accepted when it matches the allowlist.
-            </dd>
-            <dt>tee_type</dt>
-            <dd className="mono">{parsed.teeType ?? 'absent'}</dd>
-            <dt>signing_algo</dt>
-            <dd className="mono">{parsed.signingAlgo ?? 'absent'}</dd>
-            <dt>workload_keyset_digest</dt>
-            <dd className="mono">{parsed.workloadKeysetDigest ?? 'absent'}</dd>
-            <dt>intel_quote</dt>
-            <dd className="mono">
-              {parsed.quoteHex ? `${(parsed.quoteHex.length / 2 - (parsed.quoteHex.startsWith('0x') ? 1 : 0)).toLocaleString('en-US')} bytes, 0x${parsed.quoteHex.replace(/^0x/, '').slice(0, 24)}…` : 'absent'}
-            </dd>
-          </dl>
-        </section>
-      )}
+          </div>
+        </li>
 
-      {(
-        <section className="section" aria-labelledby="v-dry">
-          <div className="section-head">
-            <h2 id="v-dry"><span className="step-n">3.</span> Dry-run verify and register</h2>
-          </div>
-          <p className="sub">
-            Calls <b>verify(bytes, bytes32)</b> on the Stylus verifier ({short(VERIFIER_ADDRESS)}) via eth_call with
-            the report&apos;s quote bytes and {contractNonce ? 'the nonce from step 1' : 'a contract-issued nonce'}.
-            A success returns the signer and measurement the chain would derive; a revert carries the same failure a{' '}
-            <b>register</b> transaction would hit.
-          </p>
-          {!contractNonce && <p className="note">Set a provider address in step 1 first, so the dry run can pass its current nonce.</p>}
-          {contractNonce && !parsed?.quoteHex && <p className="note">Paste or fetch the attestation report in step 2 first; the dry run needs its quote bytes.</p>}
-          <div className="actions">
-            <button className="btn" onClick={dryRunVerify} disabled={dryRunBusy || !client || !contractNonce || !parsed?.quoteHex} type="button">
-              {dryRunBusy ? 'Calling…' : 'Dry-run verify'}
-            </button>
-            <button className="btn ghost" onClick={simulateRegister} disabled={registerBusy || !client || !chain.ready || !parsed?.quoteHex} type="button">
-              {registerBusy ? 'Simulating…' : 'Simulate register'}
-            </button>
-          </div>
-          {!client && <p className="note">Connect a wallet to enable the dry run (reads only, no signature).</p>}
-          {dryRun && <p className={dryRun.status === 'ok' && dryRun.approved ? 'note ok' : 'note err'} role={dryRun.status === 'ok' && dryRun.approved ? 'status' : 'alert'}>{plainStatusLine(dryRun)}</p>}
-          {dryRun?.status === 'ok' && (
-            <div className="panel">
-              <h3>Verifier result <Stamp block={dryRun.block} /></h3>
-              <div className="match">
-                <div className="side">
-                  <div className="label">Derived signer</div>
-                  <div className="val">{dryRun.signer}</div>
-                </div>
-                <div className="arrow">&harr;</div>
-                <div className="side">
-                  <div className="label">Derived measurement</div>
-                  <div className="val">{dryRun.measurement}</div>
-                </div>
-                <div className="verdict">
-                  <span className={`verdict ${dryRun.approved ? 'ok' : 'bad'}`}>
-                    {dryRun.approved ? 'Match' : 'Refused'}
-                  </span>
-                </div>
+        <li className="step" aria-labelledby="v-in">
+          <Num n={2} mark={parsed ? 'pass' : 'plain'} />
+          <div className="step-body">
+            <h2 id="v-in" className="t-section">Fetch the attestation report</h2>
+            <div className="fields">
+              <div className="field">
+                <label className="label" htmlFor="v-url">Report URL, optional</label>
+                <input id="v-url" className="hexin" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" spellCheck={false} />
+                <span className="hint">Use the nonce URL from step 1, never a reused or random nonce.</span>
               </div>
-              <dl className="kv">
-                <dt>signer</dt>
-                <dd className="mono">{dryRun.signer}</dd>
-                <dt>matches JSON signing_address</dt>
-                <dd className={dryRun.matchesJson ? 'sig-ok' : 'sig-bad'}>
-                  {dryRun.matchesJson ? 'yes' : 'NO. The quote does not bind the address this report claims.'}
-                </dd>
+            </div>
+            <div className="actions">
+              <button className="btn line" onClick={fillContractNonceUrl} disabled={!phalaUrl} type="button">Use the nonce URL from step 1</button>
+              <button className="btn line" onClick={fetchFromUrl} type="button" disabled={!url.trim() || fetchState === 'loading'}>
+                {fetchState === 'loading' ? 'Fetching' : 'Fetch'}
+              </button>
+            </div>
+            {fetchState === 'error' && <p className="note warn" role="alert">{fetchError}</p>}
+            <div className="fields">
+              <div className="field">
+                <label className="label" htmlFor="v-json">Attestation JSON</label>
+                <textarea
+                  id="v-json"
+                  value={text}
+                  onChange={(e) => { setText(e.target.value); setDryRun(null); }}
+                  placeholder={'{ "signing_address": "0x…", "intel_quote": "040002008100…", "nvidia_payload": "{\\"nonce\\": \\"…\\"}" }'}
+                  spellCheck={false}
+                  aria-invalid={parseError ? true : undefined}
+                  aria-describedby="v-json-hint"
+                />
+                <span className="hint" id="v-json-hint">
+                  {parseError ?? 'Parsed here in your browser; nothing leaves this page until you dry-run.'}
+                </span>
+              </div>
+            </div>
+            {parsed && (
+              <dl className="kvs" aria-label="Parsed fields">
+                <dt>signing_address</dt>
+                <dd>{parsed.signingAddress ? <HexValue value={parsed.signingAddress} href={explorer.address(parsed.signingAddress)} /> : 'absent'}</dd>
+                <dt>nonce</dt>
+                <dd>{parsed.nonce ? <HexValue value={parsed.nonce} head={10} tail={8} /> : 'absent; expected under nvidia_payload.nonce'}</dd>
+                {reportNonceMatches !== undefined && (
+                  <>
+                    <dt>Matches step 1</dt>
+                    <dd>
+                      {reportNonceMatches
+                        ? 'yes. This report was fetched with the current contract nonce.'
+                        : 'no. This report binds a different nonce and register() would revert NonceMismatch. Fetch again with the URL in step 1.'}
+                    </dd>
+                  </>
+                )}
                 <dt>measurement</dt>
-                <dd className="mono">{dryRun.measurement}</dd>
-                <dt>on allowlist</dt>
-                <dd className={dryRun.approved ? 'sig-ok' : 'sig-bad'}>
-                  {dryRun.approved ? 'yes. register() would store this signer.' : 'NO. register() would revert MeasurementNotApproved().'}
+                <dd>
+                  Not a field of this JSON. The measurement is keccak256(MRTD ‖ RTMR0..3), derived onchain by the verifier
+                  from the quote bytes, and accepted only when it is on the allowlist.
                 </dd>
-                <dt>nonce passed</dt>
-                <dd className="mono">{dryRun.nonce}</dd>
+                <dt>tee_type</dt>
+                <dd>{parsed.teeType ?? 'absent'}</dd>
+                <dt>signing_algo</dt>
+                <dd>{parsed.signingAlgo ?? 'absent'}</dd>
+                <dt>workload_keyset_digest</dt>
+                <dd>{parsed.workloadKeysetDigest ? <HexValue value={parsed.workloadKeysetDigest} head={10} tail={8} /> : 'absent'}</dd>
+                <dt>intel_quote</dt>
+                <dd>
+                  {parsed.quoteHex
+                    ? `${(parsed.quoteHex.length / 2 - (parsed.quoteHex.startsWith('0x') ? 1 : 0)).toLocaleString('en-US')} bytes`
+                    : 'absent'}
+                </dd>
               </dl>
-            </div>
-          )}
-          {dryRun?.status === 'reverted' && (
-            <p className="note err" role="alert">
-              The verifier call reverted with <b>{dryRun.data}</b>.{dryRun.help ? ` ${dryRun.help}` : ` ${dryRun.detail}`} A{' '}
-              <b>register</b> transaction with this quote would fail the same way and only cost gas.
+            )}
+          </div>
+        </li>
+
+        <li className="step" aria-labelledby="v-dry">
+          <Num n={3} mark={dryRun?.status === 'ok' && dryRun.approved ? 'pass' : 'plain'} />
+          <div className="step-body">
+            <h2 id="v-dry" className="t-section">Dry-run verify, then simulate register</h2>
+            <p className="prose">
+              Calls <Code>verify(bytes, bytes32)</Code> on the Stylus verifier with the report&apos;s quote bytes and{' '}
+              {contractNonce ? 'the nonce from step 1' : 'a contract-issued nonce'}. A success returns the signer and
+              measurement the chain would derive; a revert carries the same failure a <Code>register</Code> transaction
+              would hit.
             </p>
-          )}
-          {registerReport && <p className={registerBad ? 'note err' : 'note ok'} role={registerBad ? 'alert' : 'status'}>{registerReport}</p>}
-        </section>
-      )}
-        </div>
-        <aside className="v-aside">
-        <div className="device">
-          <h3>Verifying on</h3>
-          <div className="stat">
-            <div className="lab">Network</div>
-            <div className="val">{assayChain.name}</div>
-          </div>
-          <div className="stat">
-            <div className="lab">Assay contract</div>
-            <div className="val mono" style={{ fontSize: 13 }}>
-              <a href={explorer.address(ASSAY)} target="_blank" rel="noreferrer">{short(ASSAY)}</a>
+            {!contractNonce && <p className="note">Set a registering address in step 1 first, so the dry run can pass its current nonce.</p>}
+            {contractNonce && !parsed?.quoteHex && <p className="note">Paste or fetch the attestation report in step 2 first; the dry run needs its quote bytes.</p>}
+            <div className="actions">
+              <button className="btn" onClick={dryRunVerify} disabled={dryRunBusy || !client || !contractNonce || !parsed?.quoteHex} type="button">
+                {dryRunBusy ? 'Calling' : 'Check the quote onchain'}
+              </button>
+              <button className="btn line" onClick={simulateRegister} disabled={registerBusy || !client || !chain.ready || !parsed?.quoteHex} type="button">
+                {registerBusy ? 'Simulating' : 'Simulate register'}
+              </button>
             </div>
+            {!client && <p className="note">Connect a wallet to enable the dry run. It only reads; there is no signature.</p>}
+            {dryRun && (
+              <div className={dryRun.status === 'ok' && dryRun.approved ? 'result' : 'result bad'} role={dryRun.status === 'ok' && dryRun.approved ? 'status' : 'alert'}>
+                <span className="rl">{dryRun.status === 'ok' && dryRun.approved ? 'Verified' : 'Blocked'}</span>
+                <span className="rv">{plainStatusLine(dryRun)}</span>
+              </div>
+            )}
+            {dryRun?.status === 'ok' && (
+              <dl className="kvs">
+                <dt>Signer</dt>
+                <dd><HexValue value={dryRun.signer} /> <span className="small">{dryRun.matchesJson ? 'matches signing_address' : 'does NOT match signing_address: the quote does not bind the address this report claims'}</span></dd>
+                <dt>Measurement</dt>
+                <dd><HexValue value={dryRun.measurement} /> <span className="small">{dryRun.approved ? 'on the allowlist: register() would store this signer' : 'not on the allowlist: register() would revert MeasurementNotApproved()'}</span></dd>
+                <dt>Nonce passed</dt>
+                <dd><HexValue value={dryRun.nonce} head={10} tail={8} /></dd>
+                <dt>Read at</dt>
+                <dd><Stamp block={dryRun.block} label="block" /></dd>
+              </dl>
+            )}
+            {dryRun?.status === 'reverted' && (
+              <div className="result bad" role="alert">
+                <span className="rl">Reverted</span>
+                <span className="rv">
+                  The verifier call reverted with <Code>{dryRun.data}</Code>.{dryRun.help ? ` ${dryRun.help}` : ` ${dryRun.detail}`} A
+                  register transaction with this quote would fail the same way and only cost gas.
+                </span>
+              </div>
+            )}
+            {registerReport && (
+              <div className={registerBad ? 'result bad' : 'result'} role={registerBad ? 'alert' : 'status'}>
+                <span className="rl">{registerBad ? 'Reverts' : 'Passes'}</span>
+                <span className="rv">{registerReport}</span>
+              </div>
+            )}
           </div>
-          <div className="stat">
-            <div className="lab">Stylus verifier</div>
-            <div className="val mono" style={{ fontSize: 13 }}>
-              <a href={explorer.address(VERIFIER_ADDRESS)} target="_blank" rel="noreferrer">{short(VERIFIER_ADDRESS)}</a>
-            </div>
-          </div>
-        </div>
-      <section className="v-how" aria-labelledby="v-reg">
+        </li>
+      </ol>
+      </section>
+
+      <KeysSection title="Keys registered on Assay now" drawn />
+
+      <section className="section" aria-labelledby="v-reg">
         <div className="section-head">
-          <h2 id="v-reg">How registration works</h2>
+          <h2 id="v-reg" className="t-section">How registration works</h2>
         </div>
-        <p className="sub">
-          Three steps in order. First read <b>nextRegisterNonce</b> for the address that will send the transaction
-          (step 1). Then fetch the legacy endpoint with exactly that nonce (report_data[32:64] must equal it,
-          report_data[20:32] must be zero). Then call <b>register(bytes quote, uint256 refBlock)</b> from the same address: it calls
-          the verifier with that nonce, requires the derived measurement to be{' '}
-          {APPROVED_MEASUREMENTS.length === 1 ? 'the one allowlisted value' : `one of the ${APPROVED_MEASUREMENTS.length} allowlisted values`}, rejects any quote hash already used
-          (QuoteAlreadyUsed), and stores signer to measurement plus expiry (now plus validity). Anyone may call it
-          for any provider, since the signer comes from the quote itself. A stale quote reverts NonceMismatch and
-          consumes nothing. The live registration ran in{' '}
+        <p className="section-intro">
+          Three steps in order. Read <Code>nextRegisterNonce</Code> for the address that will send the transaction.
+          Fetch the gateway report with exactly that nonce (report_data[32:64] must equal it, report_data[20:32] must be
+          zero). Then call <Code>register(quote, refBlock)</Code> from the same address: it calls the verifier with that
+          nonce, requires the derived measurement to be{' '}
+          {APPROVED_MEASUREMENTS.length === 1 ? 'the one allowlisted value' : `one of the ${APPROVED_MEASUREMENTS.length} allowlisted values`}, rejects
+          any quote already used (<Code>QuoteAlreadyUsed</Code>), and stores the signer with its measurement and an
+          expiry of now plus the validity. Anyone may call it for any provider, since the signer comes from the quote
+          itself. A stale quote reverts <Code>NonceMismatch</Code> and consumes nothing. The live registration ran in{' '}
           <a href={explorer.tx(REGISTER_TX)} target="_blank" rel="noreferrer">this transaction</a>.
         </p>
       </section>
-        </aside>
-      </div>
+
     </main>
   );
 }

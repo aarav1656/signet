@@ -1,77 +1,95 @@
-import { useEffect, useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { explorer } from '../chain';
 
-/** "read at block #312,982,847". Every on-chain number on screen sits next to one of these. */
+/** "block 313,814,703", linked to the explorer. Every on-chain figure on screen sits next to one. */
 export function Stamp({ block, label = 'read at block' }: { block: bigint; label?: string }) {
   return (
     <span className="stamp">
       {label}{' '}
       <a href={explorer.block(block)} target="_blank" rel="noreferrer">
-        #{block.toLocaleString('en-US')}
+        {block.toLocaleString('en-US')}
       </a>
     </span>
   );
 }
 
-/** Byte-grouped hex: 9f 2a c1 … with the 0x prefix dimmed. Truncates past `max`
- *  bytes with an ellipsis; the full value rides in the title attribute. */
-export function Hex({ value, max = 20 }: { value: string; max?: number }) {
-  const clean = value.startsWith('0x') ? value.slice(2) : value;
-  const bytes = clean.match(/../g) ?? [];
-  const shown = bytes.slice(0, max);
-  const cut = bytes.length > max;
+/** A literal hex value: B612 Mono at 12px, middle-truncated, full value in the title and one click to copy. */
+export function HexValue({ value, head = 4, tail = 4, href }: { value: string; head?: number; tail?: number; href?: string }) {
+  const [copied, setCopied] = useState(false);
+  const body = value.startsWith('0x') ? value.slice(2) : value;
+  const cut = body.length > head + tail + 1;
+  const shown = cut ? `${value.startsWith('0x') ? '0x' : ''}${body.slice(0, head)}…${body.slice(-tail)}` : value;
+  const text = href ? (
+    <a href={href} target="_blank" rel="noreferrer">
+      {shown}
+    </a>
+  ) : (
+    shown
+  );
   return (
-    <span className={cut ? 'hex trunc' : 'hex'} title={cut ? value : undefined}>
-      <span className="pre">0x</span>
-      {shown.join(' ')}
-      {cut ? ' …' : ''}
+    <span className="hex" title={value}>
+      {text}
+      <button
+        type="button"
+        className="copy"
+        aria-label={`Copy ${value}`}
+        onClick={() => {
+          navigator.clipboard?.writeText(value).then(() => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1200);
+          });
+        }}
+      >
+        {copied ? 'copied' : 'copy'}
+      </button>
     </span>
   );
 }
 
-/** Count the readout from 0 to its target over ~500 ms, instantly when the user
- *  prefers reduced motion. */
-function useTick(target: bigint | null, duration = 500): bigint | null {
-  const [val, setVal] = useState<bigint | null>(null);
-  useEffect(() => {
-    if (target === null) {
-      setVal(null);
-      return;
-    }
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVal(target);
-      return;
-    }
-    let raf = 0;
-    const start = performance.now();
-    const step = (t: number) => {
-      const p = Math.min(1, (t - start) / duration);
-      setVal(p >= 1 ? target : BigInt(Math.floor(Number(target) * p)));
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return val;
+/** Code identifiers (function and error names). B612's parentheses are square, so code uses the mono face. */
+export function Code({ children }: { children: ReactNode }) {
+  return <code className="code">{children}</code>;
 }
 
-/** The board's hero instrument: the block every read on this page was taken at.
- *  Giant tabular mono, counted up on load, skeleton bar until the first read
- *  resolves. */
-export function BoardFigure({ block, label = 'state read at block' }: { block: bigint | null; label?: string }) {
-  const v = useTick(block);
-  if (v === null) {
-    return (
-      <div className="hero-figure" aria-busy="true">
-        <span className="hero-label">{label}</span>
-        <i className="hero-bar" />
-      </div>
-    );
-  }
+/** The drawing-sheet title block every route opens with: small label over value, ruled cells. */
+export function TitleBlock({ cells }: { cells: { label: string; value: ReactNode; tone?: 'signal' | 'alarm'; lead?: boolean; mobileHide?: boolean }[] }) {
   return (
-    <div className="hero-figure">
-      <span className="hero-label">{label}</span>
-      <span className="hero-num num">#{v.toLocaleString('en-US')}</span>
+    <dl className="titleblock" style={{ ['--cells' as string]: cells.length }}>
+      {cells.map((c) => (
+        <div key={c.label} className={['tb-cell', c.tone, c.lead ? 'first' : '', c.mobileHide ? 'm-hide' : ''].filter(Boolean).join(' ')}>
+          <dt>{c.label}</dt>
+          <dd>{c.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Circled number: a check or step in its true order. */
+export function Num({ n, mark = 'pass' }: { n: number; mark?: 'pass' | 'fail' | 'skip' | 'plain' }) {
+  return (
+    <span className={`n n-${mark}`} aria-hidden="true">
+      {n}
+    </span>
+  );
+}
+
+/** A specification line: subject, then hairline-separated facts. */
+export function Spec({ subject, children, action }: { subject: ReactNode; children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="spec">
+      <div className="spec-subject">{subject}</div>
+      <div className="spec-facts">{children}</div>
+      {action && <div className="spec-action">{action}</div>}
     </div>
+  );
+}
+
+export function Fact({ label, children, wide }: { label?: string; children: ReactNode; wide?: boolean }) {
+  return (
+    <span className={wide ? 'fact wide' : 'fact'}>
+      {label && <span className="fact-l">{label}</span>}
+      {children}
+    </span>
   );
 }
