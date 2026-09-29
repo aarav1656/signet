@@ -1,0 +1,10 @@
+Vendored byte-for-byte, unmodified, from https://github.com/x402-foundation/x402
+  commit a9955ae5538e5531557405091910136a2a2864c8 (Apache-2.0, see LICENSE and NOTICE here)
+  src/x402BatchSettlement.sol              <- contracts/evm/src/x402BatchSettlement.sol
+  src/interfaces/IDepositCollector.sol     <- contracts/evm/src/interfaces/IDepositCollector.sol
+  test/mocks/MockBatchDepositCollectors.sol <- contracts/evm/test/mocks/MockBatchDepositCollectors.sol
+The upstream files carry `SPDX-License-Identifier: MIT` headers; the repository license is Apache-2.0.
+lib/openzeppelin-contracts: the 28 files x402BatchSettlement imports, from OpenZeppelin/openzeppelin-contracts
+  commit fcbae5394ae8ad52d8e580a3477db99814b9d565 (v5.5.0, MIT), the exact submodule commit x402 pins.
+Compiled with the `x402` foundry profile (cancun, no via_ir, bytecode_hash none, cbor_metadata false, 200 runs),
+this reproduces the canonical CREATE2 init code; see script/x402/DeployX402BatchSettlement.s.sol.

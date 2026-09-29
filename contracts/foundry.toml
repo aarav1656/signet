@@ -12,8 +12,27 @@ via_ir = true
 remappings = [
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
   "forge-std/=lib/forge-std/src/",
+  "test/vendor/x402/:@openzeppelin/contracts/=test/vendor/x402/lib/openzeppelin-contracts/contracts/",
 ]
 fs_permissions = [{ access = "read", path = "../fixtures" }, { access = "read-write", path = "./deployments" }]
 
+# Canonical x402BatchSettlement build: the exact settings of x402-foundation/x402
+# contracts/evm/foundry.toml, so the init code hashes to the published CREATE2 address.
+[profile.x402]
+src = "test/vendor/x402/src"
+test = "test/vendor/x402/test"
+script = "script/x402"
+out = "out-x402"
+cache_path = "cache-x402"
+evm_version = "cancun"
+via_ir = false
+cbor_metadata = false
+bytecode_hash = "none"
+remappings = [
+  "@openzeppelin/contracts/=test/vendor/x402/lib/openzeppelin-contracts/contracts/",
+  "forge-std/=lib/forge-std/src/",
+]
+
 [rpc_endpoints]
 arbitrum_sepolia = "https://sepolia-rollup.arbitrum.io/rpc"
+arbitrum_one = "https://arb1.arbitrum.io/rpc"

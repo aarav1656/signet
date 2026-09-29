@@ -13,3 +13,5 @@ broadcast/
 __pycache__/
 .vite/
 .vercel/
+contracts/out-x402/
+contracts/cache-x402/
