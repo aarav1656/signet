@@ -54,8 +54,10 @@ superseded and dropped from this document; it is not referenced by any current a
 
 | Step | Command | Result | Explorer |
 |---|---|---|---|
-| Receipt-gated paid redeem (channel 0) | `agent` `npm run pay-receipt` | pending: Phala Confidential AI key | n/a |
-| Legacy paid redeem (channel 1) | `agent` `npm run pay` | pending: Phala Confidential AI key | n/a |
+| Open channel 2, pinned to `phala/qwen3.8-27b-uncensored` | `agent` `npm run open` | channel 2, deposit 2000000, block 313984561 | [0x3ebe01a4...a019](https://sepolia.arbiscan.io/tx/0x3ebe01a4c23a3359599d6ba4c13653b1c5f71649247b02bd7209fe891008a019) |
+| Receipt-gated paid redeem, call 1 | `agent` `npm run pay-receipt` (RedPill, 8 output tokens) | receipt served == requested == pinned; status true, gas 301,058, block 313984768 | [0x16270367...a55d](https://sepolia.arbiscan.io/tx/0x16270367e3c3e563bd4433d9cb33d9bdf5db84d44fb25fd0f44679aad681a55d) |
+| Receipt-gated paid redeem, call 2 | same run | status true, gas 285,057, block 313984791 | [0x4c83cf96...43b7](https://sepolia.arbiscan.io/tx/0x4c83cf961efedc3678c00d18e332aa502ac71e583ec3f5c42f24a1a5589043b7) |
+| Receipt-gated paid redeem, call 3 | same run | status true, gas 284,888, block 313984814; `channels(2).paid` 0 to 900000, provider USDG 0 to 900000 (read at block 313984816) | [0x4ed9077a...f868](https://sepolia.arbiscan.io/tx/0x4ed9077a367495ddfb1acf4a3bbc54bf4b79b0d9898e4614fbe9148ec12cf868) |
 
 Both rows above are coded and blocked only on `PHALA_API_KEY`/the Phala Confidential AI key
 being unset in this environment; no result is claimed for either until that key is present and

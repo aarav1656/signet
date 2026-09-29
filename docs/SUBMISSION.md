@@ -68,6 +68,10 @@ Compared with nearby work: x402 settles a payment for an HTTP request but carrie
 | Register Phala's Ed25519 receipt key through its TDX quote (the first `registerReceiptKey` on this deployment) | [0xdff86c7c...ef1f](https://sepolia.arbiscan.io/tx/0xdff86c7c326ffa23738ec12fc9e7a7c3c930453298c28d7ce26322888a13ef1f) |
 | Open channel 0, pinned to `meta-llama/llama-3.3-70b-instruct` | [0x61fffc01...bd2](https://sepolia.arbiscan.io/tx/0x61fffc011aeee16cce4a8075f606bb58d6b05038a7b8d6921460a26db5cacbd2) |
 | Open channel 1, legacy signature path | [0xb06dae37...2652](https://sepolia.arbiscan.io/tx/0xb06dae3711bce5b151ea7fb6af0b30a94d37186cd00bb4b06cd7e9460bfd2652) |
+| Open channel 2, pinned to `phala/qwen3.8-27b-uncensored` | [0x3ebe01a4...a019](https://sepolia.arbiscan.io/tx/0x3ebe01a4c23a3359599d6ba4c13653b1c5f71649247b02bd7209fe891008a019) |
+| Paid call 1, `redeemWithReceipt` against a real Phala receipt | [0x16270367...a55d](https://sepolia.arbiscan.io/tx/0x16270367e3c3e563bd4433d9cb33d9bdf5db84d44fb25fd0f44679aad681a55d) |
+| Paid call 2 | [0x4c83cf96...43b7](https://sepolia.arbiscan.io/tx/0x4c83cf961efedc3678c00d18e332aa502ac71e583ec3f5c42f24a1a5589043b7) |
+| Paid call 3; channel 2 paid 900000 (0.90 USDG), provider balance 0 to 900000 | [0x4ed9077a...f868](https://sepolia.arbiscan.io/tx/0x4ed9077a367495ddfb1acf4a3bbc54bf4b79b0d9898e4614fbe9148ec12cf868) |
 
 The agent (`0x2aD1...5DEF`) and the provider (`0x93e8...EE5A`) are separate wallets. `docs/e2e/chiron.md` lists every command and the post-condition read after it.
 
@@ -81,7 +85,7 @@ The agent (`0x2aD1...5DEF`) and the provider (`0x93e8...EE5A`) are separate wall
 
 ## Cost per redeem
 
-One `redeemWithReceipt` is roughly 300,000 gas on Arbitrum Sepolia, composed from two measurements: the live Stylus receipt check at 174,862 gas (`cast estimate`, block 313924043) and Assay's own logic at 132,021 gas (forge gas report). Vouchers are cumulative, so a provider can settle many calls in one redeem.
+One `redeemWithReceipt` cost 301,058 gas on the first redeem of channel 2 and 285,057 and 284,888 on the next two (mined transactions above). Vouchers are cumulative, so a provider can settle many calls in one redeem.
 
 ## Question for the Arbitrum team
 
