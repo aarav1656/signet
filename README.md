@@ -168,8 +168,6 @@ PHALA_API_KEY=<redpill key> PHALA_BASE_URL=https://api.redpill.ai npm run regist
 PHALA_API_KEY=<redpill key> PHALA_BASE_URL=https://api.redpill.ai ASSAY_CHANNEL_ID=0 npm run pay-receipt
 ```
 
-Unverified without a key: whether `GET /v1/aci/receipts/{id}` serves a receipt back (an unauthenticated probe returned 404).
-
 Web app: `cd web && npm install && npm run dev`. It reads every figure it shows from the chain with the block it was read at.
 
 ## Design choices
