@@ -4,7 +4,7 @@
 //! lexicographically sorted, compact, ASCII-only) is signed, then verified.
 //! Field values (hashes, session ids) are structurally valid placeholders;
 //! the receipt-signing TEE, not this contract, is what vouches for their
-//! provenance — this crate only proves the signature and pulls named
+//! provenance, this crate only proves the signature and pulls named
 //! fields, so the test targets exactly that.
 
 use ed25519_dalek::{Signer, SigningKey};
@@ -40,7 +40,7 @@ const RESPONSE_HASH: &str = "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 const SESSION_ID: &str = "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd";
 
 /// Build the exact JCS canonical bytes (§7.2/§7.3) of an ACI receipt
-/// document *without* its `signature` member — i.e. exactly what
+/// document *without* its `signature` member, i.e. exactly what
 /// `aci_protocol::receipt::receipt_signing_input` returns and what the TEE
 /// signs (`src/aci/receipt.rs:443-444`).
 fn build_receipt_document(requested_model: &str, verified_event: &str) -> Vec<u8> {

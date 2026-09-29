@@ -32,14 +32,14 @@ interface IReceiptVerifier {
 /// is owned by another workstream during this build).
 ///
 /// Today `Assay.redeem` (`contracts/src/Assay.sol:234-275`) trusts an `enclaveSig`
-/// over `(requestHash, responseHash)` alone (`Assay.sol:258-261`) — it proves an
+/// over `(requestHash, responseHash)` alone (`Assay.sol:258-261`): it proves an
 /// attested key vouched for a request/response pair, never which model produced
 /// the response (judging note D/B1.3: "the model is never checked"). This
 /// verifier closes that gap without touching the existing voucher shape:
 ///
 /// 1. `Channel` gains a `requestedModelHash` (bytes32), set once at `openChannel`
 ///    from a caller-supplied model identifier the agent and provider agreed off
-///    chain (e.g. `keccak256("deepseek-v3.1")`) — the spend cap becomes "attested
+///    chain (e.g. `keccak256("deepseek-v3.1")`), the spend cap becomes "attested
 ///    inference of this exact model", closing README:30's currently-false claim.
 /// 2. A new `receiptSigners` mapping (parallel to the existing `signers` mapping
 ///    `Assay.sol:73`, keyed on the Ed25519 `pubkey` instead of a secp256k1 address)
@@ -70,7 +70,7 @@ interface IReceiptVerifier {
 /// 4. This retires the legacy-endpoint dependency the current `verifier/` crate
 ///    has (README/D: "Phala's own source calls it legacy") for the payment path,
 ///    while `verifier/`'s TDX quote check remains the trust root for step 2's
-///    pubkey-to-attestation binding — the two Stylus contracts compose rather
+///    pubkey-to-attestation binding: the two Stylus contracts compose rather
 ///    than duplicate each other's job, which is also why this is a second
 ///    contract instead of growing the existing `verifier/` past its own size
 ///    budget (this crate alone is already 19.2 KB of the 24 KiB Stylus limit).

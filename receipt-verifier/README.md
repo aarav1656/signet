@@ -41,24 +41,24 @@ The build proceeded as specced; nothing here was invented.
 no_std, no full JSON library (`src/json.rs` is a ~200-line structural
 scanner: skip/find over strings, objects, arrays and numbers, used only after
 the Ed25519 signature already verified, so a malicious byte string can never
-reach it — the signature check enforces the bytes are exactly what the TEE
+reach it, since the signature check enforces the bytes are exactly what the TEE
 signed). The `#[public]` Stylus method `ReceiptVerifier::verify_receipt` wraps
 it into the exact tuple shape: `(bool, requestedModelHash, servedModelHash, responseHash)`,
 never reverting on a bad receipt (only on a call the ABI itself cannot decode).
 
-Dependency: `ed25519-dalek = { version = "2", default-features = false }` — see
+Dependency: `ed25519-dalek = { version = "2", default-features = false }`; see
 size notes below for why the default `fast` feature is dropped.
 
 ## Tests
 
 `cargo test --lib`: 7 passed (6 `json` structural-scanner unit tests, 1
 end-to-end `TestVM` test of the actual `#[public]` ABI method).
-`cargo test --test vectors`: 9 passed — a real Ed25519 keypair generated with
+`cargo test --test vectors`: 9 passed. A real Ed25519 keypair generated with
 `OsRng`, a receipt document built in Phala's exact JCS field order, signed,
 then verified; plus negative vectors: wrong pubkey, tampered `model` field,
 tampered `body_hash`, a genuine signature swapped onto a different receipt,
 a receipt whose `upstream.verified` failed (no served model to trust),
-malformed JSON, and a wrong-length signature — none panic, all return `None`.
+malformed JSON, and a wrong-length signature: none panic, all return `None`.
 One test (`model_substitution_is_visible_as_differing_hashes`) is the exact
 failure item E5 targets: signature still verifies (the TEE signed whatever it
 actually did), but `requested_model_hash != served_model_hash`.
@@ -70,8 +70,8 @@ actually did), but `requested_model_hash != served_model_hash`.
 
 | Step | Contract size |
 |---|---|
-| `ed25519-dalek` default features (`fast` = `curve25519-dalek/precomputed-tables`) | 26.5 KB (26460 bytes) — **over the limit** |
-| Drop `fast` (no precomputed basepoint tables; scalar mult runs the non-table path) | **19.2 KB (19208 bytes)** — fits, 5.4 KB headroom |
+| `ed25519-dalek` default features (`fast` = `curve25519-dalek/precomputed-tables`) | 26.5 KB (26460 bytes), **over the limit** |
+| Drop `fast` (no precomputed basepoint tables; scalar mult runs the non-table path) | **19.2 KB (19208 bytes)**, fits, 5.4 KB headroom |
 
 `opt-level = "z"`, `lto = true`, `panic = "abort"`, `strip = true`,
 `codegen-units = 1` were already set from the first commit (mirrors
@@ -79,7 +79,7 @@ actually did), but `requested_model_hash != served_model_hash`.
 optimization needed; raw (uncompressed) `.wasm` went from 70548 to 62256
 bytes over the same change. Trade-off: dropping `fast` means Ed25519
 verification runs more scalar-multiplication steps at call time (more gas),
-not a smaller attack surface or a correctness change — the same 9 tests above
+not a smaller attack surface or a correctness change: the same 9 tests above
 pass identically with or without the feature.
 
 `cargo stylus check` was run against the network (read-only gas/size

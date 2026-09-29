@@ -165,14 +165,14 @@ contract Assay is ReentrancyGuard, EIP712 {
     error CloseNotRequested();
     error ChallengeWindowActive();
     /// redeemWithReceipt(): the receipt's servedModelHash or requestedModelHash
-    /// did not equal the channel's pinned requestedModelHash -- the model-swap
+    /// did not equal the channel's pinned requestedModelHash: the model-swap
     /// refusal this path exists for.
     error ModelMismatch();
     /// redeemWithReceipt(): IReceiptVerifier.verifyReceipt returned ok == false
     /// (bad signature or malformed/incomplete receipt document).
     error ReceiptInvalid();
     /// redeemWithReceipt(): the receipt's own responseHash did not match the
-    /// voucher's responseHash -- the provider and agent disagree on which
+    /// voucher's responseHash: the provider and agent disagree on which
     /// response this payment is for.
     error ResponseHashMismatch();
     /// redeemWithReceipt(): the receipt's request.received body hash did not
@@ -209,7 +209,7 @@ contract Assay is ReentrancyGuard, EIP712 {
     /// Arbitrum's ArbSys precompile (Offchain Labs, nitro-precompile-interfaces
     /// ArbSys.sol): arbBlockHash(arbBlockNum) returns the Arbitrum block hash for
     /// arbBlockNum, reverting unless currentBlockNum-256 <= arbBlockNum <
-    /// currentBlockNum -- the same 256-block window and revert-on-out-of-range shape
+    /// currentBlockNum, the same 256-block window and revert-on-out-of-range shape
     /// as native EVM blockhash().
     address private constant ARBSYS = 0x0000000000000000000000000000000000000064;
     bytes4 private constant ARBSYS_ARBBLOCKHASH_SELECTOR = bytes4(keccak256("arbBlockHash(uint256)"));
@@ -269,7 +269,7 @@ contract Assay is ReentrancyGuard, EIP712 {
     /// quote's `attestation.workload_keyset` object (see
     /// IAssayVerifier.verifyKeyset); `pubkey` must appear in its
     /// `receipt_signing_keys[]`. Reuses the same nonce/quote-replay machinery as
-    /// register() (nextRegisterNonce, registerNonce, usedQuote) -- same anti-replay
+    /// register() (nextRegisterNonce, registerNonce, usedQuote), same anti-replay
     /// guarantee, just feeding the ACI endpoint's nonce slot instead of the legacy
     /// endpoint's. Anyone may call this for any provider; the pubkey is bound to
     /// the quote by IAssayVerifier.verifyKeyset's own digest-equality check (see
@@ -420,12 +420,12 @@ contract Assay is ReentrancyGuard, EIP712 {
 
     /// The model-swap-refusal redemption path (item E5): same payer authorization
     /// as redeem() (`payerSig` over the identical Voucher{channelId,cumulativeAmount,
-    /// requestHash,responseHash} EIP-712 struct -- the voucher shape is unchanged),
+    /// requestHash,responseHash} EIP-712 struct, the voucher shape is unchanged),
     /// but provenance comes from a Phala canonical ACI receipt (`receiptBytes` +
     /// `signature`, Ed25519-verified by `receiptVerifier`) instead of the legacy
     /// per-response ECDSA signature. The receipt's own `servedModelHash` and
     /// `requestedModelHash` must both equal this channel's pinned
-    /// `requestedModelHash` (set at openChannel()) -- a provider whose enclave
+    /// `requestedModelHash` (set at openChannel()): a provider whose enclave
     /// actually routed to a different model cannot get paid, regardless of what it
     /// claims off chain, because `servedModelHash` is read from bytes the TEE
     /// itself signed. `pubkey` must be currently registered (via
@@ -523,7 +523,7 @@ contract Assay is ReentrancyGuard, EIP712 {
 
     /// Step one of a unilateral close. Callable only after `channelTimeout` has
     /// elapsed since the channel's last redeem (or, if it was never redeemed,
-    /// since it opened) -- not from openedAt alone, so a provider who is actively
+    /// since it opened), not from openedAt alone, so a provider who is actively
     /// redeeming can never be timed out from under a pending voucher. Starts the
     /// challenge window; does not move funds.
     function requestClose(uint256 channelId) external nonReentrant {

@@ -13,7 +13,7 @@
 //!   `receipt_signing_input`). Because every member name is ASCII and every
 //!   number is an integer (`crates/aci-protocol/src/digest.rs:34-44`,
 //!   Appendix A), JCS here is exactly "compact JSON with object keys sorted
-//!   lexicographically" — no float formatting, no UTF-16 collation to
+//!   lexicographically", no float formatting, no UTF-16 collation to
 //!   reproduce.
 //! - The signature algorithm is fixed to Ed25519: `finalize()` rejects any
 //!   receipt key whose `algo != ALGO_ED25519`
@@ -41,7 +41,7 @@
 //! measurement; this crate proves *that enclave's aggregator* actually
 //! routed to the requested model on a specific call. Assay.redeem would
 //! bind a channel's registered signer (via `verifier/`) to a public key
-//! registered *here* for receipt verification — see `solidity/design-note.md`.
+//! registered *here* for receipt verification: see `solidity/design-note.md`.
 #![cfg_attr(not(any(test, feature = "export-abi")), no_main)]
 extern crate alloc;
 
@@ -69,7 +69,7 @@ pub struct VerifiedReceipt {
     /// ties a receipt to a particular caller's request.
     pub request_hash: [u8; 32],
     /// The raw 32 bytes decoded from `response.returned`'s
-    /// `"sha256:"+hex` `body_hash` field — already a digest Phala computed
+    /// `"sha256:"+hex` `body_hash` field, already a digest Phala computed
     /// over the exact wire response bytes, not rehashed here.
     pub response_hash: [u8; 32],
 }
@@ -97,7 +97,7 @@ fn hex_val(c: u8) -> Option<u8> {
 }
 
 /// The first `upstream.verified` event (§7.4/7.5 vocabulary) whose `result`
-/// is `"verified"` — the served-model claim the aggregator's own upstream
+/// is `"verified"`, the served-model claim the aggregator's own upstream
 /// check attested, not merely a routing decision. Returns the event
 /// object's raw byte range.
 fn find_verified_upstream_event(doc: &[u8], event_log_start: usize) -> Option<(usize, usize)> {

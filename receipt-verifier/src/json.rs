@@ -168,7 +168,7 @@ pub fn find_array_element<T>(
 }
 
 /// Read a raw JSON string value's content bytes (quotes stripped, no escape
-/// decoding — see module doc). `start` must be the index of the opening
+/// decoding, see module doc). `start` must be the index of the opening
 /// quote as returned by [`find_member`]/[`find_array_element`].
 pub fn string_content<'a>(b: &'a [u8], start: usize, end: usize) -> R<&'a [u8]> {
     if end < start + 2 || b[start] != b'"' || b[end - 1] != b'"' {
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn string_value_containing_fake_key_is_not_mistaken_for_structure() {
-        // The value text itself contains `"model":"evil"` — a substring
+        // The value text itself contains `"model":"evil"`, a substring
         // scanner would find this; a structural scanner must not.
         let doc = br#"{"reason":"payload had \"model\":\"evil\" in it","model":"real"}"#;
         let (s, e) = find_member(doc, 0, "model").unwrap().unwrap();

@@ -789,7 +789,7 @@ impl Verifier {
     /// `verify_report_binding` (recomputes this exact digest and compares it
     /// to the reported `report_data`) and `src/aggregator/service/e2ee.rs`'s
     /// `assemble_report`/`attestation_report_for_domain` (builds this exact
-    /// statement before calling the quoter) -- and reproduced live against a
+    /// statement before calling the quoter), and reproduced live against a
     /// real `GET /v1/aci/attestation?nonce=<chosen>` fetch (see
     /// `fixtures/aci_attestation1.json`/`aci_attestation1_nonce.txt`): this
     /// crate's own test `test_real_aci_bundle_verifies_keyset` recomputes the
@@ -799,7 +799,7 @@ impl Verifier {
     /// No JCS canonicalization is implemented on-chain: `keyset_bytes` is
     /// hashed exactly as supplied. If a caller's local canonicalization of
     /// `workload_keyset` is wrong, the digest simply will not match what the
-    /// TEE actually signed and this call reverts -- correctness is enforced
+    /// TEE actually signed and this call reverts: correctness is enforced
     /// by the equality check, not by re-deriving JCS on-chain.
     ///
     /// `pubkey` (a raw 32-byte Ed25519 public key) must appear in
@@ -814,7 +814,7 @@ impl Verifier {
     /// `pubkey` was produced by the SAME class of TDX-attested enclave Assay
     /// already trusts (same DCAP chain, same nine-field measurement, same
     /// allowlist gate as `verify()`/`register()` above), via Phala's own
-    /// report_data-commitment mechanism -- not a separate ECDSA-signs-Ed25519
+    /// report_data-commitment mechanism, not a separate ECDSA-signs-Ed25519
     /// scheme invented for this task, because Phala's source does not
     /// implement one; see the chiron repo's top-level README, "Model-swap
     /// refusal" section, "How the Ed25519 key is bound" for the full writeup.
@@ -1050,7 +1050,7 @@ mod test {
     // nonce is embedded raw in report_data) can be reconstructed and
     // checked offline. `keyset_bytes_aci1.json` is the exact JCS
     // canonicalization of that response's `attestation.workload_keyset`
-    // object (sorted keys, compact separators -- the ACI spec's ASCII/
+    // object (sorted keys, compact separators: the ACI spec's ASCII/
     // integer-only constraint means JCS reduces to exactly that); verified
     // independently in Python before writing this Rust: sha256(these exact
     // bytes) == the response's own `workload_keyset_digest` field, and
@@ -1091,7 +1091,7 @@ mod test {
         // Same DCAP chain as the legacy endpoint's quote, so the same
         // nine-field measurement formula applies; both quotes come from
         // the same class of Phala gateway image, so their measurements
-        // should agree -- an independent cross-check that verify_keyset
+        // should agree: an independent cross-check that verify_keyset
         // isn't computing something different from verify().
         let (_, legacy_measurement) = contract
             .verify(load_quote().into(), FixedBytes::from(FIXTURE_NONCE))
@@ -1132,7 +1132,7 @@ mod test {
         let vm = vm_at_test_time();
         let contract = Verifier::from(&vm);
         let mut kb = load_aci_keyset_bytes();
-        // Flip a byte inside the "ed25519" algo string value -- still
+        // Flip a byte inside the "ed25519" algo string value: still
         // syntactically valid JSON bytes-wise for this scanner (this test
         // only exercises the digest check, before any JSON is parsed).
         let pos = kb.iter().position(|&b| b == b'e').unwrap();
@@ -1150,7 +1150,7 @@ mod test {
 
     /// Red: a pubkey that is not in the attested keyset's
     /// `receipt_signing_keys` must not bind, even with a genuine quote,
-    /// genuine keyset bytes and the correct nonce -- otherwise anyone could
+    /// genuine keyset bytes and the correct nonce, otherwise anyone could
     /// register an unattested key by reusing someone else's real bundle.
     #[test]
     fn test_aci_pubkey_not_in_keyset_reverts() {
@@ -1189,7 +1189,7 @@ mod test {
 
     /// Red: `verify_keyset` shares `verify_dcap_chain` with `verify()`, so a
     /// corrupted quote signature must fail there too, not just for the
-    /// legacy entrypoint -- proves the refactor didn't silently drop a
+    /// legacy entrypoint: proves the refactor didn't silently drop a
     /// check for one of the two callers.
     #[test]
     fn test_aci_flipped_quote_signature_reverts() {
