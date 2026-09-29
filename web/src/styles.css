@@ -123,11 +123,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .tb-cell.alarm dt { color: var(--ground); opacity: 0.8; }
 
 /* ---------- page heads ---------- */
-.head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 40px; align-items: end; padding: 32px 0 28px; }
-.head .lede { max-width: 60ch; }
+.head { padding: 36px 0 28px; }
+.head h1 { max-width: 1040px; }
+.head .gloss { max-width: 92ch; margin: 16px 0 20px; }
 .gloss { font-size: 13px; line-height: 20px; color: var(--graphite); margin-bottom: 18px; }
 .gloss b { color: var(--ink); font-weight: 700; }
-.gloss-bottom { display: none; }
 .opener { margin-bottom: 128px; }
 .opener > details.inspect { margin-top: 32px; }
 .doc.single { max-width: 760px; }
@@ -137,7 +137,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .board.verdict figcaption { max-width: 72ch; }
 .face { display: grid; grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr); margin-top: 18px; }
 .face .doc { display: block; grid-row: auto; }
-.face .doc.receipt { border-top: 0; }
 .face .connector { grid-column: 2; grid-row: 1; }
 .face .connector .wire, .face .connector .cut { top: calc(100% - 34px); }
 .doc > :last-child, .doc-rows > :last-child { border-bottom: 0; }
@@ -158,6 +157,7 @@ details.inspect[open] { padding-bottom: 24px; }
 .section-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
 .section-head .stamp { margin-left: auto; }
 .section-intro { margin: 16px 0 8px; max-width: 72ch; }
+.pagehead + .section { margin-top: 24px; }
 
 /* ---------- the figure ---------- */
 .board {
@@ -170,16 +170,21 @@ details.inspect[open] { padding-bottom: 24px; }
   display: grid; grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
   grid-template-rows: auto auto auto auto; column-gap: 0; row-gap: 0;
 }
-.doc {
-  position: relative; background: var(--ground); border: 1.25px solid var(--ink);
-  display: grid; grid-template-rows: subgrid; grid-row: span 3; align-content: start;
+.doc { position: relative; display: block; background: var(--ground); border: 1.25px solid var(--ink); }
+.figure .doc { display: grid; grid-template-rows: subgrid; grid-row: span 3; align-content: start; }
+/* a drawn sheet: the top-right corner is folded over, like the TE manuals' line drawings of paper */
+.doc::after {
+  content: ''; position: absolute; top: -1.25px; right: -1.25px; width: 18px; height: 18px;
+  background: linear-gradient(225deg, var(--ground) 0 calc(50% - 0.6px), var(--ink) calc(50% - 0.6px) calc(50% + 0.6px), var(--ground) calc(50% + 0.6px));
+  border-left: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
 }
+.key-label { display: flex; align-items: center; gap: 8px; }
 .doc.channel { grid-column: 1; grid-row: 1 / span 3; border-width: 1.75px; }
-.doc.receipt { grid-column: 3; grid-row: 1 / span 3; border-top: 0; }
+.doc.receipt { grid-column: 3; grid-row: 1 / span 3; }
+.face .doc.receipt { grid-column: 3; grid-row: 1; }
 .doc.voucher { grid-column: 1; grid-row: 4; margin-top: 20px; display: block; }
 .doc.call { grid-column: 3; grid-row: 4; margin-top: 20px; display: block; }
-.tear { position: absolute; left: -1.25px; right: -1.25px; top: -9px; height: 10px; display: block; width: calc(100% + 2.5px); }
-.doc-head { padding: 12px 16px 10px; border-bottom: 1px solid var(--rule); display: grid; gap: 2px; }
+.doc-head { padding: 12px 34px 10px 16px; border-bottom: 1px solid var(--rule); display: grid; gap: 2px; }
 .doc-head .small { font-size: 12px; line-height: 18px; }
 .doc-key { padding: 14px 16px 16px; border-bottom: 1px solid var(--rule); display: grid; gap: 6px; }
 .doc.channel .doc-key { text-align: right; justify-items: end; }
@@ -318,6 +323,10 @@ a.spec:hover .spec-subject .t-subject { text-decoration: underline; text-underli
 .result .rl { font: 700 11px/20px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--graphite); }
 .note { font-size: 13px; line-height: 20px; color: var(--graphite); max-width: 80ch; }
 .note.warn { color: var(--ink); }
+.doc-head-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+.switch { display: inline-flex; gap: 10px; margin-left: 4px; }
+.switch button { border: 0; background: none; padding: 0 2px; cursor: pointer; font: 700 13px/20px var(--body); color: var(--graphite); border-bottom: 1px solid transparent; }
+.switch button[aria-pressed='true'] { color: var(--ink); border-bottom-color: var(--ink); }
 .picker { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; font-size: 14px; }
 .picker button { border: 0; background: none; padding: 6px 0; cursor: pointer; color: var(--graphite); border-bottom: 1px solid transparent; }
 .picker button[aria-pressed='true'] { color: var(--ink); border-bottom-color: var(--ink); }
@@ -348,13 +357,17 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule
   .t-display { font-size: 26px; line-height: 31px; letter-spacing: -0.02em; }
   .gloss { font-size: 12px; line-height: 18px; }
   .tb-cell.m-hide { display: none; }
-  .face .doc-head .small { display: none; }
-  .gloss-top { display: none; }
-  .gloss-bottom { display: block; margin: 20px 0 0; }
+  .face .doc:not(.receipt) .doc-head .small { display: none; }
   .opener { margin-bottom: 64px; }
   .face .t-diff { font-size: 20px; line-height: 24px; }
   .face .doc-key { padding-top: 8px; padding-bottom: 10px; }
-  .face .connector { height: 48px; }
+  .face .connector { height: 56px; }
+  .face .connector .wire.a, .face .connector .wire.b { left: 50%; }
+  .face .connector .wire.a { top: 0; height: 18px; }
+  .face .connector .wire.b { bottom: 0; top: auto; height: 18px; }
+  .face .connector .cut { left: 50%; top: 50%; width: 30px; height: 20px; margin: -10px 0 0 -15px; }
+  .face .connector .cut::before, .face .connector .cut::after { top: auto; bottom: auto; left: 5px; right: 5px; width: auto; height: 0; border-left: 0; border-top: 2px solid var(--signal); transform: rotate(-18deg); }
+  .face .connector .cut::before { top: 5px; } .face .connector .cut::after { top: 13px; }
   .board.verdict figcaption { font-size: 16px; line-height: 22px; }
   .t-display br { display: none; }
   .t-title { font-size: 28px; line-height: 32px; }
@@ -365,9 +378,8 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule
   .tb-cell.first { grid-column: 1 / -1; order: -1; border-top: 0; }
   .tb-cell.signal, .tb-cell.alarm { padding-left: 10px; }
   .figure, .face { grid-template-columns: minmax(0, 1fr); }
-  .face .doc.receipt { border-top: 1.25px solid var(--ink); margin-top: 10px; }
+  .face .doc.receipt { grid-column: 1; grid-row: auto; }
   .face .connector { grid-column: 1; grid-row: auto; }
-  .face .connector .wire.a { top: 0; } .face .connector .cut { top: 50%; }
   .doc.channel, .doc.receipt, .doc.voucher, .doc.call { grid-column: 1; grid-row: auto; display: block; }
   .doc.receipt { border-top: 1.25px solid var(--ink); margin-top: 10px; }
   .doc.channel .doc-key { text-align: left; justify-items: start; }
@@ -382,6 +394,7 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule
   @keyframes wire-v { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   .drow { grid-template-columns: 88px minmax(0, 1fr) auto; padding: 4px 12px; }
   .doc-head, .doc-key, .amount { padding-left: 12px; padding-right: 12px; }
+  .doc-head { padding-right: 30px; }
   .lrow { grid-template-columns: 32px minmax(0, 1fr); gap: 4px 12px; padding: 10px 0; }
   .lrow .read, .lrow .res { grid-column: 2; text-align: left; }
   .spec { grid-template-columns: 1fr; gap: 6px; }

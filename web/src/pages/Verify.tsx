@@ -318,7 +318,7 @@ export function Verify() {
         </div>
       </header>
 
-      <KeysSection title="Keys registered on Assay now" drawn />
+      <KeysSection title="Gateway keys the contract accepts now" drawn />
 
 
       <section className="section" aria-labelledby="v-steps">

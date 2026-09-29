@@ -38,7 +38,12 @@ Genre: verification report. A title block with provenance, a figure, a keyed leg
 | `--t-body` | B612 | 15 / 24 | 400 | 0 | prose, row text |
 | `--t-small` | B612 | 13 / 20 | 400 | 0.005em | hints, provenance |
 | `--t-label` | B612 | 11 / 14 | 700 | +0.08em, uppercase | title block labels, form labels, drawing labels |
-| `--t-hex` | B612 Mono | 12 / 16 | 400 | 0 | literal hex and code identifiers only (B612's parentheses are square, so `ModelMismatch()` is set in the mono) |
+| `--t-hex` | B612 Mono | 12 / 16 | 400 | 0 | literal hex only: hashes, addresses, selectors |
+| `--t-code` | B612 | 0.94em | 700 | 0 | code identifiers in running text (`redeemWithReceipt`, `ModelMismatch()`) |
+
+B612 and B612 Mono draw `( )` as near-square brackets, which turns `ModelMismatch()` into `ModelMismatch[]`.
+A `Chiron Parens` face (Red Hat Display restricted by `unicode-range: U+0028-0029`) sits in front of both
+stacks, so every parenthesis on the site is round.
 
 Tabular figures (`font-variant-numeric: tabular-nums`) only inside tables and the legend's figure column.
 Headings are never italic. No weight above 700 anywhere; display never above 500.
@@ -112,7 +117,7 @@ State transitions: route content fades 160ms; a submitted form shows its result 
 - No cards, tiles, raised panels or rounded boxes; nothing nested inside a bordered box.
 - No pills, badges or status chips. State is a word in the row.
 - No big-number hero; no figure larger than `--t-subject`, except the three `--t-diff` strings that are the argument itself.
-- No mono outside literal hex and code identifiers. No full 64-character hash in running layout.
+- No mono outside literal hex. No full 64-character hash in running layout; hashes and addresses sit behind a click.
 - No green, red, blue, purple, teal, amber or orange. One accent, one job.
 - No gradients, glows, shadows, glass, neon.
 - No icons above headings; no decorative icons at all. Circled numbers are the only glyphs.
@@ -130,7 +135,7 @@ first time they appear. Hashes, addresses and the contract-order checks sit behi
 Overview
 [ title block: network | read live at block N | VERDICT: Payment refused (magenta fill) ]
 [ one sentence, display 44                  ]   [ gloss: sealed gateway, receipt ]
-[                                           ]   [ OPEN A CHANNEL PINNED TO A MODEL ]
+[                                           ]   [ Open a channel pinned to a model ]
 [ caption: this receipt names a different model than the one channel 0 was opened for ... ]
 [ CHANNEL 0 WAS OPENED FOR      ]  --//--  [ TEST RECEIPT SAYS IT SERVED ]
 [ meta-llama/llama-3.3-70b-...  ]  magenta [ served-model                ]
@@ -138,11 +143,13 @@ Overview
 [ + Inspect the call: the full sheet, voucher, call, callouts 1-9, legend, receipt bytes ]
 then channels and keys as specification lines, what the proof covers, contract constants
 
-Channels: title block | "Lock USDG for one model, then pay per call" + gloss + OPEN A NEW CHANNEL |
-  picker | the channel and its clock as two drawn documents | addresses behind a click | open form |
-  steps 1 to 3
-Verify: title block | "Verify a gateway, then register its key" + gloss | steps 1 to 3 |
-  the two registered keys as drawn documents | how registration works
+Channels: title block | "Lock USDG for one model, then pay per call" + gloss + Open a new channel |
+  channel picker | one drawn document: what the channel pays for, what is left, its state |
+  clock, addresses and fingerprints behind a click | receipt payments | every channel as specification
+  lines | open form | steps 1 to 3
+Verify: title block | "Verify a gateway, then register its key" + gloss + Read the nonce for the live
+  provider | the two registered keys as drawn documents (can sign until, fingerprint) with the hex behind a
+  click | steps 1 to 3 | how registration works
 ```
 
 Mobile stacks everything in one column; the first screen keeps the sentence, the visual and the action.

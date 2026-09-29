@@ -284,6 +284,34 @@ export function Channel() {
   const legacyCh = !!ch && ch.requestedModelHash === ZERO_HASH;
   const pinnedName = ch && !legacyCh && ch.requestedModelHash.toLowerCase() === keccak256(toHex(DEFAULT_MODEL_ID)).toLowerCase() ? DEFAULT_MODEL_ID : null;
 
+  const channelSwitch = (
+    <span className="switch" role="group" aria-label="Choose a channel">
+      {channelCountSnap.data &&
+        Array.from({ length: Number(channelCountSnap.data.value) }, (_, i) => String(i)).map((id) => (
+          <button key={id} type="button" aria-pressed={id === channelId.trim()} onClick={() => setChannelId(id)}>
+            {id}
+          </button>
+        ))}
+    </span>
+  );
+  const otherId = (
+    <div className="field">
+      <label className="label" htmlFor="c-id">Another channel id</label>
+      <input
+        id="c-id"
+        value={channelCountSnap.data && /^\d+$/.test(channelId.trim()) && BigInt(channelId.trim()) < channelCountSnap.data.value ? '' : channelId}
+        onChange={(e) => setChannelId(e.target.value)}
+        inputMode="numeric"
+        placeholder="any id"
+      />
+      <span className="hint">
+        {channelCountSnap.data
+          ? `${channelCountSnap.data.value.toString()} ${channelCountSnap.data.value === 1n ? 'channel has' : 'channels have'} been opened on this contract.`
+          : 'Counting channels.'}
+      </span>
+    </div>
+  );
+
   return (
     <main>
       <TitleBlock
@@ -310,47 +338,27 @@ export function Channel() {
       </header>
 
       <section aria-labelledby="c-lookup">
-        <div className="picker" role="group" aria-label="Choose a channel">
-          <span className="t-label" id="c-lookup">Showing channel</span>
-          {channelCountSnap.data &&
-            Array.from({ length: Number(channelCountSnap.data.value) }, (_, i) => String(i)).map((id) => (
-              <button key={id} type="button" aria-pressed={id === channelId.trim()} onClick={() => setChannelId(id)}>
-                {id}
-              </button>
-            ))}
-          <label className="sr-only" htmlFor="c-id">Channel id</label>
-          <input
-            id="c-id"
-            value={channelCountSnap.data && /^\d+$/.test(channelId.trim()) && BigInt(channelId.trim()) < channelCountSnap.data.value ? '' : channelId}
-            onChange={(e) => setChannelId(e.target.value)}
-            inputMode="numeric"
-            placeholder="other id"
-            aria-describedby="c-id-hint"
-          />
-          <span className="small" id="c-id-hint">
-            {channelCountSnap.data
-              ? `${channelCountSnap.data.value.toString()} ${channelCountSnap.data.value === 1n ? 'channel' : 'channels'} on this contract`
-              : 'counting channels'}
-          </span>
-        </div>
         {snapshot.isPending && <p className="section-intro small" aria-busy="true">Reading channel {channelId}.</p>}
         {snapshot.isError && snapshot.error.message !== 'bad-id' && (
           <div className="alarm" role="alert" style={{ marginTop: 16 }}><b>Could not read this channel.</b> <span>{String(snapshot.error).slice(0, 200)}</span></div>
         )}
         {snapshot.data && !exists && (
-          <p className="section-intro">
-            No channel was ever opened under id {channelId}: its provider slot is still the zero address. Pick an id
-            above, or open one below.
-          </p>
+          <>
+            <p className="section-intro">
+              No channel was ever opened under id {channelId}: its provider slot is still the zero address. Show{' '}
+              {channelSwitch}, or open one below.
+            </p>
+            <div className="fields">{otherId}</div>
+          </>
         )}
         {snapshot.data && exists && ch && (
           <>
             {selfTest && <p className="section-intro note warn">Self-test channel: the agent and the provider are the same wallet, {short(ch.agent)}.</p>}
             <div className="board" style={{ marginTop: 12 }}>
               <div className="doc single">
-                <div className="doc-head">
+                <div className="doc-head doc-head-row">
                   <span className="t-label">Channel {channelId.trim()}</span>
-                  <span className="small">live, read from the contract at the block in the title bar</span>
+                  <span className="small">show {channelSwitch}</span>
                 </div>
                 <div className="doc-key">
                   <span className="t-label">{legacyCh ? 'Pins no model' : 'Pays only for'}</span>
@@ -367,7 +375,8 @@ export function Channel() {
               </div>
             </div>
             <details className="more">
-              <summary>Clock, addresses, the model hash and the enclave fingerprint</summary>
+              <summary>Clock, addresses, the model hash, the enclave fingerprint and other channel ids</summary>
+              <div className="fields" style={{ marginBottom: 16 }}>{otherId}</div>
               <dl className="kvs">
                 <dt>Paid so far</dt>
                 <dd>{fmtUsdg(ch.paid)} USDG</dd>

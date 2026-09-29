@@ -186,22 +186,14 @@ function receiptJson(receiptBytes: Hex): ReceiptJson | null {
   }
 }
 
-/** Seconds since a timestamp in ms, re-rendered every second. */
-function useAgo(ms: number | undefined) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
-  }, []);
-  return ms ? Math.max(0, Math.round((now - ms) / 1000)) : null;
-}
+/** "13h 57m": a key's remaining life without the ticking seconds. */
+const hoursMinutes = (sec: number) => `${Math.floor(sec / 3600)}h ${String(Math.floor((sec % 3600) / 60)).padStart(2, '0')}m`;
 
 const shortHash = (h: string) => (h.length > 20 ? `${h.slice(0, h.indexOf(':') + 5)}…` : h);
 
 function Refusal() {
   const q = useAtBlock(['refusal-demo', ASSAY], readRefusal);
   const r = q.data?.value;
-  const ago = useAgo(q.data ? q.dataUpdatedAt : undefined);
   const refused = !!r && r.revert.reverted && r.revert.name === 'ModelMismatch';
   const pinnedLabel = r ? (r.pinnedIsLlama ? PINNED_MODEL_ID : r.ch.requestedModelHash === ZERO_HASH ? 'no model (legacy channel)' : 'an unrecognised model hash') : PINNED_MODEL_ID;
   const servedId = typeof r?.upstream?.model_id === 'string' ? r.upstream.model_id : null;
@@ -272,9 +264,9 @@ function Refusal() {
 
   const gloss = (
     <>
-      <b>Sealed gateway:</b> the provider&apos;s server runs inside a TEE (Intel TDX), hardware that reports a
-      fingerprint of its software; the contract checks it against an allowlist. <b>Receipt:</b> a statement that
-      gateway signs for each call, naming the model that answered.
+      <b>Sealed gateway:</b> the provider&apos;s server, running inside a TEE (Intel TDX) whose software fingerprint the
+      contract checks. <b>Receipt:</b> the gateway&apos;s signed note naming the model that answered each call; it does
+      not prove which weights ran.
     </>
   );
 
@@ -284,17 +276,7 @@ function Refusal() {
       <TitleBlock
         cells={[
           { label: 'Network', value: `${assayChain.name}, live`, mobileHide: true },
-          {
-            label: 'Read live at',
-            mobileHide: true,
-            value: q.data ? (
-              <span title={ago !== null ? `read ${ago} s ago; re-read every 15 s` : undefined}>
-                block <a href={explorer.block(q.data.block)} target="_blank" rel="noreferrer">{q.data.block.toLocaleString('en-US')}</a>
-              </span>
-            ) : (
-              'reading'
-            ),
-          },
+          { label: 'Contract', value: 'Assay, the payment channel', mobileHide: true },
           verdictCell,
         ]}
       />
@@ -303,8 +285,8 @@ function Refusal() {
         <h1 className="t-display">
           Your agent only pays when the provider&apos;s sealed gateway signs a receipt naming the model you picked.
         </h1>
-        <div className="lede">
-          <p className="gloss gloss-top">{gloss}</p>
+        <p className="gloss">{gloss}</p>
+        <div className="actions">
           <Link className="btn" to="/channel">Open a channel pinned to a model</Link>
         </div>
       </header>
@@ -338,12 +320,13 @@ function Refusal() {
                 : 'The contract would pay this receipt. The refusal this page exists to show is not happening.'}
         </figcaption>
         <div className={r ? 'face run' : 'face'}>
-          <div className="doc">
+          <div className="doc sheet">
             <div className="doc-head">
-              <span className="t-label">Channel 0 was opened for</span>
-              <span className="small">a channel is USDG an agent locks up front and pays out per call</span>
+              <span className="t-label">Channel 0</span>
+              <span className="small">USDG, a dollar stablecoin, locked by an agent to pay one provider per call</span>
             </div>
             <div className="doc-key">
+              <span className="t-label key-label"><Num n={7} mark={r ? mark(7) : 'plain'} /> Opened for the model</span>
               <span className="t-diff">{pinnedLabel}</span>
             </div>
           </div>
@@ -352,15 +335,13 @@ function Refusal() {
             <span className="cut" />
             <span className="wire b" />
           </div>
-          <div className="doc receipt">
-            <svg className="tear" viewBox="0 0 400 10" preserveAspectRatio="none" aria-hidden="true">
-              <path d={`M0 10 ${Array.from({ length: 40 }, (_, i) => `L${i * 10 + 5} 1 L${i * 10 + 10} 10`).join(' ')}`} fill="var(--ground)" stroke="var(--ink)" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
-            </svg>
+          <div className="doc sheet receipt">
             <div className="doc-head">
-              <span className="t-label">Test receipt says it served</span>
+              <span className="t-label">Test receipt</span>
               <span className="small">signed with a test key, not by a registered gateway</span>
             </div>
             <div className="doc-key">
+              <span className="t-label key-label"><Num n={7} mark={r ? mark(7) : 'plain'} /> Says it served the model</span>
               <span className={modelsEqual ? 't-diff' : 't-diff served'}>{servedId ?? (r ? 'unreadable model id' : 'served-model')}</span>
             </div>
           </div>
@@ -370,11 +351,10 @@ function Refusal() {
           <span>
             {!r ? 'Asking the contract.' : refused ? 'not paid. It stays in channel 0.' : 'The refusal did not happen; see the alert above.'}
             <span className="small">
-              {' '}A read-only call{q.data ? ` at block ${q.data.block.toLocaleString('en-US')}` : ''}: nothing was sent, and no real llama call was swapped.
+              {' '}A read-only demo call{q.data ? <> at block <a href={explorer.block(q.data.block)} target="_blank" rel="noreferrer">{q.data.block.toLocaleString('en-US')}</a>, re-read every 15 s</> : ''}: nothing was sent, and no real llama call was swapped.
             </span>
           </span>
         </div>
-        <p className="gloss gloss-bottom">{gloss}</p>
       </figure>
 
       <details className="inspect" onToggle={(e) => setInspectOpen((e.target as HTMLDetailsElement).open)}>
@@ -407,13 +387,9 @@ function Refusal() {
             <span className="wire a" />
             <span className="cut" />
             <span className="wire b" />
-            <span className="n-wrap"><span data-step="" style={{ ['--step' as string]: 7 }}><Num n={7} mark={mark(7)} /></span></span>
           </div>
 
           <div className="doc receipt">
-            <svg className="tear" viewBox="0 0 400 10" preserveAspectRatio="none" aria-hidden="true">
-              <path d={`M0 10 ${Array.from({ length: 40 }, (_, i) => `L${i * 10 + 5} 1 L${i * 10 + 10} 10`).join(' ')}`} fill="var(--ground)" stroke="var(--ink)" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
-            </svg>
             <div className="doc-head">
               <span className="t-label">Receipt, test vector</span>
               <span className="small">signed by a test key, not by a registered gateway key</span>
@@ -619,8 +595,9 @@ export function KeysSection({ title = 'Registered gateway keys', drawn = false }
         {q.data && <Stamp block={q.data.block} />}
       </div>
       <p className="section-intro">
-        Both keys were registered from fresh Intel TDX quotes that the Stylus verifier checked onchain, under the one
-        allowlisted measurement. A key pays nothing after its expiry until it is registered again.
+        {drawn
+          ? `Registering adds a key like these. Each came from a fresh Intel TDX report that the contract checked, and each is accepted for ${ATTESTATION_VALIDITY / 3600} hours.`
+          : 'Both keys were registered from fresh Intel TDX quotes that the contract\'s quote verifier checked onchain, under the one allowlisted measurement. A key pays nothing after its expiry until it is registered again.'}
       </p>
       {q.isPending && <p className="small" aria-busy="true">Reading signers and receiptSigners.</p>}
       {q.isError && (
@@ -645,9 +622,8 @@ export function KeysSection({ title = 'Registered gateway keys', drawn = false }
                       <span className="small">{k.plain}</span>
                     </div>
                     <div className="doc-key">
-                      <span className="t-label">{unset ? 'Status' : live ? 'Can sign until' : 'Expired'}</span>
-                      <span className="t-subject">{unset ? 'not registered' : fmtStamp(k.exp)}</span>
-                      {!unset && <span className="small">{live ? `in ${fmtCountdown(Number(k.exp) - now)}` : fmtCountdown(Number(k.exp) - now)}</span>}
+                      <span className="t-label">{unset ? 'Status' : live ? 'Accepted for' : 'Expired'}</span>
+                      <span className="t-subject">{unset ? 'not registered' : live ? hoursMinutes(Number(k.exp) - now) : `${hoursMinutes(now - Number(k.exp))} ago`}</span>
                     </div>
                     <div className="drow"><span className="t-label">Fingerprint</span><span className="v">{unset ? 'none' : allowed ? 'on the allowlist' : 'not on the allowlist'}</span></div>
                   </div>
@@ -662,7 +638,7 @@ export function KeysSection({ title = 'Registered gateway keys', drawn = false }
                 <Fragment key={k.kind}>
                   <dt>{k.kind}</dt>
                   <dd>
-                    <HexValue value={k.key} /> <span className="small">read with <Code>{k.call}(…)</Code>; {k.algo}</span>
+                    <HexValue value={k.key} /> <span className="small">read with <Code>{k.call}(…)</Code>; {k.algo}; expires {k.m === ZERO_HASH ? 'never registered' : fmtStamp(k.exp)}</span>
                     <br />
                     <span className="small">fingerprint </span>{k.m === ZERO_HASH ? 'none' : <HexValue value={k.m} />}
                     <span className="small">; registered in </span>
