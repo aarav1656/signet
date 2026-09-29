@@ -48,15 +48,13 @@ Both verifier contracts are Stylus (Rust, WASM), not Solidity, because the check
 
 ## The problem
 
-An agent that pays a model API per call cannot see what actually served the call. A provider can substitute a cheaper or quantized model and keep charging the advertised price.
+An agent paying per call for an open-weight model cannot see which model answered. A gateway can route the request to a cheaper model, a smaller quantization, or a server nobody attested, and bill for the model that was asked for. Cai, Shi, Zhao and Song ([arXiv 2504.04715](https://arxiv.org/abs/2504.04715)) find that detecting this from outputs alone is unreliable: output-statistics tests miss subtle substitutions, and log-probability checks break on ordinary inference nondeterminism. They propose trusted execution environments as the practical fix.
 
-| Source | What it shows |
-|---|---|
-| [Cai, Shi, Zhao, Song, "Are You Getting What You Pay For? Auditing Model Substitution in LLM APIs", arXiv 2504.04715](https://arxiv.org/abs/2504.04715) | Software-only detection of a substituted model is unreliable: output-statistics tests fail against subtle substitutions, and log-probability checks break on normal inference nondeterminism. The authors propose trusted execution environments as the practical fix. |
-| [MoonshotAI/K2-Vendor-Verifier](https://github.com/MoonshotAI/K2-Vendor-Verifier) | The model's own publisher measures significant tool-call accuracy differences between API vendors serving the same open-weight model. |
-| [OpenRouterTeam/ai-sdk-provider#499](https://github.com/OpenRouterTeam/ai-sdk-provider/issues/499) | A silent provider flip mid-session: a flipped request cost about $0.04 against about $0.005 for a cache hit, and no error reached the caller. |
+Phala's confidential gateway (also sold as RedPill) is that fix at the gateway: it verifies the upstream before forwarding, and "if the gateway cannot verify the upstream or enforce the binding on the actual connection, it does not send your prompt" ([verified upstreams](https://docs.redpill.ai/confidential-ai/verified-upstreams.md)). Every response gets a receipt, signed with a key from the gateway's attestation, whose `upstream.verified` event names the model that served it, quantization included when the id carries it, for example `Qwen/Qwen3.6-35B-A3B-FP8` ([receipts](https://docs.redpill.ai/confidential-ai/receipts.md)).
 
-Phala's confidential gateway already runs in a TEE, publishes a TDX attestation, and signs a receipt for every response that names the model the upstream served. What was missing is a payment that depends on them: checking a receipt in a client library after paying does not stop the payment. Chiron makes the check and the payment the same transaction.
+What was missing is a payment that depends on that receipt. A client library can check it, but only after the call was billed. Chiron makes the check and the payment the same transaction, so the case it catches is exact: a response whose signed receipt names a different model id than the one the channel was opened for, or a receipt from a gateway whose attestation is not registered, never gets paid.
+
+What it does not catch: how well a correctly named model is deployed. Two vendors serving the same model id can differ in quality, and a receipt names the model, not the weights; Phala's own provider table lists `model_weights_provenance` as Unknown for every confidential provider ([providers](https://docs.redpill.ai/confidential-ai/providers.md)). Pinning the full id, quantization suffix included, makes a silent quantization swap an id mismatch. Binding the weights themselves needs a weights commitment in the receipt, which no provider exposes yet.
 
 ## How it works
 
@@ -138,8 +136,10 @@ Tests on the deployed code:
 | `register` (verify + store) | 2,346,274 | tx `0xaf4218b9...0d59` |
 | `registerReceiptKey` (verify keyset + store) | 2,368,996 | tx `0xdff86c7c...ef1f` |
 | `openChannel` | 243,470 | tx `0x61fffc01...bd2` |
+| `ReceiptVerifier.verifyReceipt`, one 676-byte receipt | 174,862 | `cast estimate` on the live Stylus contract, block 313924043; a standalone call, so it includes the 21,000 base cost and calldata |
+| `redeemWithReceipt`, Assay's own logic | 132,021 | forge gas report, first redeem on a channel, receipt verifier mocked |
 
-Registration runs once per key rotation. The per-call path only runs the Ed25519 receipt check.
+Registration runs once per key rotation. The per-call path is `redeemWithReceipt`: Assay's logic plus the Stylus receipt check, which puts one redeem at roughly 300,000 gas on Arbitrum Sepolia. That is an estimate composed from the two measurements above; the first live receipt-paid redeem will replace it with a mined figure. Because the voucher is cumulative, a provider can redeem once for many calls, so this cost is per redeem, not per call.
 
 ## Run it
 
@@ -178,4 +178,4 @@ Web app: `cd web && npm install && npm run dev`. It reads every figure it shows 
 
 ## Team
 
-Built by pranjalcodesinw3, AI-assisted.
+Built by pranjalcodesinw3.
