@@ -30,6 +30,8 @@ The seller's 402 response advertises these fields in `accepts[].extra`, alongsid
 | `providerPayout` | address | Where claimed funds go. Nonzero, and not the gate. |
 | `gateNonce` | bytes32 | Any value; lets one buyer hold several channels with identical pins. |
 
+`acceptedServedLabels` is the buyer's decision, not the seller's. A seller may suggest labels in `extra`, but a client MUST build the set from its own table of labels it accepts for `modelHash`, and ignore any suggested label it does not recognise: a seller who advertises a cheaper model's label would otherwise be paid in full for serving that model.
+
 The channel salt is
 
 ```
@@ -62,7 +64,7 @@ The voucher alone is not enough because it binds no request, and a TEE gateway's
 2. `callAckSig` is a valid `CallAck` for `(channelId, voucherClaim.totalClaimed, requestHash, responseHash)` by the payer side.
 3. `verifyReceipt(pubkey, receiptBytes, receiptSig)` returns `ok`, requested model hash `== pin.modelHash`, served model hash nonzero and equal to one entry of `pin.acceptedServedLabels`, and body hashes equal to `requestHash` and `responseHash`.
 4. `receiptSigners(pubkey)` is registered, its measurement `== pin.requiredMeasurement`, and `block.timestamp <= expiry`.
-5. `(requestHash, responseHash)` has never been paid to `pin.providerPayout`.
+5. `(requestHash, responseHash)` has never been paid on this `channelId`. The replay record is per channel, not per provider, so a receipt burned on a throwaway channel cannot void the provider's claim on the real one.
 6. `voucherClaim.totalClaimed` exceeds the channel's recorded `totalClaimed`; `x402BatchSettlement.claim` accepts it; the gate's settled balance rises by exactly the increment; `providerPayout`'s balance rises by exactly the increment.
 
 Funds that reach the gate any other way (a direct transfer, or a channel naming the gate as receiver under a foreign `receiverAuthorizer`) are flushed before step 6 and never forwarded.
