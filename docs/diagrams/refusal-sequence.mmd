@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Provider
+    participant Assay
+    participant ReceiptVerifier
+
+    Note over Provider,Assay: Assay.redeemWithReceipt, contracts/src/Assay.sol:439
+    Provider->>Assay: redeemWithReceipt(channelId, cumulativeAmount, requestHash, responseHash, payerSig, pubkey, receiptBytes, signature)
+    Assay->>ReceiptVerifier: verifyReceipt(pubkey, receiptBytes, signature)
+    ReceiptVerifier-->>Assay: (ok, requestedModelHash, servedModelHash, receiptRequestHash, receiptResponseHash)
+    Assay->>Assay: check ok == true (else revert ReceiptInvalid)
+    Assay->>Assay: compare servedModelHash to the pin (c.requestedModelHash)
+    Assay--xProvider: reverts ModelMismatch(): served model not in the pin, not paid

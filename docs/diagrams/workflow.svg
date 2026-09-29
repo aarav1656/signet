@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 907.1129999999998 1012.637" width="1995.6485999999998" height="2227.8014" style="--bg:#F6F8FA;--fg:#111318;--line:#5A6270;--accent:#111318;--muted:#5A6270;--surface:#FFFFFF;--border:#5A6270;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-235A6270" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#5A6270" stroke="#5A6270" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start-235A6270" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#5A6270" stroke="#5A6270" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-23D01A6E" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#D01A6E" stroke="#D01A6E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start-23D01A6E" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#D01A6E" stroke="#D01A6E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="S1" data-to="S2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="637.0279999999998,102.25000000000001 637.0279999999998,141.8" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="S2" data-to="S3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="637.0279999999998,178.70000000000002 637.0279999999999,226.70000000000002" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="S3" data-to="S4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="637.0279999999999,263.6 637.0279999999999,311.6" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="S4" data-to="S5" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="637.0279999999999,348.5 637.0279999999999,396.50000000000006" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="S5" data-to="S6" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="637.0279999999999,450.30000000000007 637.0279999999999,498.30000000000007" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="S6" data-to="Branch" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="637.0279999999999,535.2 637.0279999999999,583.2" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Branch" data-to="Paid" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="yes" points="600.4718333333333,765.9808333333334 600.4718333333333,838.537 522.3954999999999,838.537 522.3954999999999,918.837" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Branch" data-to="Refused" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="no" points="673.5841666666665,765.9808333333334 673.5841666666665,838.537 751.6605,838.537 751.6605,918.837" fill="none" stroke="#D01A6E" stroke-width="3px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23D01A6E)" />
+<g class="edge-label" data-from="Branch" data-to="Paid" data-label="yes">
+  <rect x="504.39549999999986" y="845.537" width="35.47" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="522.1304999999999" y="860.687" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">yes</text>
+</g>
+<g class="edge-label" data-from="Branch" data-to="Refused" data-label="no">
+  <rect x="736.6605" y="845.537" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="751.4254999999999" y="860.687" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">no</text>
+</g>
+<g class="node" data-id="Subtitle" data-label="One paid call, channel 2, pinned to phala/qwen3.8-27b-uncensored." data-shape="rectangle">
+  <rect x="40" y="48.45" width="428.7519999999999" height="36.900000000000006" rx="0" ry="0" fill="none" stroke="none" stroke-width="0.75" />
+  <text x="254.37599999999995" y="66.9" text-anchor="middle" font-size="13" font-weight="500" fill="#5A6270" dy="4.55">One paid call, channel 2, pinned to phala/qwen3.8-27b-uncensored.</text>
+</g>
+<g class="node" data-id="S1" data-label="1. Agent pins a model and opens a channel
+openChannel (channel 2)" data-shape="rectangle">
+  <rect x="496.75199999999984" y="48.45" width="280.552" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="637.0279999999998" y="75.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="637.0279999999998" dy="-3.9000000000000012">1. Agent pins a model and opens a channel</tspan><tspan x="637.0279999999998" dy="16.900000000000002">openChannel (channel 2)</tspan></text>
+</g>
+<g class="node" data-id="S2" data-label="2. The call goes through the Phala TEE gateway" data-shape="rectangle">
+  <rect x="478.22699999999986" y="141.8" width="317.602" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="637.0279999999998" y="160.25" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">2. The call goes through the Phala TEE gateway</text>
+</g>
+<g class="node" data-id="S3" data-label="3. The TEE signs a receipt naming the served model" data-shape="rectangle">
+  <rect x="466.7414999999999" y="226.70000000000002" width="340.5729999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="637.0279999999999" y="245.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">3. The TEE signs a receipt naming the served model</text>
+</g>
+<g class="node" data-id="S4" data-label="4. Agent checks the receipt locally and signs a voucher" data-shape="rectangle">
+  <rect x="456.36749999999995" y="311.6" width="361.32099999999986" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="637.0279999999999" y="330.05" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">4. Agent checks the receipt locally and signs a voucher</text>
+</g>
+<g class="node" data-id="S5" data-label="5. Provider calls redeemWithReceipt
+tx 0x16270367...a55d, 301,058 gas" data-shape="rectangle">
+  <rect x="510.0899999999999" y="396.50000000000006" width="253.87599999999995" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="637.0279999999999" y="423.40000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="637.0279999999999" dy="-3.9000000000000012">5. Provider calls redeemWithReceipt</tspan><tspan x="637.0279999999999" dy="16.900000000000002">tx 0x16270367...a55d, 301,058 gas</tspan></text>
+</g>
+<g class="node" data-id="S6" data-label="6. Assay calls ReceiptVerifier.verifyReceipt" data-shape="rectangle">
+  <rect x="488.9715" y="498.30000000000007" width="296.11299999999983" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="637.0279999999999" y="516.7500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">6. Assay calls ReceiptVerifier.verifyReceipt</text>
+</g>
+<g class="node" data-id="Branch" data-label="7. Served model in the pin?" data-shape="diamond">
+  <polygon points="637.0279999999999,583.2 746.6964999999999,692.8685 637.0279999999999,802.537 527.3594999999999,692.8685" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="637.0279999999999" y="692.8685" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">7. Served model in the pin?</text>
+</g>
+<g class="node" data-id="Paid" data-label="USDG paid to provider
+0.30 USDG this call" data-shape="rectangle">
+  <rect x="436.58299999999986" y="918.837" width="171.625" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="522.3954999999999" y="945.737" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="522.3954999999999" dy="-3.9000000000000012">USDG paid to provider</tspan><tspan x="522.3954999999999" dy="16.900000000000002">0.30 USDG this call</tspan></text>
+</g>
+<g class="node" data-id="Refused" data-label="reverts ModelMismatch: not paid" data-shape="rectangle">
+  <rect x="636.2079999999999" y="918.837" width="230.90499999999994" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="751.6604999999998" y="937.287" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">reverts ModelMismatch: not paid</text>
+</g>
+</svg>

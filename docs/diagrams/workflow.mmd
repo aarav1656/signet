@@ -1,0 +1,28 @@
+flowchart TB
+  Subtitle["One paid call, channel 2, pinned to phala/qwen3.8-27b-uncensored."]
+
+  S1["1. Agent pins a model and opens a channel<br/>openChannel (channel 2)"]
+  S2["2. The call goes through the Phala TEE gateway"]
+  S3["3. The TEE signs a receipt naming the served model"]
+  S4["4. Agent checks the receipt locally and signs a voucher"]
+  S5["5. Provider calls redeemWithReceipt<br/>tx 0x16270367...a55d, 301,058 gas"]
+  S6["6. Assay calls ReceiptVerifier.verifyReceipt"]
+  Branch{"7. Served model in the pin?"}
+  Paid["USDG paid to provider<br/>0.30 USDG this call"]
+  Refused["reverts ModelMismatch: not paid"]
+
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> S5
+  S5 --> S6
+  S6 --> Branch
+  Branch -->|"yes"| Paid
+  Branch -.->|"no"| Refused
+
+  classDef default fill:#FFFFFF,stroke:#5A6270,stroke-width:2px,color:#111318
+  classDef subtitle fill:none,stroke:none,color:#5A6270,font-style:italic
+  class Subtitle subtitle
+
+  linkStyle default stroke:#5A6270,stroke-width:2px
+  linkStyle 7 stroke:#D01A6E,stroke-width:3px

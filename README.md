@@ -80,6 +80,11 @@ What it does not catch: how well a correctly named model is deployed. Two vendor
 
 ## How it works
 
+![Chiron architecture](docs/diagrams/architecture.png)
+
+One paid call step by step: [workflow](docs/diagrams/workflow.png). The refusal path in contract order: [refusal sequence](docs/diagrams/refusal-sequence.png).
+
+
 **1. Register the gateway's keys.** Anyone can call `register(quote, refBlock)`. Assay issues the nonce the quote must commit to:
 
 ```

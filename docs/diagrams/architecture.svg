@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1377.0549999999998 1021.1999999999998" width="1377.0549999999998" height="1021.1999999999998" style="--bg:#F6F8FA;--fg:#111318;--line:#5A6270;--accent:#111318;--muted:#5A6270;--surface:#FFFFFF;--border:#5A6270;background:#F6F8FA">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          #111318;
+    --_text-sec:      var(--muted, color-mix(in srgb, #111318 60%, #F6F8FA));
+    --_text-muted:    var(--muted, color-mix(in srgb, #111318 40%, #F6F8FA));
+    --_text-faint:    color-mix(in srgb, #111318 25%, #F6F8FA);
+    --_line:          var(--line, color-mix(in srgb, #111318 50%, #F6F8FA));
+    --_arrow:         var(--accent, color-mix(in srgb, #111318 85%, #F6F8FA));
+    --_node-fill:     var(--surface, color-mix(in srgb, #111318 3%, #F6F8FA));
+    --_node-stroke:   var(--border, color-mix(in srgb, #111318 20%, #F6F8FA));
+    --_group-fill:    #F6F8FA;
+    --_group-hdr:     color-mix(in srgb, #111318 5%, #F6F8FA);
+    --_inner-stroke:  color-mix(in srgb, #111318 12%, #F6F8FA);
+    --_key-badge:     color-mix(in srgb, #111318 10%, #F6F8FA);
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#111318" stroke="#111318" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#111318" stroke="#111318" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-235A6270" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#5A6270" stroke="#5A6270" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start-235A6270" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#5A6270" stroke="#5A6270" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-23D01A6E" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#D01A6E" stroke="#D01A6E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start-23D01A6E" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#D01A6E" stroke="#D01A6E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Agent" data-to="Gateway" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="request" points="776.77825,97.35 776.77825,112.9 473.87755833333324,112.9 473.87755833333324,193.2" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Gateway" data-to="Model" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="forwards; upstream returns the served model id" points="447.7433916666666,247 447.7433916666666,429.1 350.3086749999999,429.1 350.3086749999998,509.40000000000003" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Gateway" data-to="Provider" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="receipt names the model (Ed25519)" points="500.01172499999996,247 500.01172499999996,283 560.738675,283 560.738675,363.3" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Agent" data-to="Assay" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="openChannel" points="820.4255,97.35 820.4255,396.8 940.5447499999998,396.8 940.5447499999998,667.5 734.2170833333332,667.5 734.2170833333332,667.5" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Provider" data-to="Assay" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="registerReceiptKey" points="524.367575,417.1 524.367575,587.2 335.9147499999999,587.2 335.9147499999999,667.5 542.2424166666666,667.5 542.2424166666666,667.5" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Provider" data-to="Assay" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="redeemWithReceipt" points="548.614975,417.1 548.614975,599.2 449.2287499999999,599.2 449.2287499999999,655.5 590.2360833333332,655.5 590.2360833333332,667.5" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Assay" data-to="Provider" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="reverts ModelMismatch: not paid" points="638.22975,667.5 638.22975,667.5 592.2607499999999,667.5 592.2607499999999,599.2 572.8623749999999,599.2 572.8623749999999,417.1" fill="none" stroke="#D01A6E" stroke-width="3px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23D01A6E)" />
+<polyline class="edge" data-from="Assay" data-to="ReceiptVerifier" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="verifyReceipt" points="566.23925,721.3 566.23925,745.3 415.60124999999994,745.3 415.60124999999994,837.5999999999999" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Assay" data-to="Verifier" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="verify / verifyKeyset" points="638.22975,721.3 638.2297499999999,915.3999999999999 487.46620833333327,915.3999999999999 487.46620833333327,927.3999999999999" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="IntelRoot" data-to="Verifier" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="PCK chain" points="216.0207499999999,777.5999999999999 216.0207499999999,915.3999999999999 397.65387499999997,915.3999999999999 397.65387499999997,927.3999999999999" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Assay" data-to="USDG" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="USDG: pays provider" points="710.2202499999999,721.3 710.2202499999999,769.3 812.9007499999999,769.3 812.9007499999998,837.5999999999999" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Provider" data-to="ChironGate" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="claimWithReceipt (x402 channel)" points="597.1097749999999,417.1 597.1097749999999,429.1 815.4627499999999,429.1 815.4627499999999,509.40000000000003" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="ChironGate" data-to="X402" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="claim / settle" points="853.8234166666665,563.2 853.8234166666665,575.2 1027.7842499999997,575.2 1027.7842499999997,667.5" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="ChironGate" data-to="Assay" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="reads receiptSigners" points="777.1020833333332,563.2 777.1020833333332,655.5 686.2234166666666,655.5 686.2234166666666,667.5" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<polyline class="edge" data-from="Agent" data-to="X402" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="deposit (opens x402 channel, gate as receiver)" points="864.07275,97.35 864.07275,384.8 1114.8339166666665,384.8 1114.8339166666665,643.5 1082.7695833333332,643.5 1082.7695833333332,667.5" fill="none" stroke="#5A6270" stroke-width="2px" marker-end="url(#arrowhead-235A6270)" />
+<g class="edge-label" data-from="Agent" data-to="Gateway" data-label="request">
+  <rect x="446.37755833333324" y="119.9" width="54.478" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="473.6165583333332" y="135.05" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">request</text>
+</g>
+<g class="edge-label" data-from="Gateway" data-to="Model" data-label="forwards; upstream returns the served model id">
+  <rect x="231.3086749999999" y="436.1" width="237.43" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="350.0236749999999" y="451.25" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">forwards; upstream returns the served model id</text>
+</g>
+<g class="edge-label" data-from="Gateway" data-to="Provider" data-label="receipt names the model (Ed25519)">
+  <rect x="472.73867499999994" y="290" width="175.654" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="560.5656749999999" y="305.15" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">receipt names the model (Ed25519)</text>
+</g>
+<g class="edge-label" data-from="Agent" data-to="Assay" data-label="openChannel">
+  <rect x="900.0447499999998" y="403.8" width="80.614" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="940.3517499999998" y="418.95" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">openChannel</text>
+</g>
+<g class="edge-label" data-from="Provider" data-to="Assay" data-label="registerReceiptKey">
+  <rect x="280.4147499999999" y="630.2" width="110.31400000000001" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="335.5717499999999" y="645.35" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">registerReceiptKey</text>
+</g>
+<g class="edge-label" data-from="Provider" data-to="Assay" data-label="redeemWithReceipt">
+  <rect x="394.7287499999999" y="606.2" width="108.53200000000002" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="448.9947499999999" y="621.35" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">redeemWithReceipt</text>
+</g>
+<g class="edge-label" data-from="Assay" data-to="Provider" data-label="reverts ModelMismatch: not paid">
+  <rect x="507.26074999999986" y="606.2" width="169.11999999999998" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="591.8207499999999" y="621.35" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">reverts ModelMismatch: not paid</text>
+</g>
+<g class="edge-label" data-from="Assay" data-to="ReceiptVerifier" data-label="verifyReceipt">
+  <rect x="375.10124999999994" y="752.3" width="80.61400000000002" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="415.40824999999995" y="767.4499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">verifyReceipt</text>
+</g>
+<g class="edge-label" data-from="Assay" data-to="Verifier" data-label="verify / verifyKeyset">
+  <rect x="581.7297499999999" y="854.0999999999999" width="112.09600000000002" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="637.7777499999999" y="869.2499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">verify / verifyKeyset</text>
+</g>
+<g class="edge-label" data-from="IntelRoot" data-to="Verifier" data-label="PCK chain">
+  <rect x="182.5207499999999" y="878.0999999999999" width="66.952" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="215.9967499999999" y="893.2499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">PCK chain</text>
+</g>
+<g class="edge-label" data-from="Assay" data-to="USDG" data-label="USDG: pays provider">
+  <rect x="753.9007499999999" y="776.3" width="117.44200000000002" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="812.6217499999999" y="791.4499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">USDG: pays provider</text>
+</g>
+<g class="edge-label" data-from="Provider" data-to="ChironGate" data-label="claimWithReceipt (x402 channel)">
+  <rect x="731.4627499999999" y="436.1" width="167.93200000000002" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="815.4287499999999" y="451.25" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">claimWithReceipt (x402 channel)</text>
+</g>
+<g class="edge-label" data-from="ChironGate" data-to="X402" data-label="claim / settle">
+  <rect x="991.2842499999998" y="582.2" width="72.89200000000001" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="1027.7302499999998" y="597.35" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">claim / settle</text>
+</g>
+<g class="edge-label" data-from="ChironGate" data-to="Assay" data-label="reads receiptSigners">
+  <rect x="717.1020833333332" y="606.2" width="119.22399999999999" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="776.7140833333332" y="621.35" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">reads receiptSigners</text>
+</g>
+<g class="edge-label" data-from="Agent" data-to="X402" data-label="deposit (opens x402 channel, gate as receiver)">
+  <rect x="996.3339166666666" y="537.9000000000001" width="236.242" height="30.3" rx="2" ry="2" fill="#F6F8FA" stroke="#D7DBE0" stroke-width="1" />
+  <text x="1114.4549166666666" y="553.0500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="#5A6270" dy="3.8499999999999996">deposit (opens x402 channel, gate as receiver)</text>
+</g>
+<g class="node" data-id="Subtitle" data-label="An agent pays per AI call only when the provider's sealed gateway signs a receipt naming the model it pinned." data-shape="rectangle">
+  <rect x="40" y="43.55" width="665.131" height="36.900000000000006" rx="0" ry="0" fill="none" stroke="none" stroke-width="0.75" />
+  <text x="372.5655" y="62" text-anchor="middle" font-size="13" font-weight="500" fill="#5A6270" dy="4.55">An agent pays per AI call only when the provider&#39;s sealed gateway signs a receipt naming the model it pinned.</text>
+</g>
+<g class="node" data-id="Agent" data-label="Agent
+(payer wallet, off-chain)" data-shape="rectangle">
+  <rect x="733.131" y="43.55" width="174.58899999999997" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="820.4254999999999" y="70.45" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="820.4254999999999" dy="-3.9000000000000012">Agent</tspan><tspan x="820.4254999999999" dy="16.900000000000002">(payer wallet, off-chain)</tspan></text>
+</g>
+<g class="node" data-id="Gateway" data-label="Phala TEE gateway
+(Intel TDX, off-chain)" data-shape="rectangle">
+  <rect x="395.47505833333327" y="193.2" width="156.805" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="473.87755833333324" y="220.1" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="473.87755833333324" dy="-3.9000000000000012">Phala TEE gateway</tspan><tspan x="473.87755833333324" dy="16.900000000000002">(Intel TDX, off-chain)</tspan></text>
+</g>
+<g class="node" data-id="Model" data-label="Upstream model server
+(off-chain)" data-shape="rectangle">
+  <rect x="261.16167499999983" y="509.40000000000003" width="178.29399999999998" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="350.3086749999998" y="536.3000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="350.3086749999998" dy="-3.9000000000000012">Upstream model server</tspan><tspan x="350.3086749999998" dy="16.900000000000002">(off-chain)</tspan></text>
+</g>
+<g class="node" data-id="IntelRoot" data-label="Intel attestation root
+(PCK chain)" data-shape="rectangle">
+  <rect x="139.47074999999995" y="723.8" width="153.10000000000002" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="216.02074999999996" y="750.6999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="216.02074999999996" dy="-3.9000000000000012">Intel attestation root</tspan><tspan x="216.02074999999996" dy="16.900000000000002">(PCK chain)</tspan></text>
+</g>
+<g class="node" data-id="Provider" data-label="Provider
+(payee wallet)" data-shape="rectangle">
+  <rect x="500.1201749999999" y="363.3" width="121.23700000000001" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="560.738675" y="390.2" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="560.738675" dy="-3.9000000000000012">Provider</tspan><tspan x="560.738675" dy="16.900000000000002">(payee wallet)</tspan></text>
+</g>
+<g class="node" data-id="ChironGate" data-label="ChironGate
+(x402 extension, 0xA5b5...F24e)" data-shape="rectangle">
+  <rect x="700.3807499999999" y="509.40000000000003" width="230.16399999999993" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="815.4627499999999" y="536.3000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="815.4627499999999" dy="-3.9000000000000012">ChironGate</tspan><tspan x="815.4627499999999" dy="16.900000000000002">(x402 extension, 0xA5b5...F24e)</tspan></text>
+</g>
+<g class="node" data-id="X402" data-label="x402BatchSettlement
+(0x4020...0003)" data-shape="rectangle">
+  <rect x="972.7989166666665" y="667.5" width="164.95600000000002" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="1055.2769166666665" y="694.4" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="1055.2769166666665" dy="-3.9000000000000012">x402BatchSettlement</tspan><tspan x="1055.2769166666665" dy="16.900000000000002">(0x4020...0003)</tspan></text>
+</g>
+<g class="node" data-id="Note" data-label="official x402BatchSettlement bytecode,
+redeployed by us on Arbitrum Sepolia at its canonical address" data-shape="rectangle">
+  <rect x="935.72" y="307" width="401.3349999999998" height="53.800000000000004" rx="0" ry="0" fill="#EEF1F4" stroke="#5A6270" stroke-width="1px" />
+  <text x="1136.3874999999998" y="333.9" text-anchor="middle" font-size="13" font-weight="500" fill="#5A6270"><tspan x="1136.3874999999998" dy="-3.9000000000000012">official x402BatchSettlement bytecode,</tspan><tspan x="1136.3874999999998" dy="16.900000000000002">redeployed by us on Arbitrum Sepolia at its canonical address</tspan></text>
+</g>
+<g class="node" data-id="Assay" data-label="Assay
+(USDG payment channel, Arbitrum Sepolia)" data-shape="rectangle">
+  <rect x="494.24875" y="667.5" width="287.9619999999999" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="638.22975" y="694.4" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="638.22975" dy="-3.9000000000000012">Assay</tspan><tspan x="638.22975" dy="16.900000000000002">(USDG payment channel, Arbitrum Sepolia)</tspan></text>
+</g>
+<g class="node" data-id="Verifier" data-label="Stylus Verifier
+(verify / verifyKeyset, Arbitrum Sepolia)" data-shape="rectangle">
+  <rect x="307.84154166666667" y="927.3999999999999" width="269.4369999999999" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="442.5600416666666" y="954.2999999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="442.5600416666666" dy="-3.9000000000000012">Stylus Verifier</tspan><tspan x="442.5600416666666" dy="16.900000000000002">(verify / verifyKeyset, Arbitrum Sepolia)</tspan></text>
+</g>
+<g class="node" data-id="ReceiptVerifier" data-label="Stylus ReceiptVerifier
+(verifyReceipt, Ed25519, Arbitrum Sepolia)" data-shape="rectangle">
+  <rect x="273.47275" y="837.5999999999999" width="284.2569999999999" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="415.60124999999994" y="864.4999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="415.60124999999994" dy="-3.9000000000000012">Stylus ReceiptVerifier</tspan><tspan x="415.60124999999994" dy="16.900000000000002">(verifyReceipt, Ed25519, Arbitrum Sepolia)</tspan></text>
+</g>
+<g class="node" data-id="USDG" data-label="USDG
+(Paxos, Arbitrum Sepolia)" data-shape="rectangle">
+  <rect x="717.8257499999999" y="837.5999999999999" width="190.14999999999998" height="53.800000000000004" rx="0" ry="0" fill="#FFFFFF" stroke="#5A6270" stroke-width="0.75" />
+  <text x="812.9007499999998" y="864.4999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#111318"><tspan x="812.9007499999998" dy="-3.9000000000000012">USDG</tspan><tspan x="812.9007499999998" dy="16.900000000000002">(Paxos, Arbitrum Sepolia)</tspan></text>
+</g>
+</svg>

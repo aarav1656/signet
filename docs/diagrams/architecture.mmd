@@ -1,0 +1,44 @@
+flowchart TB
+  Subtitle["An agent pays per AI call only when the provider's sealed gateway signs a receipt naming the model it pinned."]
+
+  Agent["Agent<br/>(payer wallet, off-chain)"]
+  Gateway["Phala TEE gateway<br/>(Intel TDX, off-chain)"]
+  Model["Upstream model server<br/>(off-chain)"]
+
+  IntelRoot["Intel attestation root<br/>(PCK chain)"]
+
+  Provider["Provider<br/>(payee wallet)"]
+
+  ChironGate["ChironGate<br/>(x402 extension, 0xA5b5...F24e)"]
+  X402["x402BatchSettlement<br/>(0x4020...0003)"]
+  Note["official x402BatchSettlement bytecode,<br/>redeployed by us on Arbitrum Sepolia at its canonical address"]
+
+  Assay["Assay<br/>(USDG payment channel, Arbitrum Sepolia)"]
+  Verifier["Stylus Verifier<br/>(verify / verifyKeyset, Arbitrum Sepolia)"]
+  ReceiptVerifier["Stylus ReceiptVerifier<br/>(verifyReceipt, Ed25519, Arbitrum Sepolia)"]
+  USDG["USDG<br/>(Paxos, Arbitrum Sepolia)"]
+
+  Agent -->|request| Gateway
+  Gateway -->|"forwards; upstream returns the served model id"| Model
+  Gateway -->|"receipt names the model (Ed25519)"| Provider
+  Agent -->|openChannel| Assay
+  Provider -->|registerReceiptKey| Assay
+  Provider -->|redeemWithReceipt| Assay
+  Assay -.->|"reverts ModelMismatch: not paid"| Provider
+  Assay -->|verifyReceipt| ReceiptVerifier
+  Assay -->|"verify / verifyKeyset"| Verifier
+  IntelRoot -->|"PCK chain"| Verifier
+  Assay -->|"USDG: pays provider"| USDG
+  Provider -->|"claimWithReceipt (x402 channel)"| ChironGate
+  ChironGate -->|"claim / settle"| X402
+  ChironGate -->|"reads receiptSigners"| Assay
+  Agent -->|"deposit (opens x402 channel, gate as receiver)"| X402
+
+  classDef default fill:#FFFFFF,stroke:#5A6270,stroke-width:2px,color:#111318
+  classDef note fill:#EEF1F4,stroke:#5A6270,stroke-width:1px,color:#5A6270,font-style:italic
+  classDef subtitle fill:none,stroke:none,color:#5A6270,font-style:italic
+  class Note note
+  class Subtitle subtitle
+
+  linkStyle default stroke:#5A6270,stroke-width:2px
+  linkStyle 6 stroke:#D01A6E,stroke-width:3px
