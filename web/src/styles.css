@@ -354,11 +354,9 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule
   .t-diff { font-size: 22px; line-height: 26px; }
   .head { grid-template-columns: 1fr; gap: 16px; padding: 24px 0 20px; }
   .titleblock { grid-template-columns: 1fr 1fr; }
-  .tb-cell, .tb-cell:nth-child(3n + 1) { border-left: 1px solid var(--rule); padding: 8px 10px 10px; }
-  .tb-cell:nth-child(n) { border-top: 1px solid var(--rule); }
-  .tb-cell:nth-child(odd) { border-left: 0; padding-left: 0; }
-  .tb-cell.first { grid-column: 1 / -1; order: -1; border-top: 0; padding-left: 10px; }
-  .tb-cell.first + .tb-cell { border-top: 1px solid var(--rule); }
+  .tb-cell, .tb-cell:first-child, .tb-cell:nth-child(3n + 1) { border-left: 0; border-top: 1px solid var(--rule); padding: 8px 12px 10px 0; }
+  .tb-cell.first { grid-column: 1 / -1; order: -1; border-top: 0; }
+  .tb-cell.signal, .tb-cell.alarm { padding-left: 10px; }
   .figure, .face { grid-template-columns: minmax(0, 1fr); }
   .face .doc.receipt { border-top: 1.25px solid var(--ink); margin-top: 10px; }
   .face .connector { grid-column: 1; grid-row: auto; }

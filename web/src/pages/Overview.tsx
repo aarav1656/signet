@@ -324,7 +324,13 @@ function Refusal() {
 
       <figure className="board verdict" aria-busy={q.isPending}>
         <figcaption className="t-subject">
-          This receipt names a different model than the one channel 0 was opened for, so the contract refuses to pay.
+          {!r
+            ? 'Asking the contract whether it will pay channel 0 for this receipt.'
+            : refused
+              ? 'This receipt names a different model than the one channel 0 was opened for, so the contract refuses to pay.'
+              : r.revert.reverted
+                ? 'The contract rejected this call for a reason other than the model. The refusal this page exists to show is not happening.'
+                : 'The contract would pay this receipt. The refusal this page exists to show is not happening.'}
         </figcaption>
         <div className={r ? 'face run' : 'face'}>
           <div className="doc">
@@ -336,7 +342,7 @@ function Refusal() {
               <span className="t-diff">{pinnedLabel}</span>
             </div>
           </div>
-          <div className={modelsEqual ? 'connector whole' : 'connector'} aria-hidden="true">
+          <div className={!r || modelsEqual ? 'connector whole' : 'connector'} aria-hidden="true">
             <span className="wire a" />
             <span className="cut" />
             <span className="wire b" />
