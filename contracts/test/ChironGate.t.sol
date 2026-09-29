@@ -43,6 +43,30 @@ contract ReentrantToken is ERC20 {
     }
 }
 
+/// ERC-20 that skims 1% of every transfer sent from `taxed`.
+contract SkimToken is ERC20 {
+    address public taxed;
+
+    constructor() ERC20("Skim", "SK") {}
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+
+    function setTaxed(address taxed_) external {
+        taxed = taxed_;
+    }
+
+    function _update(address from, address to, uint256 value) internal override {
+        if (taxed != address(0) && from == taxed && to != address(0)) {
+            uint256 fee = value / 100;
+            super._update(from, address(0xFEE), fee);
+            value -= fee;
+        }
+        super._update(from, to, value);
+    }
+}
+
 /// ChironGate against the real x402BatchSettlement (vendored byte-for-byte) and the real
 /// Assay receipt-key registry. Only the Stylus Ed25519 receipt verifier is mocked
 /// (MockReceiptVerifier, the repo's existing convention; its crypto is tested in
@@ -200,6 +224,20 @@ contract ChironGateTest is AssayTestBase {
         assertEq(usdg.balanceOf(address(gate)), 0);
         assertTrue(gate.consumed(payoutA, keccak256(abi.encode(REQ1, RESP1))));
         assertTrue(gate.consumed(payoutA, keccak256(abi.encode(REQ2, RESP2))));
+    }
+
+    /// x402 vouchers carry a ceiling; the claim, the ack and the payout use the claimed total.
+    function test_voucherCeilingAboveClaim_paysClaimedTotal() public {
+        (ChironGate.Pin memory p, bytes32 cid) = _openA(100e6);
+        IX402BatchSettlement.ChannelConfig memory c = _config(p, address(usdg));
+        Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
+        cl.vc = _vc(c, 80e6, authPk);
+        cl.vc.totalClaimed = 30e6;
+        _receipt(REQ1, RESP1);
+        assertEq(_submit(cl), 30e6);
+        assertEq(usdg.balanceOf(payoutA), 30e6);
+        (, uint128 claimed) = x402.channels(cid);
+        assertEq(claimed, 30e6);
     }
 
     function test_gateDigestMatchesIndependentCallAck() public view {
@@ -575,5 +613,71 @@ contract ChironGateTest is AssayTestBase {
             abi.encodeWithSelector(receiptVerifier.verifyReceipt.selector, receiptPubkey, receiptBytes, hex"02"),
             abi.encode(true, MODEL, MODEL, req, resp)
         );
+    }
+
+    // ---------------------------------------------------------------- balance deltas
+
+    function _openSkim(address taxed) internal returns (SkimToken tok, ChironGate.Pin memory p) {
+        tok = new SkimToken();
+        tok.mint(agent, 100e6);
+        vm.prank(agent);
+        tok.approve(address(collector), type(uint256).max);
+        p = _pin(payoutA, bytes32(uint256(4)));
+        _open(_config(p, address(tok)), 100e6);
+        tok.setTaxed(taxed);
+    }
+
+    /// x402 settles short. Tokens already stranded in the gate must not top the provider up.
+    function test_settleShort_reverts() public {
+        (SkimToken tok, ChironGate.Pin memory p) = _openSkim(address(x402));
+        tok.mint(address(gate), 10e6);
+        Claim memory cl = _honest(p, address(tok), 30e6, REQ1, RESP1);
+        _receipt(REQ1, RESP1);
+        vm.expectRevert(ChironGate.SettleShort.selector);
+        _submit(cl);
+    }
+
+    function test_forwardShort_reverts() public {
+        (SkimToken tok, ChironGate.Pin memory p) = _openSkim(address(gate));
+        Claim memory cl = _honest(p, address(tok), 30e6, REQ1, RESP1);
+        _receipt(REQ1, RESP1);
+        vm.expectRevert(ChironGate.ForwardShort.selector);
+        _submit(cl);
+        assertEq(tok.balanceOf(payoutA), 0);
+    }
+
+    /// A pin that names the gate itself as payout would strand the money; the forward delta
+    /// check refuses it.
+    function test_payoutIsGate_reverts() public {
+        ChironGate.Pin memory p = _pin(address(gate), bytes32(0));
+        _open(_config(p, address(usdg)), 100e6);
+        Claim memory cl = _honest(p, address(usdg), 30e6, REQ1, RESP1);
+        _receipt(REQ1, RESP1);
+        vm.expectRevert(ChironGate.ForwardShort.selector);
+        _submit(cl);
+    }
+
+    function test_payerAuthorizerZero_wrongSigner_reverts() public {
+        ChironGate.Pin memory p = _pin(payoutA, bytes32(uint256(9)));
+        IX402BatchSettlement.ChannelConfig memory c = _config(p, address(usdg));
+        c.payerAuthorizer = address(0);
+        bytes32 cid = _open(c, 100e6);
+        Claim memory cl;
+        cl.vc = _vc(c, 25e6, agentPk);
+        cl.pin = p;
+        cl.req = REQ1;
+        cl.resp = RESP1;
+        cl.ack = _sign(providerPk, _ackDigest(cid, 25e6, REQ1, RESP1));
+        cl.pubkey = receiptPubkey;
+        _receipt(REQ1, RESP1);
+        vm.expectRevert(ChironGate.BadCallAck.selector);
+        _submit(cl);
+    }
+
+    function test_constructor_rejectsNonContracts() public {
+        vm.expectRevert(ChironGate.BadParams.selector);
+        new ChironGate(IX402BatchSettlement(payoutA), IReceiptKeyRegistry(address(assay)));
+        vm.expectRevert(ChironGate.BadParams.selector);
+        new ChironGate(x402, IReceiptKeyRegistry(payoutA));
     }
 }

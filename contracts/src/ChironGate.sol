@@ -89,7 +89,6 @@ contract ChironGate is EIP712, ReentrancyGuard {
     error AttestationExpired();
     error ReceiptAlreadyConsumed();
     error NothingToClaim();
-    error ClaimNotApplied();
     error SettleShort();
     error ForwardShort();
 
@@ -174,8 +173,6 @@ contract ChironGate is EIP712, ReentrancyGuard {
         IX402BatchSettlement.VoucherClaim[] memory batch = new IX402BatchSettlement.VoucherClaim[](1);
         batch[0] = vc;
         x402.claim(batch);
-        (, uint128 claimedAfter) = x402.channels(channelId);
-        if (claimedAfter != vc.totalClaimed) revert ClaimNotApplied();
 
         uint256 gateBefore = IERC20(token).balanceOf(address(this));
         x402.settle(address(this), token);
@@ -194,8 +191,8 @@ contract ChironGate is EIP712, ReentrancyGuard {
         returns (bool)
     {
         if (c.payerAuthorizer != address(0)) {
-            (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, sig);
-            return err == ECDSA.RecoverError.NoError && recovered == c.payerAuthorizer;
+            (address recovered,,) = ECDSA.tryRecover(digest, sig);
+            return recovered == c.payerAuthorizer;
         }
         return SignatureChecker.isValidSignatureNow(c.payer, digest, sig);
     }
