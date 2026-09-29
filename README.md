@@ -8,6 +8,8 @@ Chiron is a USDG payment channel on Arbitrum for AI agents that buy inference pe
 
 The contract is `Assay` (`contracts/src/Assay.sol`).
 
+**Paid live on Arbitrum Sepolia.** Three real inference calls through Phala's gateway, each paid by `redeemWithReceipt` only after the Stylus verifier accepted the gateway's receipt naming the pinned model: [`0x16270367...a55d`](https://sepolia.arbiscan.io/tx/0x16270367e3c3e563bd4433d9cb33d9bdf5db84d44fb25fd0f44679aad681a55d), [`0x4c83cf96...43b7`](https://sepolia.arbiscan.io/tx/0x4c83cf961efedc3678c00d18e332aa502ac71e583ec3f5c42f24a1a5589043b7), [`0x4ed9077a...f868`](https://sepolia.arbiscan.io/tx/0x4ed9077a367495ddfb1acf4a3bbc54bf4b79b0d9898e4614fbe9148ec12cf868). Channel 2 paid 0.90 USDG to the provider, read back as `channels(2).paid` = 900000.
+
 ## What the receipt proves, and what it does not
 
 Proves: a TEE running the allowlisted image measurement signed a receipt naming the model it served and hashes of the exact request and response bytes, so a swapped model or an unattested gateway never gets paid. Does not prove: that the answer is correct. Chiron makes model substitution unprofitable; it makes no claim about output quality. Only the redeemed call's receipt is checked onchain: the highest voucher wins per channel, so a provider who serves one bad call among many good ones and never gets that specific call redeemed is not caught by this contract. Earlier calls in a session rely on the agent's own local check (see "What the agent does before it signs anything"), not an onchain one.
@@ -35,6 +37,12 @@ Live transactions on this deployment:
 | Register Phala's Ed25519 receipt key from a second fresh quote | [`0xdff86c7c...ef1f`](https://sepolia.arbiscan.io/tx/0xdff86c7c326ffa23738ec12fc9e7a7c3c930453298c28d7ce26322888a13ef1f), block 313675112 | `receiptSigners(0x110f...aa0a)` = same measurement |
 | Open channel 0, pinned to `meta-llama/llama-3.3-70b-instruct` | [`0x61fffc01...bd2`](https://sepolia.arbiscan.io/tx/0x61fffc011aeee16cce4a8075f606bb58d6b05038a7b8d6921460a26db5cacbd2), block 313676162 | deposit 2.000000 USDG |
 | Open channel 1, legacy signature path | [`0xb06dae37...2652`](https://sepolia.arbiscan.io/tx/0xb06dae3711bce5b151ea7fb6af0b30a94d37186cd00bb4b06cd7e9460bfd2652), block 313676207 | deposit 2.000000 USDG |
+| Open channel 2, pinned to `phala/qwen3.8-27b-uncensored` | [`0x3ebe01a4...a019`](https://sepolia.arbiscan.io/tx/0x3ebe01a4c23a3359599d6ba4c13653b1c5f71649247b02bd7209fe891008a019), block 313984561 | deposit 2.000000 USDG |
+| Paid call 1: `redeemWithReceipt` against a real Phala receipt | [`0x16270367...a55d`](https://sepolia.arbiscan.io/tx/0x16270367e3c3e563bd4433d9cb33d9bdf5db84d44fb25fd0f44679aad681a55d), block 313984768 | paid 0.30 USDG |
+| Paid call 2 | [`0x4c83cf96...43b7`](https://sepolia.arbiscan.io/tx/0x4c83cf961efedc3678c00d18e332aa502ac71e583ec3f5c42f24a1a5589043b7), block 313984791 | paid 0.60 USDG cumulative |
+| Paid call 3 | [`0x4ed9077a...f868`](https://sepolia.arbiscan.io/tx/0x4ed9077a367495ddfb1acf4a3bbc54bf4b79b0d9898e4614fbe9148ec12cf868), block 313984814 | `channels(2).paid` = 900000; provider USDG 0 to 900000 |
+
+Each paid call was a real completion from Phala's gateway (via RedPill), whose receipt named `phala/qwen3.8-27b-uncensored` as both requested and served, with `upstream.verified` = `verified`. The agent checked the receipt locally, signed the voucher, and the provider wallet redeemed it.
 
 The agent wallet (`0x2aD1...5DEF`) pays and the provider wallet (`0x93e8...EE5A`) is paid; the two are different addresses. `docs/e2e/chiron.md` lists every command and post-condition.
 
@@ -44,7 +52,7 @@ The agent wallet (`0x2aD1...5DEF`) pays and the provider wallet (`0x93e8...EE5A`
 
 ## Arbitrum technology
 
-Both verifier contracts are Stylus (Rust, WASM), not Solidity, because the checks they run are too expensive in the EVM: `Verifier` parses an Intel TDX DCAP quote chain and checks two P-384 and P-256 ECDSA signature chains against Intel's root in one transaction (`cast estimate` measured 2,304,195 gas on a fresh Phala quote, tx `0xaf4218b9...0d59` for the full register call at 2,346,274 gas); `ReceiptVerifier` checks an Ed25519 signature over the receipt's canonical JSON bytes. Neither op is available as an EVM precompile on Arbitrum Sepolia, and a pure-Solidity P-384/TDX-parsing implementation would blow past the block gas limit. Stylus compiles the same logic to WASM and runs it at near-native speed inside the same Arbitrum Sepolia transaction that Assay uses to pay, so the attestation check and the payment share one atomic call.
+Both verifiers are Stylus contracts (Rust compiled to WASM). The TDX `Verifier` parses a DCAP quote, walks the PCK certificate chain to Intel's root and checks its P-256 ECDSA signatures: 2,304,195 gas on a fresh Phala quote (`cast estimate`, block 313704492). Arbitrum does have a P-256 verification precompile (RIP-7212); the certificate and quote parsing around those signature checks is the bulk of the work, and Stylus runs all of it in one call. The `ReceiptVerifier` checks an Ed25519 signature, which has no EVM precompile, over the receipt's canonical JSON bytes and extracts four fields from it: 174,862 gas as a standalone call on a 676-byte receipt. Both run inside the same transaction that pays, so the check and the payment are atomic.
 
 ## The problem
 
@@ -137,9 +145,10 @@ Tests on the deployed code:
 | `registerReceiptKey` (verify keyset + store) | 2,368,996 | tx `0xdff86c7c...ef1f` |
 | `openChannel` | 243,470 | tx `0x61fffc01...bd2` |
 | `ReceiptVerifier.verifyReceipt`, one 676-byte receipt | 174,862 | `cast estimate` on the live Stylus contract, block 313924043; a standalone call, so it includes the 21,000 base cost and calldata |
-| `redeemWithReceipt`, Assay's own logic | 132,021 | forge gas report, first redeem on a channel, receipt verifier mocked |
+| `redeemWithReceipt`, first redeem on a channel | 301,058 | tx `0x16270367...a55d` |
+| `redeemWithReceipt`, later redeems | 285,057 and 284,888 | txs `0x4c83cf96...43b7`, `0x4ed9077a...f868` |
 
-Registration runs once per key rotation. The per-call path is `redeemWithReceipt`: Assay's logic plus the Stylus receipt check, which puts one redeem at roughly 300,000 gas on Arbitrum Sepolia. That is an estimate composed from the two measurements above; the first live receipt-paid redeem will replace it with a mined figure. Because the voucher is cumulative, a provider can redeem once for many calls, so this cost is per redeem, not per call.
+Registration runs once per key rotation. The per-call path is `redeemWithReceipt`, about 285,000 gas once a channel has been paid once. Because the voucher is cumulative, a provider can redeem once for many calls, so this cost is per redeem, not per call.
 
 ## Run it
 
