@@ -360,10 +360,10 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule
   .gloss { font-size: 12px; line-height: 18px; }
   .tb-cell.m-hide { display: none; }
   .face .doc:not(.receipt) .doc-head .small { display: none; }
-  .opener { margin-bottom: 64px; }
+  .opener { margin-bottom: 24px; }
   .face .t-diff { font-size: 20px; line-height: 24px; }
   .face .doc-key { padding-top: 8px; padding-bottom: 10px; }
-  .face .connector { height: 56px; }
+  .face .connector { height: 40px; }
   .face .connector .wire.a, .face .connector .wire.b { left: 50%; }
   .face .connector .wire.a { top: 0; height: 18px; }
   .face .connector .wire.b { bottom: 0; top: auto; height: 18px; }
@@ -384,7 +384,7 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule
   .face .doc.receipt { grid-column: 1; grid-row: auto; }
   .face .connector { grid-column: 1; grid-row: auto; }
   .doc.channel, .doc.receipt, .doc.voucher, .doc.call { grid-column: 1; grid-row: auto; display: block; }
-  .doc.receipt { border-top: 1.25px solid var(--ink); margin-top: 10px; }
+  .doc.receipt { border-top: 1.25px solid var(--ink); margin-top: 0; }
   .doc.channel .doc-key { text-align: left; justify-items: start; }
   .connector { grid-column: 1; grid-row: auto; height: 76px; }
   .connector .wire.a, .connector .wire.b { left: 24px; right: auto; width: 0; height: calc(50% - 20px); border-top: 0; border-left: 1px solid var(--ink); top: 0; transform-origin: top center; }
