@@ -276,7 +276,7 @@ function Refusal() {
       <TitleBlock
         cells={[
           { label: 'Network', value: `${assayChain.name}, live`, mobileHide: true },
-          { label: 'Contract', value: 'Assay, the payment channel', mobileHide: true },
+          { label: 'Contract', value: "Assay, Chiron's payment channel", mobileHide: true },
           verdictCell,
         ]}
       />
@@ -326,7 +326,7 @@ function Refusal() {
               <span className="small">USDG, a dollar stablecoin, locked by an agent to pay one provider per call</span>
             </div>
             <div className="doc-key">
-              <span className="t-label key-label"><Num n={7} mark={r ? mark(7) : 'plain'} /> Opened for the model</span>
+              <span className="t-label key-label">Opened for the model</span>
               <span className="t-diff">{pinnedLabel}</span>
             </div>
           </div>
@@ -334,6 +334,7 @@ function Refusal() {
             <span className="wire a" />
             <span className="cut" />
             <span className="wire b" />
+            {r && <span className="cut-label">{modelsEqual ? 'match' : 'no match'}<br />check 7 of 9</span>}
           </div>
           <div className="doc sheet receipt">
             <div className="doc-head">
@@ -341,7 +342,7 @@ function Refusal() {
               <span className="small">signed with a test key, not by a registered gateway</span>
             </div>
             <div className="doc-key">
-              <span className="t-label key-label"><Num n={7} mark={r ? mark(7) : 'plain'} /> Says it served the model</span>
+              <span className="t-label key-label">Says it served the model</span>
               <span className={modelsEqual ? 't-diff' : 't-diff served'}>{servedId ?? (r ? 'unreadable model id' : 'served-model')}</span>
             </div>
           </div>
@@ -351,7 +352,7 @@ function Refusal() {
           <span>
             {!r ? 'Asking the contract.' : refused ? 'not paid. It stays in channel 0.' : 'The refusal did not happen; see the alert above.'}
             <span className="small">
-              {' '}A read-only demo call{q.data ? <> at block <a href={explorer.block(q.data.block)} target="_blank" rel="noreferrer">{q.data.block.toLocaleString('en-US')}</a>, re-read every 15 s</> : ''}: nothing was sent, and no real llama call was swapped.
+              {' '}A live, read-only demo call with a fixed test receipt{q.data ? <> at block <a href={explorer.block(q.data.block)} target="_blank" rel="noreferrer">{q.data.block.toLocaleString('en-US')}</a>, re-read every 15 s</> : ''}: nothing was sent, and no real llama call was swapped.
             </span>
           </span>
         </div>
@@ -594,11 +595,12 @@ export function KeysSection({ title = 'Registered gateway keys', drawn = false }
         <h2 id="keys-h" className="t-section">{title}</h2>
         {q.data && <Stamp block={q.data.block} />}
       </div>
-      <p className="section-intro">
-        {drawn
-          ? `Registering adds a key like these. Each came from a fresh Intel TDX report that the contract checked, and each is accepted for ${ATTESTATION_VALIDITY / 3600} hours.`
-          : 'Both keys were registered from fresh Intel TDX quotes that the contract\'s quote verifier checked onchain, under the one allowlisted measurement. A key pays nothing after its expiry until it is registered again.'}
-      </p>
+      {!drawn && (
+        <p className="section-intro">
+          Both keys were registered from fresh Intel TDX quotes that the contract&apos;s quote verifier checked onchain,
+          under the one allowlisted measurement. A key pays nothing after its expiry until it is registered again.
+        </p>
+      )}
       {q.isPending && <p className="small" aria-busy="true">Reading signers and receiptSigners.</p>}
       {q.isError && (
         <div className="alarm" role="alert">
@@ -631,6 +633,10 @@ export function KeysSection({ title = 'Registered gateway keys', drawn = false }
               })}
             </div>
           </div>
+          <p className="section-intro small">
+            Registering adds a key like these. Each came from a fresh Intel TDX report that the contract checked, and each
+            is accepted for {ATTESTATION_VALIDITY / 3600} hours.
+          </p>
           <details className="more">
             <summary>Keys, fingerprints and registration transactions</summary>
             <dl className="kvs">

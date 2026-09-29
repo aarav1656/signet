@@ -140,6 +140,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .face .connector { grid-column: 2; grid-row: 1; }
 .face .connector .wire, .face .connector .cut { top: calc(100% - 34px); }
 .doc > :last-child, .doc-rows > :last-child { border-bottom: 0; }
+.cut-label { position: absolute; left: 0; right: 0; top: calc(100% - 6px); text-align: center; font: 700 10px/12px var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--signal); }
+.connector.whole .cut-label { color: var(--graphite); }
 .outcome { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-top: 22px; }
 .run .doc, .run .connector { animation-play-state: running; }
 details.more { margin-top: 16px; font-size: 14px; }
@@ -214,7 +216,7 @@ details.inspect[open] { padding-bottom: 24px; }
 .amount { display: grid; gap: 4px; padding: 12px 16px 14px; border-bottom: 1px solid var(--rule); }
 .struck { position: relative; display: inline-block; justify-self: start; }
 .struck::after {
-  content: ''; position: absolute; left: -4px; right: -4px; top: 55%; border-top: 2px solid var(--signal);
+  content: ''; position: absolute; left: 0; right: 0; top: 55%; border-top: 2px solid var(--signal);
   transform-origin: left center;
 }
 
@@ -368,6 +370,7 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule
   .face .connector .cut { left: 50%; top: 50%; width: 30px; height: 20px; margin: -10px 0 0 -15px; }
   .face .connector .cut::before, .face .connector .cut::after { top: auto; bottom: auto; left: 5px; right: 5px; width: auto; height: 0; border-left: 0; border-top: 2px solid var(--signal); transform: rotate(-18deg); }
   .face .connector .cut::before { top: 5px; } .face .connector .cut::after { top: 13px; }
+  .face .cut-label { left: calc(50% + 24px); right: auto; top: calc(50% - 6px); text-align: left; }
   .board.verdict figcaption { font-size: 16px; line-height: 22px; }
   .t-display br { display: none; }
   .t-title { font-size: 28px; line-height: 32px; }
