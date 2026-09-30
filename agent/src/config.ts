@@ -11,7 +11,8 @@ import {
 
 export const assay: Address = ((process.env.ASSAY_ADDRESS ?? '').trim() || ASSAY_ADDRESS) as Address;
 export const usdg: Address = USDG_ADDRESS;
-export const chainId: number = CHAIN_ID;
+// CHAIN_ID overrides the chain the register/open/pay modes sign for, e.g. 46630 for RHC testnet.
+export const chainId: number = Number((process.env.CHAIN_ID ?? '').trim()) || CHAIN_ID;
 export const rpcUrl: string = (process.env.RPC_URL ?? '').trim() || RPC_URL;
 
 export const channelId: bigint = BigInt(process.env.ASSAY_CHANNEL_ID ?? '0');

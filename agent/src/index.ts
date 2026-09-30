@@ -32,6 +32,7 @@ import { assayAbi } from '../../web/src/abi/Assay.generated.ts';
 import { chironGateAbi, x402BatchSettlementAbi } from './gate-abi.ts';
 import {
   assay,
+  chainId,
   channelId,
   erc3009Collector,
   gate,
@@ -45,6 +46,7 @@ import {
   x402 as x402Address,
 } from './config.ts';
 import { checkGatewaySigner, explainRefusal } from './gateway-check.ts';
+import { runAcctApprove, runAcctOvercap, runAcctTrade } from './account.ts';
 import {
   enclaveDigest,
   modelHash,
@@ -73,7 +75,7 @@ const erc20Abi = [
 ] as const;
 
 function chain() {
-  return { ...arbitrumSepolia, rpcUrls: { default: { http: [rpcUrl] } } };
+  return { ...arbitrumSepolia, id: chainId, rpcUrls: { default: { http: [rpcUrl] } } };
 }
 
 /// Agent signs vouchers; provider submits redeems (Assay requires msg.sender ==
@@ -803,7 +805,15 @@ if (mode === 'refuse') {
   await runGatePay();
 } else if (mode === 'gate-refuse') {
   await runGateRefuse();
+} else if (mode === 'acct-trade') {
+  await runAcctTrade();
+} else if (mode === 'acct-overcap') {
+  await runAcctOvercap();
+} else if (mode === 'acct-approve') {
+  await runAcctApprove();
 } else {
-  console.error('Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt|gate-open|gate-pay|gate-refuse>');
+  console.error(
+    'Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt|gate-open|gate-pay|gate-refuse|acct-trade|acct-overcap|acct-approve>',
+  );
   process.exit(1);
 }

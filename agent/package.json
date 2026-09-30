@@ -13,6 +13,9 @@
     "gate-open": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts gate-open",
     "gate-pay": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts gate-pay",
     "gate-refuse": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts gate-refuse",
+    "acct-trade": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-trade",
+    "acct-overcap": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-overcap",
+    "acct-approve": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-approve",
     "test": "node --env-file-if-exists=.env --test test/*.test.ts"
   },
   "dependencies": {
