@@ -126,6 +126,19 @@ contract AgentAccountTest is AgentAccountTestBase {
         assertEq(account.agent(), agentAddr);
     }
 
+    function test_register_arbSysRevertIsFinal() public {
+        ArbSysDouble arb = ArbSysDouble(address(0x64));
+        vm.etch(address(arb), address(new ArbSysDouble()).code);
+        uint256 ref = block.number - 1;
+        arb.setRevert(ref);
+        // native blockhash(ref) exists here, so only "an ArbSys revert is final" stops a fallback to it
+        assertTrue(blockhash(ref) != bytes32(0));
+        bytes32 nativeNonce = keccak256(abi.encode(block.chainid, address(account), account.agentEpoch(), blockhash(ref)));
+        bytes memory q = abi.encode(agent2, AGENT_M, nativeNonce);
+        vm.expectRevert(AgentAccount.StaleRefBlock.selector);
+        account.registerAgent(q, ref);
+    }
+
     function test_register_revertsZeroHash_nativeFallback() public {
         // off Arbitrum, blockhash(current block) is zero
         bytes32 constantNonce = keccak256(abi.encode(block.chainid, address(account), account.agentEpoch(), bytes32(0)));
@@ -533,6 +546,20 @@ contract AgentAccountTest is AgentAccountTestBase {
         vm.prank(agentAddr);
         vm.expectRevert(abi.encodeWithSelector(AgentAccount.InsufficientOutput.selector, 1e18 - 1, 1e18));
         a.execute(t, r);
+    }
+
+    function test_callback_revertsAfterSwapInSameTx() public {
+        (AgentAccount a, ShortPoolManager pm) = _shortAccount();
+        pm.configure(1e18, 0, 0);
+        AgentAccount.Trade memory t = _buy(10e6);
+        AgentAccount.Receipt memory r = _receipt();
+        vm.prank(agentAddr);
+        a.execute(t, r);
+        // later in the same transaction the pool calls back on its own: the flag is already down
+        bytes memory data = abi.encode(key, usdgIs0, uint128(10e6));
+        vm.prank(address(pm));
+        vm.expectRevert(AgentAccount.NotSwapping.selector);
+        a.unlockCallback(data);
     }
 
     function test_execute_revertsOverSpent_whenPoolOvercharges() public {
@@ -963,6 +990,7 @@ contract AgentAccountTest is AgentAccountTestBase {
         bytes32 rs = keccak256("rs");
         bytes32 digest = _voucherDigest(foreign, 1e6, rq, rs);
         assertEq(account.isValidSignature(digest, _wrapped(foreign, 1e6, rq, rs, digest)), bytes4(0xffffffff));
+        assertEq(account.isValidSignature(digest, _sign(agentPk, digest)), bytes4(0xffffffff));
         // a channel id that does not exist
         digest = _voucherDigest(99, 1e6, rq, rs);
         assertEq(account.isValidSignature(digest, _wrapped(99, 1e6, rq, rs, digest)), bytes4(0xffffffff));
@@ -980,6 +1008,7 @@ contract AgentAccountTest is AgentAccountTestBase {
         assertEq(account.isValidSignature(digest, sig), bytes4(0x1626ba7e));
         vm.warp(account.agentExpiry() + 1);
         assertEq(account.isValidSignature(digest, sig), bytes4(0xffffffff));
+        assertEq(account.isValidSignature(digest, _sign(agentPk, digest)), bytes4(0xffffffff));
     }
 
     function test_1271_rejectsPausedRevokedWrongSignerClosed() public {
@@ -1175,10 +1204,16 @@ contract AgentAccountTest is AgentAccountTestBase {
     }
 
     function test_constructor_revertsNoCode() public {
-        vm.expectRevert(abi.encodeWithSelector(AgentAccount.NoCode.selector, address(0xdead)));
-        new AgentAccount(owner, address(verifier), address(receiptVerifier), address(assay), address(0xdead), address(usdg));
-        vm.expectRevert(abi.encodeWithSelector(AgentAccount.NoCode.selector, address(0xdead)));
-        new AgentAccount(owner, address(0xdead), address(receiptVerifier), address(assay), address(manager), address(usdg));
+        address[5] memory deps = [address(verifier), address(receiptVerifier), address(assay), address(manager), address(usdg)];
+        for (uint256 i; i < 5; ++i) {
+            address[5] memory args;
+            for (uint256 j; j < 5; ++j) {
+                args[j] = i == j ? address(0xdead) : deps[j];
+            }
+            vm.expectRevert(abi.encodeWithSelector(AgentAccount.NoCode.selector, address(0xdead)));
+            new AgentAccount(owner, args[0], args[1], args[2], args[3], args[4]);
+        }
+        new AgentAccount(owner, deps[0], deps[1], deps[2], deps[3], deps[4]);
     }
 
     function _refreshReceiptKey() internal {

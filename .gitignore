@@ -18,3 +18,5 @@ contracts/cache-x402/
 agent/.gate-channel*.json*
 contracts/out-v4/
 contracts/cache-v4/
+contracts/out-mut/
+contracts/cache-mut/

@@ -56,3 +56,10 @@ remappings = ["solmate/=test/vendor/v4-core/lib/solmate/", "forge-std/=lib/forge
 rhc_testnet = "https://rpc.testnet.chain.robinhood.com"
 arbitrum_sepolia = "https://sepolia-rollup.arbitrum.io/rpc"
 arbitrum_one = "https://arb1.arbitrum.io/rpc"
+
+# Mutation runs (test/mutation/agent_account_mutations.py): same sources, no optimizer, own
+# out/cache so a run never disturbs the main build.
+[profile.mutation]
+optimizer = false
+out = "out-mut"
+cache_path = "cache-mut"

@@ -604,7 +604,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
         (address chAgent,,,,,,, bool closed,,) = assay.channels(channelId);
         if (chAgent != address(this) || closed) return 0xffffffff;
         (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(hash, agentSig);
-        if (err != ECDSA.RecoverError.NoError || recovered != agent || recovered == address(0)) return 0xffffffff;
+        if (err != ECDSA.RecoverError.NoError || recovered != agent) return 0xffffffff;
         if (block.timestamp > agentExpiry || paused) return 0xffffffff;
         return IERC1271.isValidSignature.selector;
     }
