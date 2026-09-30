@@ -16,3 +16,5 @@ __pycache__/
 contracts/out-x402/
 contracts/cache-x402/
 agent/.gate-channel*.json*
+contracts/out-v4/
+contracts/cache-v4/

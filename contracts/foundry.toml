@@ -13,8 +13,12 @@ remappings = [
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
   "forge-std/=lib/forge-std/src/",
   "test/vendor/x402/:@openzeppelin/contracts/=test/vendor/x402/lib/openzeppelin-contracts/contracts/",
+  "@uniswap/v4-core/=test/vendor/v4-core/",
+  "solmate/=test/vendor/v4-core/lib/solmate/",
 ]
-fs_permissions = [{ access = "read", path = "../fixtures" }, { access = "read-write", path = "./deployments" }]
+# v4-core's PoolManager pins solc 0.8.26; it is built by the `v4` profile into out-v4 instead.
+skip = ["test/vendor/v4-core/src/PoolManager.sol"]
+fs_permissions = [{ access = "read", path = "../fixtures" }, { access = "read-write", path = "./deployments" }, { access = "read", path = "./out-v4" }]
 
 # Canonical x402BatchSettlement build: the exact settings of x402-foundation/x402
 # contracts/evm/foundry.toml, so the init code hashes to the published CREATE2 address.
@@ -33,6 +37,22 @@ remappings = [
   "forge-std/=lib/forge-std/src/",
 ]
 
+# Canonical Uniswap v4 PoolManager build: v4-core v4.0.0's own foundry.toml settings.
+[profile.v4]
+src = "test/vendor/v4-core/src"
+test = "test/vendor/v4-core/test"
+script = "test/vendor/v4-core/src"
+out = "out-v4"
+cache_path = "cache-v4"
+solc = "0.8.26"
+evm_version = "cancun"
+via_ir = true
+optimizer_runs = 44444444
+bytecode_hash = "none"
+skip = []
+remappings = ["solmate/=test/vendor/v4-core/lib/solmate/", "forge-std/=lib/forge-std/src/"]
+
 [rpc_endpoints]
+rhc_testnet = "https://rpc.testnet.chain.robinhood.com"
 arbitrum_sepolia = "https://sepolia-rollup.arbitrum.io/rpc"
 arbitrum_one = "https://arb1.arbitrum.io/rpc"

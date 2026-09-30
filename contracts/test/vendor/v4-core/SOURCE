@@ -1,0 +1,18 @@
+Vendored byte-for-byte, unmodified, from https://github.com/Uniswap/v4-core
+  tag v4.0.0, commit e50237c43811bd9b526eff40f26772152a42daba
+  src/**                          <- src/** (only the import closure of PoolManager.sol,
+                                     src/test/PoolModifyLiquidityTest.sol and the libraries the tests read)
+  test/utils/CurrencySettler.sol  <- test/utils/CurrencySettler.sol
+  lib/solmate/src/auth/Owned.sol  <- lib/solmate/src/auth/Owned.sol
+                                     (transmissions11/solmate commit 4b47a19038b798b4a33d9749d25e570443520647, AGPL-3.0-only, LICENSE here)
+
+Licenses: each file keeps its own SPDX header. PoolManager.sol and the libraries Pool, Position,
+CurrencyDelta, CurrencyReserves, NonzeroDeltaCount and Lock are BUSL-1.1 (BUSL_LICENSE here; Licensor
+Universal Navigation Inc.), which grants copy, redistribution and non-production use: this repo uses
+them only to run tests. The types, interfaces and remaining libraries are MIT (MIT_LICENSE here);
+src/AgentAccount.sol imports only MIT files (types, interfaces, TickMath).
+
+Build: PoolManager.sol pins `pragma solidity 0.8.26`, so the default profile (0.8.28) skips it and the
+`v4` profile compiles it with v4-core's own settings (0.8.26, cancun, via_ir, 44444444 runs,
+bytecode_hash none) into out-v4/. test/AgentAccountRHCFork.t.sol deploys that build at the canonical
+RHC PoolManager address and asserts its runtime code hash equals the live one.
