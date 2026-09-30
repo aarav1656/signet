@@ -149,11 +149,11 @@ abstract contract AgentAccountTestBase is Test {
     }
 
     function _buy(uint128 usdgIn) internal view returns (AgentAccount.Trade memory) {
-        return AgentAccount.Trade(key, usdgIs0, usdgIn, 1, uint64(block.timestamp + 600));
+        return AgentAccount.Trade(key, usdgIs0, usdgIn, 1, uint64(vm.getBlockTimestamp() + 600));
     }
 
     function _sell(uint128 tslaIn) internal view returns (AgentAccount.Trade memory) {
-        return AgentAccount.Trade(key, !usdgIs0, tslaIn, 1, uint64(block.timestamp + 600));
+        return AgentAccount.Trade(key, !usdgIs0, tslaIn, 1, uint64(vm.getBlockTimestamp() + 600));
     }
 
     function _exec(AgentAccount.Trade memory t) internal returns (uint256 tradeId, uint256 out) {
