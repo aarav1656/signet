@@ -174,6 +174,46 @@
       "step": "Assay.registerReceiptKey (Ed25519 receipt key)",
       "hash": "0x31821e0bcf0d9f2083516dfd854adb9366636201d51bc0d34e5ee1566076432d",
       "block": 127035712
+    },
+    {
+      "step": "owner funds the CVM agent key with 0.0002 ETH for gas",
+      "hash": "0xe218cf1ed290931c4e264d248d561c0520168506fbc91dc3ec56890065cace56",
+      "block": 127175982
+    },
+    {
+      "step": "owner setMeasurement(0x9dfd5de3...b364c8, true), the measurement the Stylus Verifier returned for the CVM quote",
+      "hash": "0x6512a61b07949d06b349e52bfc63e86ae6599e5105322f4276f5ea8da6f892e0",
+      "block": 127176102
+    },
+    {
+      "step": "registerAgent(CVM quote): agent 0x4a0BCAE7f9969EA0f224E69F4b8778A69Df78eA8, AgentRegistered, expiry 1790951403",
+      "hash": "0x1f15df28041e7b8938ca6653eb5a75231f525568ab015644ec535796caa68134",
+      "block": 127176129
+    },
+    {
+      "step": "owner setModel: account receipt pin meta-llama/llama-3.3-70b-instruct, served llama3-3-70b",
+      "hash": "0x22a1883e013ca5e4c1e41167ef24bce5b6919cc6e07ddce328d6cbfa7fd2204f",
+      "block": 127176866
+    },
+    {
+      "step": "agent execute, 1.000000 testUSDG in, 3984027527308004 TSLA out, tradeId 1, servedModelHash 0xc8536dbf...78df59 recorded",
+      "hash": "0xe50522661b55c797071b56e43aaf2bc91d37c9745a295ff6a5976883dd4ddfa2",
+      "block": 127176968
+    },
+    {
+      "step": "agent execute amountIn perTrade+1: reverted ExceedsPerTradeCap(10000001, 10000000), status 0",
+      "hash": "0xb1adb7231fbd38b77489769d7db754b30f36fa9b1ba97bf14f51980f3b12528c",
+      "block": 127177045
+    },
+    {
+      "step": "agent propose, 2.000001 testUSDG above the 2.000000 threshold, proposal 1",
+      "hash": "0x4eb4925389368436722b89721dd5db7e28b128923118dfa797e9a7cf42895253",
+      "block": 127177110
+    },
+    {
+      "step": "owner approveTrade(1): TradeExecuted proposalId 1, 7944291302953708 TSLA out, tradeId 2",
+      "hash": "0x7f2a63f44c439d6099133bad32da8f346414f66f2f8541a3fedca496c4d81ead",
+      "block": 127177130
     }
   ],
   "explorer": "https://explorer.testnet.chain.robinhood.com",
@@ -188,5 +228,36 @@
   },
   "gatewayMeasurement": "0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149",
   "modelId": "phala/qwen3.8-27b-uncensored",
-  "provider": "0x93e82363e3481039d2F8Ee3e4b4263B6D141EE5A"
+  "provider": "0x93e82363e3481039d2F8Ee3e4b4263B6D141EE5A",
+  "agentCvm": {
+    "platform": "Phala Cloud dstack CVM, tdx.small, prod5 US-WEST-1",
+    "vmUuid": "7f2efb7f-bd87-4d25-9002-870df3018009",
+    "appId": "e39de5552f988e69e573236137089c81cfbe21d9",
+    "os": {
+      "name": "dstack-0.5.9",
+      "isDev": false,
+      "osImageHash": "bd369a8c2f9edb2b52dad48ac8e0b32dde5f1337c423a506b48d07403a7d8033"
+    },
+    "composeHash": "c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
+    "dockerComposeHash": "aed22dae6a01ff3ce537412fdd88a083a2f228f04ff7bf7eb9c028021efec66f",
+    "composeFile": "agent-cvm/docker-compose.yml",
+    "imageDigest": "sha256:a3a879b15202376a24e30e2b593ab9a5b271d2046413f62f39b043614ab3212e",
+    "tcb": {
+      "mrtd": "f06dfda6dce1cf904d4e2bab1dc370634cf95cefa2ceb2de2eee127c9382698090d7a4a13e14c536ec6c9c3c8fa87077",
+      "rtmr0": "68102e7b524af310f7b7d426ce75481e36c40f5d513a9009c046e9d37e31551f0134d954b496a3357fd61d03f07ffe96",
+      "rtmr1": "07e6f51aa763abfe75c3ddfbf4f425fe3f0ceff66d807a75e049303dce9addf68e7218729bd419638af63a370f65878c",
+      "rtmr2": "df67e467e60edc1737bcf8e682d48131bfb427f523226aa7f197a7608e9b3784783fa759ef5b28191fa12f9ddb36b858",
+      "rtmr3": "320656994e46d405b74ec20d244a0c649cee104a11718b4610911594efdb9ca7ad101ab910b59f22be5c1c5fa64f366c"
+    },
+    "agent": "0x4a0BCAE7f9969EA0f224E69F4b8778A69Df78eA8",
+    "measurement": "0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8",
+    "quoteBytes": 5010
+  },
+  "accountModel": {
+    "requestedModel": "meta-llama/llama-3.3-70b-instruct",
+    "servedModel": "llama3-3-70b",
+    "requestedModelHash": "0x245e10b5c3befa4510d11cba0fe4ad1aa3dc9f8def21eb6287a846f8c0b47b9a",
+    "acceptedServedHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
+    "setModelTx": "0x22a1883e013ca5e4c1e41167ef24bce5b6919cc6e07ddce328d6cbfa7fd2204f"
+  }
 }

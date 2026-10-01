@@ -57,7 +57,7 @@ The agent client's live-cycle modes each assert a post-condition that only compl
 
 - `forge test`: 292 passed, 0 failed. The `AgentAccount` suites (unit, rolling-window fuzz against an exact reference, drain invariant) are 88 of them; 4 more run against live RHC testnet state through `RHC_FORK_URL`.
 - Mutation record: `docs/security/agent-account-mutations.md`, 109 of 110 mutants killed, the restored source green.
-- `agent` `npm test`: 23 passed, including the exact 64-byte `report_data` layout the quote must carry and the `Trade` encoding the owner's approval hashes.
+- `agent` `npm test`: 27 passed, including the exact 64-byte `report_data` layout the quote must carry and the `Trade` encoding the owner's approval hashes.
 - `receipt-verifier` `cargo test`: 18 passed. `verifier` `cargo test`: 22 passed.
 - Assay's own record: four review rounds (`SECURITY-REVIEW.md`, `docs/security/assay-usdg-review.md`); each finding came with a test that failed before its fix.
 

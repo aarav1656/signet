@@ -21,7 +21,7 @@ cp -R "$ROOT/agent/src" "$STAGE/rootfs/app/agent/src"
 cp "$ROOT/web/src/lib/addresses.generated.ts" "$STAGE/rootfs/app/web/src/lib/"
 (cd "$STAGE/rootfs/app/agent" && npm ci --omit=dev --ignore-scripts --silent)
 rm -f "$STAGE"/rootfs/app/agent/node_modules/.package-lock.json
-COPYFILE_DISABLE=1 tar -C "$STAGE/rootfs" --uid 0 --gid 0 --numeric-owner -cf "$STAGE/layer.tar" app
+COPYFILE_DISABLE=1 tar --no-xattrs --no-acls --no-mac-metadata -C "$STAGE/rootfs" --uid 0 --gid 0 --numeric-owner -cf "$STAGE/layer.tar" app
 
 export DOCKER_CONFIG="$STAGE/docker"
 printf '%s' "$GH_TOKEN" | "$CRANE" auth login ghcr.io -u pranjalcodesinw3 --password-stdin >/dev/null

@@ -1,0 +1,16 @@
+# Measured into RTMR3 (compose-hash): the image is pinned by digest, and the account and RPC are
+# fixed here. CONTROL_TOKEN is the only sealed environment variable: a per-deployment bearer for
+# the operator's /tx route, not a wallet or API key. The owner key is never in this file or in
+# the CVM.
+services:
+  agent:
+    image: ttl.sh/chiron-agent-a47640e12d38@sha256:a3a879b15202376a24e30e2b593ab9a5b271d2046413f62f39b043614ab3212e
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ACCOUNT_ADDRESS: "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      RHC_RPC_URL: "https://rpc.testnet.chain.robinhood.com"
+      CONTROL_TOKEN: "${CONTROL_TOKEN}"
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock

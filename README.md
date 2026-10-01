@@ -86,16 +86,33 @@ Read from the chain on this deployment:
 - The Stylus `Verifier` on 46630 verifies a fresh Phala gateway TDX quote: `verify(quote, nonce)` returns signer `0x79A5061efe5A46b0d1F33B11Cf1c5adbEDAe6B79` and measurement `0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149` (2,371,819 gas by `cast estimate`).
 - `registerAgent` given a Phala gateway quote bound to the account's own `attestNonce(refBlock)` passes the quote and nonce checks and reverts `MeasurementNotApproved(0xfd34...0149)`, because the owner has not approved that workload. The account admits no agent until the owner approves a measurement and a quote carries it.
 - The guards answer on chain: `execute` and `propose` accept only the registered agent (every other caller, the owner included, gets `NotAgent`), `approveTrade` accepts only a pending proposal (`ProposalNotPending`), and `setLimits` keeps the approval threshold at or below the per-trade cap (`BadLimits`).
-- Inference channel 0 on Assay lists the account as its agent, the provider wallet `0x93e82363e3481039d2F8Ee3e4b4263B6D141EE5A`, a 5 testUSDG deposit, the gateway measurement above and the model pin `keccak256("phala/qwen3.8-27b-uncensored")`.
+- Inference channel 0 on Assay lists the account as its agent, the provider wallet `0x93e82363e3481039d2F8Ee3e4b4263B6D141EE5A`, a 5 testUSDG deposit, the gateway measurement above and the channel's model pin `keccak256("phala/qwen3.8-27b-uncensored")`. The account's own receipt pin for trades is `keccak256("meta-llama/llama-3.3-70b-instruct")`, with served model `llama3-3-70b`.
+
+## The attested agent, live
+
+The agent runs inside a Phala Cloud dstack CVM (`agent/src/cvm.ts`, packaged by `agent-cvm/build-image.sh`, deployed from `agent-cvm/docker-compose.yml` with the image pinned by digest). It generates its key in memory, asks the CVM for a TDX quote whose `report_data` is its address plus the account's `attestNonce`, and signs `execute` and `propose` there. The owner key stays on the operator machine: it approves the measurement the Stylus `Verifier` returns for that quote, and approves trades above the threshold.
+
+| Step | Transaction | Result |
+|---|---|---|
+| Owner approves the CVM measurement `0x9dfd5de3...b364c8` | [`0x6512a61b...f892e0`](https://explorer.testnet.chain.robinhood.com/tx/0x6512a61b07949d06b349e52bfc63e86ae6599e5105322f4276f5ea8da6f892e0) | `approvedMeasurement` true |
+| `registerAgent` with the CVM quote | [`0x1f15df28...a68134`](https://explorer.testnet.chain.robinhood.com/tx/0x1f15df28041e7b8938ca6653eb5a75231f525568ab015644ec535796caa68134) | `agent()` is the CVM key `0x4a0BCAE7...78eA8` |
+| In-cap buy, 1.000000 testUSDG | [`0xe5052266...ddfa2`](https://explorer.testnet.chain.robinhood.com/tx/0xe50522661b55c797071b56e43aaf2bc91d37c9745a295ff6a5976883dd4ddfa2) | `TradeExecuted`, 3984027527308004 TSLA out, served model hash `0xc8536dbf...78df59` recorded |
+| Over-cap, `perTrade + 1` | [`0xb1adb723...12528c`](https://explorer.testnet.chain.robinhood.com/tx/0xb1adb7231fbd38b77489769d7db754b30f36fa9b1ba97bf14f51980f3b12528c) | reverted `ExceedsPerTradeCap(10000001, 10000000)` |
+| Above the threshold, `propose` | [`0x4eb49253...895253`](https://explorer.testnet.chain.robinhood.com/tx/0x4eb4925389368436722b89721dd5db7e28b128923118dfa797e9a7cf42895253) | proposal 1 |
+| Owner `approveTrade(1)` | [`0x7f2a63f4...c4d81ead`](https://explorer.testnet.chain.robinhood.com/tx/0x7f2a63f44c439d6099133bad32da8f346414f66f2f8541a3fedca496c4d81ead) | `TradeExecuted`, proposalId 1, 7944291302953708 TSLA out |
+
+Full record with measurement, compose hash, receipts and read-backs: `docs/e2e/robinhood-testnet-agent-account.md` and `contracts/deployments/46630.json`.
+
 
 ## Deploy and live cycle
 
 `contracts/script/rhc/deploy-stylus.sh` deploys the unchanged `verifier/` and `receipt-verifier/` crates to RHC testnet and reads each back: code exists, and `Verifier.verify` on a stored Phala quote under a nonce it does not carry reverts. `contracts/script/rhc/DeployAgentAccountRHC.s.sol` then deploys testUSDG, Assay, the pool and its liquidity, the factory and one account, configures the owner's limits, pool and model pin, funds the account, opens the inference channel, and reverts the script on any mismatch when it reads back the wiring, pool state, policy, limits and balances. It writes `contracts/deployments/46630.json`.
 
-The agent client runs three live-cycle modes against the deployed account (keys are read by variable name and never printed):
+The agent client runs four live-cycle modes against the deployed account (`acct-register` is the owner side of admission: it fetches the CVM quote, reads the measurement the Verifier returns, approves it and submits `registerAgent`) (keys are read by variable name and never printed):
 
 ```
 cd agent
+ACCOUNT_ADDRESS=0x... npm run acct-register  # CVM quote, Verifier eth_call, approve measurement, registerAgent
 ACCOUNT_ADDRESS=0x... npm run acct-trade     # in-policy buy with a real Phala receipt
 ACCOUNT_ADDRESS=0x... npm run acct-overcap   # amountIn = perTrade + 1
 ACCOUNT_ADDRESS=0x... npm run acct-approve   # band-2 trade: NeedsApproval, propose, approveTrade

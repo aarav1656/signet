@@ -46,7 +46,7 @@ import {
   x402 as x402Address,
 } from './config.ts';
 import { checkGatewaySigner, explainRefusal } from './gateway-check.ts';
-import { runAcctApprove, runAcctOvercap, runAcctTrade } from './account.ts';
+import { runAcctApprove, runAcctOvercap, runAcctRegister, runAcctTrade } from './account.ts';
 import {
   enclaveDigest,
   modelHash,
