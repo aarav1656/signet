@@ -805,6 +805,8 @@ if (mode === 'refuse') {
   await runGatePay();
 } else if (mode === 'gate-refuse') {
   await runGateRefuse();
+} else if (mode === 'acct-register') {
+  await runAcctRegister();
 } else if (mode === 'acct-trade') {
   await runAcctTrade();
 } else if (mode === 'acct-overcap') {
@@ -813,7 +815,7 @@ if (mode === 'refuse') {
   await runAcctApprove();
 } else {
   console.error(
-    'Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt|gate-open|gate-pay|gate-refuse|acct-trade|acct-overcap|acct-approve>',
+    'Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt|gate-open|gate-pay|gate-refuse|acct-register|acct-trade|acct-overcap|acct-approve>',
   );
   process.exit(1);
 }

@@ -8,8 +8,13 @@
 //   acct-approve  step 4: band-2 execute reverts NeedsApproval, propose, owner approveTrade,
 //                 second approveTrade reverts ProposalNotPending
 //
-// Keys are read by variable name only and never printed: AGENT_PRIVATE_KEY (the attested agent
-// key; inside the CVM it is generated in memory instead), OWNER_PRIVATE_KEY.
+//   acct-register owner side of admission: ask the CVM for a quote, read the measurement the
+//                 Verifier returns, approve it, submit registerAgent
+//
+// The agent is either remote (CVM_URL: the attested agent inside a Phala CVM, whose key is
+// generated in the CVM and never seen here) or local (AGENT_PRIVATE_KEY, development only). The
+// owner key never enters the CVM. Keys are read by variable name only and never printed:
+// OWNER_PRIVATE_KEY, CVM_CONTROL_TOKEN, AGENT_PRIVATE_KEY.
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   BaseError,
@@ -24,10 +29,13 @@ import {
   pad,
   parseEventLogs,
   type Address,
+  type Chain,
   type Hex,
+  type PublicClient,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { agentAccountAbi } from './account-abi.ts';
+import { fromWire, toWire } from './wire.ts';
 import { phalaModel } from './config.ts';
 import { modelHash } from './digest.ts';
 import {
@@ -122,7 +130,40 @@ function key(name: string): Hex {
   return (k.startsWith('0x') ? k : `0x${k}`) as Hex;
 }
 
-function setup() {
+type AgentCall = { functionName: 'execute' | 'propose' | 'cancelProposal'; args: readonly unknown[]; gas?: bigint };
+
+/// The agent, remote or local: an address to simulate as, and a way to send one agent-side call.
+async function agentSigner(
+  publicClient: PublicClient,
+  chain: Chain,
+  rpc: string,
+  account: Address,
+): Promise<{ address: Address; write: (c: AgentCall) => Promise<Hex> }> {
+  const cvm = (process.env.CVM_URL ?? '').trim().replace(/\/$/, '');
+  if (cvm) {
+    const token = env('CVM_CONTROL_TOKEN');
+    const info = fromWire<{ agent: Address; account: Address; chainId: number }>(await (await fetch(`${cvm}/info`)).text());
+    if (info.account.toLowerCase() !== account.toLowerCase()) throw new Error(`CVM serves account ${info.account}, not ${account}.`);
+    if (info.chainId !== RHC_TESTNET_ID) throw new Error(`CVM is on chain ${info.chainId}, expected ${RHC_TESTNET_ID}.`);
+    return {
+      address: info.agent,
+      write: async (c) => {
+        const res = await fetch(`${cvm}/tx`, { method: 'POST', headers: { authorization: `Bearer ${token}` }, body: toWire(c) });
+        const out = fromWire<{ hash?: Hex; error?: string }>(await res.text());
+        if (!res.ok || !out.hash) throw new Error(`CVM /tx ${c.functionName}: ${out.error ?? res.status}`);
+        return out.hash;
+      },
+    };
+  }
+  const local = privateKeyToAccount(key('AGENT_PRIVATE_KEY'));
+  const wallet = createWalletClient({ account: local, chain, transport: http(rpc) });
+  return {
+    address: local.address,
+    write: (c) => wallet.writeContract({ address: account, abi: agentAccountAbi, functionName: c.functionName, args: c.args as never, ...(c.gas ? { gas: c.gas } : {}) } as never),
+  };
+}
+
+async function setup() {
   const rpc = env('RHC_RPC_URL', 'https://rpc.testnet.chain.robinhood.com');
   const chain = defineChain({
     id: RHC_TESTNET_ID,
@@ -131,16 +172,15 @@ function setup() {
     rpcUrls: { default: { http: [rpc] } },
   });
   const account = env('ACCOUNT_ADDRESS') as Address;
-  const agent = privateKeyToAccount(key('AGENT_PRIVATE_KEY'));
   const owner = privateKeyToAccount(key('OWNER_PRIVATE_KEY'));
-  if (agent.address === owner.address) throw new Error('Refusing: the agent key and the owner key are the same key.');
   const publicClient = createPublicClient({ chain, transport: http(rpc) });
-  const agentWallet = createWalletClient({ account: agent, chain, transport: http(rpc) });
+  const agent = await agentSigner(publicClient, chain, rpc, account);
+  if (agent.address.toLowerCase() === owner.address.toLowerCase()) throw new Error('Refusing: the agent key and the owner key are the same key.');
   const ownerWallet = createWalletClient({ account: owner, chain, transport: http(rpc) });
-  return { chain, account, agent, owner, publicClient, agentWallet, ownerWallet };
+  return { chain, account, agent, owner, publicClient, ownerWallet };
 }
 
-type Ctx = ReturnType<typeof setup>;
+type Ctx = Awaited<ReturnType<typeof setup>>;
 
 async function read<T>(ctx: Ctx, functionName: string, args: readonly unknown[] = []): Promise<T> {
   return (await ctx.publicClient.readContract({
@@ -269,7 +309,7 @@ async function quoteMinOut(ctx: Ctx, t: Trade, r: TradeReceipt): Promise<bigint>
     abi: agentAccountAbi,
     functionName: 'execute',
     args: [{ ...t, minOut: 1n }, r],
-    account: ctx.agent,
+    account: ctx.agent.address,
   });
   const out = (result as readonly [bigint, bigint])[1];
   const bps = BigInt(env('SLIPPAGE_BPS', '100'));
@@ -340,7 +380,7 @@ function assertBuyDeltas(
 }
 
 export async function runAcctTrade(): Promise<void> {
-  const ctx = setup();
+  const ctx = await setup();
   await requireFreshAgent(ctx);
   const m = await market(ctx);
   const pin = await readPin(ctx);
@@ -354,7 +394,7 @@ export async function runAcctTrade(): Promise<void> {
   const draft = m.buy(amountIn);
   const t = { ...draft, minOut: await quoteMinOut(ctx, draft, receipt) };
   const before = await balances(ctx, m.usdg);
-  const hash = await ctx.agentWallet.writeContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'execute', args: [t, receipt] });
+  const hash = await ctx.agent.write({ functionName: 'execute', args: [t, receipt] });
   const { log, block } = await executedLog(ctx, hash);
   const after = await balances(ctx, m.usdg);
   assertBuyDeltas(before, after, t, log, served);
@@ -367,7 +407,7 @@ export async function runAcctTrade(): Promise<void> {
 }
 
 export async function runAcctOvercap(): Promise<void> {
-  const ctx = setup();
+  const ctx = await setup();
   await requireFreshAgent(ctx);
   const m = await market(ctx);
   const pin = await readPin(ctx);
@@ -375,18 +415,12 @@ export async function runAcctOvercap(): Promise<void> {
   const t = m.buy(m.perTrade + 1n);
   const before = await balances(ctx, m.usdg);
   const args = await expectRevert(
-    ctx.publicClient.simulateContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'execute', args: [t, receipt], account: ctx.agent }),
+    ctx.publicClient.simulateContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'execute', args: [t, receipt], account: ctx.agent.address }),
     'ExceedsPerTradeCap',
   );
   if (args[0] !== t.amountIn || args[1] !== m.perTrade) throw new Error(`ExceedsPerTradeCap carried ${String(args)}`);
   // One real reverted transaction, for explorer evidence: a fixed gas limit skips estimation.
-  const hash = await ctx.agentWallet.writeContract({
-    address: ctx.account,
-    abi: agentAccountAbi,
-    functionName: 'execute',
-    args: [t, receipt],
-    gas: 600_000n,
-  });
+  const hash = await ctx.agent.write({ functionName: 'execute', args: [t, receipt], gas: 600_000n });
   const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'reverted') throw new Error(`over-cap tx ${hash} did not revert`);
   const after = await balances(ctx, m.usdg);
@@ -395,7 +429,7 @@ export async function runAcctOvercap(): Promise<void> {
 }
 
 export async function runAcctApprove(): Promise<void> {
-  const ctx = setup();
+  const ctx = await setup();
   await requireFreshAgent(ctx);
   const m = await market(ctx);
   const pin = await readPin(ctx);
@@ -404,14 +438,14 @@ export async function runAcctApprove(): Promise<void> {
   const { receipt, served } = await inferenceReceipt(ctx, pin, `An account may buy TSLA with ${amountIn} raw testUSDG, subject to owner approval. Reply BUY or HOLD.`);
   const draft = m.buy(amountIn);
   await expectRevert(
-    ctx.publicClient.simulateContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'execute', args: [draft, receipt], account: ctx.agent }),
+    ctx.publicClient.simulateContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'execute', args: [draft, receipt], account: ctx.agent.address }),
     'NeedsApproval',
   );
   // minOut for the owner's later fill: the canonical V4Quoter's output for this exact swap at
   // this block, less SLIPPAGE_BPS.
   const t: Trade = { ...draft, minOut: await quoterMinOut(ctx, draft) };
 
-  const pHash = await ctx.agentWallet.writeContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'propose', args: [t, receipt] });
+  const pHash = await ctx.agent.write({ functionName: 'propose', args: [t, receipt] });
   const pRcpt = await ctx.publicClient.waitForTransactionReceipt({ hash: pHash });
   if (pRcpt.status !== 'success') throw new Error(`propose tx ${pHash} reverted`);
   const proposed = parseEventLogs({ abi: agentAccountAbi, logs: pRcpt.logs, eventName: 'TradeProposed' });
@@ -438,3 +472,72 @@ export async function runAcctApprove(): Promise<void> {
   );
 }
 
+
+const verifierAbi = [
+  {
+    type: 'function',
+    name: 'verify',
+    inputs: [{ name: 'quote', type: 'bytes' }, { name: 'nonce', type: 'bytes32' }],
+    outputs: [{ name: 'signer', type: 'address' }, { name: 'measurement', type: 'bytes32' }],
+    stateMutability: 'nonpayable',
+  },
+] as const;
+
+type CvmQuote = { agent: Address; refBlock: bigint; nonce: Hex; quote: Hex };
+
+async function cvmQuote(): Promise<CvmQuote> {
+  const cvm = env('CVM_URL').replace(/\/$/, '');
+  const res = await fetch(`${cvm}/quote`, { method: 'POST' });
+  const out = fromWire<CvmQuote & { error?: string }>(await res.text());
+  if (!res.ok || !out.quote) throw new Error(`CVM /quote: ${out.error ?? res.status}`);
+  return out;
+}
+
+/// Owner side of admission. The CVM supplies the quote (its key and the account's attestNonce in
+/// report_data); the Stylus Verifier is asked by eth_call which signer and measurement it
+/// returns; the owner approves that measurement; registerAgent is submitted with a fresh quote
+/// (the first quote's ArbSys window may have passed). Post-condition: agent() is the CVM's key.
+export async function runAcctRegister(): Promise<void> {
+  const ctx = await setup();
+  const verifier = await read<Address>(ctx, 'verifier');
+  const first = await cvmQuote();
+  const { result } = await ctx.publicClient.simulateContract({
+    address: verifier,
+    abi: verifierAbi,
+    functionName: 'verify',
+    args: [first.quote, first.nonce],
+  });
+  const [signer, measurement] = result;
+  if (signer.toLowerCase() !== ctx.agent.address.toLowerCase()) throw new Error(`Verifier returned signer ${signer}, the CVM reports ${ctx.agent.address}.`);
+  console.log(`Verifier accepts the CVM quote: signer ${signer} measurement ${measurement} (eth_call at refBlock ${first.refBlock})`);
+
+  if (!(await read<boolean>(ctx, 'approvedMeasurement', [measurement]))) {
+    const hash = await ctx.ownerWallet.writeContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'setMeasurement', args: [measurement, true] });
+    const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
+    if (rcpt.status !== 'success') throw new Error(`setMeasurement tx ${hash} reverted`);
+    console.log(`owner setMeasurement tx ${hash} block ${rcpt.blockNumber}`);
+  }
+  if (!(await read<boolean>(ctx, 'approvedMeasurement', [measurement]))) throw new Error('measurement is not approved after setMeasurement');
+
+  const fresh = await cvmQuote();
+  if (fresh.agent.toLowerCase() !== ctx.agent.address.toLowerCase()) throw new Error('the CVM agent key changed between quotes');
+  const hash = await ctx.ownerWallet.writeContract({
+    address: ctx.account,
+    abi: agentAccountAbi,
+    functionName: 'registerAgent',
+    args: [fresh.quote, fresh.refBlock],
+  });
+  const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
+  if (rcpt.status !== 'success') throw new Error(`registerAgent tx ${hash} reverted`);
+  const regs = parseEventLogs({ abi: agentAccountAbi, logs: rcpt.logs, eventName: 'AgentRegistered' }).filter(
+    (l) => l.address.toLowerCase() === ctx.account.toLowerCase(),
+  );
+  if (regs.length !== 1) throw new Error(`registerAgent emitted ${regs.length} AgentRegistered logs`);
+  const [agent, m, expiry] = await Promise.all([
+    read<Address>(ctx, 'agent'),
+    read<Hex>(ctx, 'agentMeasurement'),
+    read<bigint>(ctx, 'agentExpiry'),
+  ]);
+  if (agent.toLowerCase() !== ctx.agent.address.toLowerCase() || m !== measurement) throw new Error(`agent() ${agent} / agentMeasurement ${m} do not match the CVM quote`);
+  console.log(`registerAgent tx ${hash} block ${rcpt.blockNumber}: agent ${agent} measurement ${m} expiry ${expiry}`);
+}
