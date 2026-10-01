@@ -51,6 +51,41 @@ Chain 46630. Trades route through the canonical Uniswap v4 PoolManager `0x8366a3
 
 The mutation runner (`contracts/test/mutation/agent_account_mutations.py`) builds under its own `mutation` profile with a separate output and cache directory and restores the source on exit. Each mutant removes one guard (the quote replay check, the measurement allowlist, the per-trade cap on each path, the rolling-window arithmetic, the receipt model checks, the reentrancy guards, the ERC-1271 scope, and so on). The unit, window and invariant suites must go red for each, and the restored source must go green.
 
+## Live on Robinhood Chain testnet (chain 46630)
+
+Deployed 2026-10-01 from `0x2aD12a72362704367e99a344cFf5affDDF7f5DEF`, which owns the account. Every contract below was read back after deployment; `contracts/deployments/46630.json` holds the full record with every transaction hash, and each transaction's `cast receipt` status is success.
+
+| Contract | Address | What it is |
+|---|---|---|
+| AgentAccount | [`0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D`](https://explorer.testnet.chain.robinhood.com/address/0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D) | The owner's account. Source verified on Blockscout. |
+| AgentAccountFactory | [`0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e`](https://explorer.testnet.chain.robinhood.com/address/0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e) | Creates one account per owner. Source verified on Blockscout. |
+| Verifier | [`0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c`](https://explorer.testnet.chain.robinhood.com/address/0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c) | Stylus (Rust). Verifies an Intel TDX DCAP quote chain, returns the signer and the nine-field measurement. |
+| ReceiptVerifier | [`0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380`](https://explorer.testnet.chain.robinhood.com/address/0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380) | Stylus (Rust). Verifies one Ed25519-signed Phala inference receipt. |
+| Assay | [`0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D`](https://explorer.testnet.chain.robinhood.com/address/0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D) | The inference payment channel the account bills through. Source verified on Blockscout. |
+| TestUSDG | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://explorer.testnet.chain.robinhood.com/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | 6-decimal quote asset for the venue, minted by the deploy script. Source verified on Blockscout. |
+| TSLA Stock Token | [`0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E`](https://explorer.testnet.chain.robinhood.com/address/0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E) | Robinhood's official testnet Stock Token. |
+| Uniswap v4 PoolManager | [`0x8366a39CC670B4001A1121B8F6A443A643e40951`](https://explorer.testnet.chain.robinhood.com/address/0x8366a39CC670B4001A1121B8F6A443A643e40951) | Canonical deployment, code hash equal to mainnet. |
+
+| Step | Transactions | Result read back |
+|---|---|---|
+| Verifier deploy and activation | [`0xf500c6a6...22d8`](https://explorer.testnet.chain.robinhood.com/tx/0xf500c6a6c5b17dde0d2e96d95f7f4d4873af7a78e71e5413396c1ae73c0d22d8), [`0x51206397...c117`](https://explorer.testnet.chain.robinhood.com/tx/0x51206397c65caa23ceabd5397e7ef3c6cb1ce2b69a25713f6af914b8d7cac117) | Stylus program deployed and activated |
+| ReceiptVerifier deploy and activation | [`0xb936516b...5b02`](https://explorer.testnet.chain.robinhood.com/tx/0xb936516b05299ec4bba8f9bbbd38e996b109107289647bf6fd8fd53ff9955b02), [`0x062445c2...2d78`](https://explorer.testnet.chain.robinhood.com/tx/0x062445c238af15976d9ff73201026e5b94b6666fabc13ab3c1f1238001da2d78) | Stylus program deployed and activated |
+| Deploy script | 18 transactions, first [`0x5c032428...723a`](https://explorer.testnet.chain.robinhood.com/tx/0x5c0324286ef538a446d3614fc178335b5336c2d8e8131121e9033cf2bd88723a), last [`0x49401a8a...84f7`](https://explorer.testnet.chain.robinhood.com/tx/0x49401a8a560deedc1fb0c9f1945102af3c493b5847d9c24d543ccf2d636f84f7), blocks 127033507 to 127033779 | testUSDG, Assay, pool and liquidity, factory, account, limits, pool allowlist, model pin, funding, inference channel 0 (5 testUSDG deposit) |
+| Register Phala's gateway signer on this Assay | [`0x58c5a715...1c05`](https://explorer.testnet.chain.robinhood.com/tx/0x58c5a715f26b95c2dd9fff6a845f48cd3761e7f942a6131bbcd54ece65f11c05) | `signers(0x79a5...6b79)` = measurement `0xfd34...0149` |
+| Register Phala's Ed25519 receipt key | [`0x31821e0b...432d`](https://explorer.testnet.chain.robinhood.com/tx/0x31821e0bcf0d9f2083516dfd854adb9366636201d51bc0d34e5ee1566076432d) | `receiptSigners(0x110f...aa0a)` = same measurement |
+| Owner deposits 10 testUSDG | [`0x34f3650d...58e5`](https://explorer.testnet.chain.robinhood.com/tx/0x34f3650dff287c1c5fea93364be2fac150069a91a11a45724ed4c6fbe31558e5) | account testUSDG 95,000,000 to 105,000,000 |
+| Owner deposits 0.0001 TSLA | [`0xb5c82cf6...ec11`](https://explorer.testnet.chain.robinhood.com/tx/0xb5c82cf607b95d465301a02e899613af4f9731a7bf17a8e6adf5c8ced437ec11) | account TSLA balance up by 1e14 |
+| Owner sets the testUSDG approval threshold to 3 then back to 2 | [`0x02e1d9f2...21aa`](https://explorer.testnet.chain.robinhood.com/tx/0x02e1d9f29980035b7519a6a8388e702510443f239fe81ab361056e90035221aa), [`0xf37394f3...5a90`](https://explorer.testnet.chain.robinhood.com/tx/0xf37394f3a1cf3332dfa58377e39111c1508f9bcb7f7bc8c933c0b2b1d6175a90) | `limits(testUSDG)` read back as (true, 10e6, 5e6, 3e6), then (true, 10e6, 5e6, 2e6) |
+| Owner sets the approval TTL to 1800 s then back to 3600 s | [`0xecea35b9...4e4c`](https://explorer.testnet.chain.robinhood.com/tx/0xecea35b9914a797c3a906e09d14d411cdbd21e832c1b96db422fa50932f34e4c), [`0x6e39dbc8...4ccd`](https://explorer.testnet.chain.robinhood.com/tx/0x6e39dbc8bde12738d4cbf11e38ed0247a590b9930c2283244b49008bdbdb4ccd) | `approvalTtl()` read back after each |
+| Owner withdraws 1 testUSDG | [`0xb825cbf6...69ef`](https://explorer.testnet.chain.robinhood.com/tx/0xb825cbf6683bf01d4f80ed84743556100e866a8b8afe16b3154f561b606369ef) | account 105,000,000 to 104,000,000, owner up by 1,000,000 |
+
+Read from the chain on this deployment:
+
+- The Stylus `Verifier` on 46630 verifies a fresh Phala gateway TDX quote: `verify(quote, nonce)` returns signer `0x79A5061efe5A46b0d1F33B11Cf1c5adbEDAe6B79` and measurement `0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149` (2,371,819 gas by `cast estimate`).
+- `registerAgent` given a Phala gateway quote bound to the account's own `attestNonce(refBlock)` passes the quote and nonce checks and reverts `MeasurementNotApproved(0xfd34...0149)`, because the owner has not approved that workload. The account admits no agent until the owner approves a measurement and a quote carries it.
+- The guards answer on chain: `execute` and `propose` accept only the registered agent (every other caller, the owner included, gets `NotAgent`), `approveTrade` accepts only a pending proposal (`ProposalNotPending`), and `setLimits` keeps the approval threshold at or below the per-trade cap (`BadLimits`).
+- Inference channel 0 on Assay lists the account as its agent, the provider wallet `0x93e82363e3481039d2F8Ee3e4b4263B6D141EE5A`, a 5 testUSDG deposit, the gateway measurement above and the model pin `keccak256("phala/qwen3.8-27b-uncensored")`.
+
 ## Deploy and live cycle
 
 `contracts/script/rhc/deploy-stylus.sh` deploys the unchanged `verifier/` and `receipt-verifier/` crates to RHC testnet and reads each back: code exists, and `Verifier.verify` on a stored Phala quote under a nonce it does not carry reverts. `contracts/script/rhc/DeployAgentAccountRHC.s.sol` then deploys testUSDG, Assay, the pool and its liquidity, the factory and one account, configures the owner's limits, pool and model pin, funds the account, opens the inference channel, and reverts the script on any mismatch when it reads back the wiring, pool state, policy, limits and balances. It writes `contracts/deployments/46630.json`.
