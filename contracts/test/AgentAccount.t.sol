@@ -175,6 +175,8 @@ contract AgentAccountTest is AgentAccountTestBase {
         AgentAccount other = AgentAccount(factory.createAccount(owner));
         vm.prank(owner);
         other.setMeasurement(AGENT_M, true);
+        _registerAgentOn(other, agent3, AGENT_M);
+        assertEq(other.agentEpoch(), account.agentEpoch()); // same epoch: only the account differs
         bytes memory q = _quote(agent2, AGENT_M); // nonce for `account`
         vm.expectPartialRevert(AgentQuoteVerifier.NonceMismatch.selector);
         other.registerAgent(q, block.number - 1);
@@ -1153,6 +1155,16 @@ contract AgentAccountTest is AgentAccountTestBase {
         assertEq(deposit, 40e6);
         assertEq(m, GATEWAY_M);
         assertEq(model, MODEL);
+    }
+
+    function test_openInferenceChannel_revertsBeforeModelSet() public {
+        AgentAccount fresh = AgentAccount(factory.createAccount(owner));
+        usdg.mint(address(fresh), 10e6);
+        vm.prank(owner);
+        vm.expectRevert(AgentAccount.ModelNotSet.selector);
+        fresh.openInferenceChannel(provider, 10e6);
+        assertEq(usdg.balanceOf(address(fresh)), 10e6);
+        assertEq(usdg.allowance(address(fresh), address(assay)), 0);
     }
 
     function test_inferenceClose_refundLandsInAccount() public {

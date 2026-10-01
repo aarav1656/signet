@@ -10,6 +10,7 @@ Each forge run is capped at 230 s.
 """
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -88,7 +89,7 @@ MUTANTS = [
     ("propose consumes a receipt", "(bytes32 served, bytes32 reqHash, bytes32 respHash) = _consumeReceipt(r);\n\n",
      "(bytes32 served, bytes32 reqHash, bytes32 respHash) = (bytes32(0), bytes32(0), bytes32(0));\n\n"),
     ("setModel: model and gateway nonzero", "if (requestedModelHash_ == bytes32(0) || gatewayMeasurement_ == bytes32(0)) revert ModelNotSet();", ""),
-    ("setModel: accepted set nonzero", "== bytes32(0)\n        ) revert ModelNotSet();", "== bytes32(1)\n        ) revert ModelNotSet();"),
+    ("setModel: accepted set nonzero", "== bytes32(0)\n        ) revert ModelNotSet();", "== bytes32(uint256(1))\n        ) revert ModelNotSet();"),
     # swap (I4)
     ("swap flag raised", "swapping = true;", ""),
     ("swap flag lowered", "swapping = false;", ""),
@@ -138,7 +139,9 @@ MUTANTS = [
     ("1271: not paused", "if (block.timestamp > agentExpiry || paused) return 0xffffffff;", "if (block.timestamp > agentExpiry) return 0xffffffff;"),
     # billing
     ("channel open needs a model pin", "if (requestedModelHash == bytes32(0)) revert ModelNotSet();\n        IERC20(usdg)", "IERC20(usdg)"),
-    ("allowance reset after channel open", "IERC20(usdg).forceApprove(address(assay), 0);", ""),
+    # Equivalent against the real Assay: _pull transfers exactly the approved amount, so the
+    # allowance is already 0. Kept because the spec requires the reset; reported, not hidden.
+    ("allowance reset after channel open [equivalent]", "IERC20(usdg).forceApprove(address(assay), 0);", ""),
     # reentrancy
     ("nonReentrant execute", "        external\n        nonReentrant\n        returns (uint256 tradeId", "        external\n        returns (uint256 tradeId"),
     ("nonReentrant propose", "external nonReentrant returns (uint256 proposalId)", "external returns (uint256 proposalId)"),
@@ -170,12 +173,12 @@ MUTANTS = [
 ]
 
 
-def run():
-    p = subprocess.run(CMD, capture_output=True, text=True, env=ENV)
+def run(force=False):
+    p = subprocess.run(CMD + (["--force"] if force else []), capture_output=True, text=True, env=ENV)
     out = p.stdout + p.stderr
     if "Compiler run failed" in out or "Error (" in out:
         return None, ["COMPILE ERROR"]
-    failed = sorted(set(re.findall(r"\[FAIL[^\]]*\]\s+(\w+)\(", out)))
+    failed = sorted(set(re.findall(r"^\[FAIL.*\] (\w+)\(", out, re.M)))  # reasons carry "[1.1e7]"
     passed = re.findall(r"\[PASS\] (\w+)\(", out)
     if not failed and not passed:
         return None, [out[-400:].replace("\n", " ")]
@@ -191,6 +194,8 @@ def main():
     subprocess.run(["timeout", "230", "forge", "build"], env={**ENV, "FOUNDRY_PROFILE": "v4"}, check=True,
                    capture_output=True)
     lines = []
+    for d in ("cache-mut", "out-mut"):  # a stale mutation cache can fail the baseline with solc 2449
+        shutil.rmtree(d, ignore_errors=True)
     try:
         n, failed = run()
         if n != 0:
@@ -203,9 +208,13 @@ def main():
             SRC.write_text(original.replace(old, new))
             t0 = time.time()
             n, failed = run()
+            if n == 0:  # an incremental build can miss a same-second rewrite; confirm from scratch
+                n, failed = run(force=True)
             SRC.write_text(original)
             status = "KILLED" if n else ("ERROR" if n is None else "SURVIVED")
-            survivors += status != "KILLED"
+            if status == "SURVIVED" and "[equivalent]" in name:
+                status = "EQUIV"
+            survivors += status not in ("KILLED", "EQUIV")
             line = f"{status:8} {name:44} {', '.join(failed)}"
             lines.append(line)
             print(f"{line}  ({time.time() - t0:.0f}s)", flush=True)
@@ -213,7 +222,9 @@ def main():
         restored = "green" if n == 0 else "NOT GREEN"
         print("restored: " + restored)
         killed = sum(1 for l in lines if l.startswith("KILLED"))
-        tally = f"{killed}/{len(lines)} killed, {len(lines) - killed} not killed; restored suite {restored}"
+        equiv = sum(1 for l in lines if l.startswith("EQUIV"))
+        tally = (f"{killed}/{len(lines)} killed, {equiv} equivalent (documented), "
+                 f"{len(lines) - killed - equiv} survived or errored; restored suite {restored}")
         print(tally)
         if not only:
             RECORD.write_text(
