@@ -34,3 +34,11 @@ export function fmtToken(v: bigint, decimals: number): string {
   const [whole, frac = ''] = formatUnits(v, decimals).split('.');
   return `${BigInt(whole).toLocaleString('en-US')}.${frac.slice(0, 6).replace(/0+$/, '').padEnd(2, '0')}`;
 }
+
+/** "01 Oct 15:05 UTC" for a unix-seconds time. */
+export function fmtWhen(sec: bigint | number): string {
+  const d = new Date(Number(sec) * 1000);
+  const mon = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getUTCDate())} ${mon} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+}

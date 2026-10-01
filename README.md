@@ -2,7 +2,7 @@
 
 Hosted app: [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) . Repo: [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron).
 
-The hosted app opens on the agent account: the deployed `AgentAccount` read live from Robinhood Chain testnet as an inspection sheet (owner, balances, caps, daily window, approval threshold, registered agent and its attested measurement, approved measurements, last trades with their model hashes), the two refusals the account issues, and the owner's actions from a connected wallet (create an account, deposit, withdraw, set caps, approve a measurement, approve or reject a pending trade). The Assay receipts pages sit at `/refusal`, `/channel` and `/verify`.
+The hosted app opens on the agent account: the deployed `AgentAccount` read live from Robinhood Chain testnet as a gate log (every executed trade with its amount, token and recorded model hash, every proposal and approval, and every refused call with its decoded custom error, each linked to its transaction) beside an agent panel (agent, attested measurement, live key-expiry countdown, model pin), then the owner's mandate (balances, caps, daily window, approval threshold, approved measurements), the two refusals the account issues, and the owner's actions from a connected wallet (create an account, deposit, withdraw, set caps, approve a measurement, approve or reject a pending trade). The Assay receipts pages sit at `/refusal`, `/channel` and `/verify`.
 
 Named for the one trustworthy centaur: the attested agent among substitutes.
 

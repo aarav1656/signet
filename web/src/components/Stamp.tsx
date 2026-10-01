@@ -13,7 +13,7 @@ export function Stamp({ block, label = 'read at block', url = explorer.block }: 
   );
 }
 
-/** A literal hex value: B612 Mono at 12px, middle-truncated, full value in the title and one click to copy. */
+/** A literal hex value: mono at 12px, middle-truncated, full value in the title and one click to copy. */
 export function HexValue({ value, head = 4, tail = 4, href }: { value: string; head?: number; tail?: number; href?: string }) {
   const [copied, setCopied] = useState(false);
   const body = value.startsWith('0x') ? value.slice(2) : value;
@@ -46,12 +46,12 @@ export function HexValue({ value, head = 4, tail = 4, href }: { value: string; h
   );
 }
 
-/** Code identifiers (function and error names). B612's parentheses are square, so code uses the mono face. */
+/** Code identifiers (function and error names), set in the mono face. */
 export function Code({ children }: { children: ReactNode }) {
   return <code className="code">{children}</code>;
 }
 
-/** The drawing-sheet title block every route opens with: small label over value, ruled cells. */
+/** The ruled strip of labelled cells a route opens with: small label over value, ruled cells. */
 export function TitleBlock({ cells }: { cells: { label: string; value: ReactNode; tone?: 'signal' | 'alarm'; lead?: boolean; mobileHide?: boolean }[] }) {
   return (
     <dl className="titleblock" style={{ ['--cells' as string]: cells.length }}>

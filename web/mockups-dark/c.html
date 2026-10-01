@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chiron C: Mandate</title>
+<link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Sans&family=Albert+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1424;--bg2:#121b30;--ink:#efe9dc;--mute:#8f9ab0;--brass:#c9a55c;--line:#25304a}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.6 'Albert Sans',sans-serif;min-height:100vh;
+ background-image:linear-gradient(180deg,#101a30,#0d1424 55%)}
+.wrap{max-width:1240px;margin:0 auto;padding:36px 56px}
+nav{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:20px;font-size:13px;color:var(--mute)}
+nav b{font:400 22px 'Hedvig Letters Sans';letter-spacing:-.01em;color:var(--ink)}
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:80px;padding:88px 0 40px}
+h1{font:400 64px/1.04 'Hedvig Letters Sans';letter-spacing:-.04em}
+h1 u{text-decoration:none;color:var(--brass)}
+.lede{margin:28px 0 36px;color:#b9bfce;font-weight:300;font-size:19px;max-width:42ch}
+.cta{display:inline-block;border:1px solid var(--brass);color:var(--brass);padding:14px 28px;text-decoration:none;font-weight:500;letter-spacing:.02em;border-radius:2px}
+.gl{margin-top:56px;font-size:13.5px;color:var(--mute);max-width:46ch;display:grid;gap:12px}
+.gl b{color:var(--ink);font-weight:500}
+.doc{background:var(--bg2);border:1px solid var(--line);padding:32px 36px}
+.doc h2{font:500 11px 'Albert Sans';letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
+.doc .who{font-size:13px;color:var(--mute);padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.row{display:grid;grid-template-columns:1fr auto;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);font-size:15px;align-items:baseline;opacity:0;animation:in .6s forwards}
+.row:nth-of-type(1){animation-delay:.1s}.row:nth-of-type(2){animation-delay:.2s}.row:nth-of-type(3){animation-delay:.3s}.row:nth-of-type(4){animation-delay:.4s}.row:nth-of-type(5){animation-delay:.5s}
+@keyframes in{from{opacity:0;transform:translateY(5px)}to{opacity:1}}
+.row small{display:block;color:var(--mute);font-size:12.5px}
+.row em{font-style:normal;font-size:12.5px;letter-spacing:.03em;color:var(--mute);white-space:nowrap}
+.row.no em{color:#d9826f}.row.ok em{color:var(--brass)}
+.row:last-child{border:0}
+@media(max-width:900px){.hero{grid-template-columns:1fr;gap:48px;padding-top:48px}}
+@media(max-width:600px){.wrap{padding:22px 20px}h1{font-size:42px}.lede{font-size:17px}.doc{padding:22px 20px}.row{grid-template-columns:1fr}nav span{display:none}}
+</style></head><body><div class="wrap">
+<nav><b>Chiron</b><span>Robinhood Chain</span></nav>
+<div class="hero"><section>
+<h1>Give an AI agent a <u>mandate</u>, not your keys.</h1>
+<p class="lede">It trades from your account only after its hardware is proven on chain. Limits are set per token, large trades wait for your approval, and every trade names the model behind it.</p>
+<a class="cta" href="#">Open the account</a>
+<div class="gl"><p><b>Attestation</b> is a signed report from the agent's Intel TDX chip, checked on chain by a Stylus contract.</p><p><b>Measurement</b> is the fingerprint of the exact code running on that chip.</p></div>
+</section>
+<section class="doc">
+<h2>Statement of mandate</h2>
+<div class="who">Account 0x9c69...aa6D · Agent 0xdd24...A5c7 · Measurement 0xeb2d9462...6829 · Expires in 24 h</div>
+<div class="row ok"><div>Bought testUSDG<small>Within the 10 per-trade limit</small></div><em>Executed</em></div>
+<div class="row no"><div>Over-limit trade declined<small>Above the 10 per-trade limit</small></div><em>ExceedsPerTradeCap</em></div>
+<div class="row ok"><div>Proposal above the 2 approval line<small>Held for the owner, then approved</small></div><em>Approved</em></div>
+<div class="row no"><div>Agent revoked, then attempted again<small>Its measurement is no longer trusted</small></div><em>NotAgent</em></div>
+<div class="row ok"><div>1 USDG into TSLA<small>From the USDG pool</small></div><em>Executed</em></div>
+</section></div></div></body></html>

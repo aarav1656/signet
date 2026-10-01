@@ -12,7 +12,7 @@ import {
   toHex,
   type Hex,
 } from 'viem';
-import { usePublicClient, useSignTypedData, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { usePublicClient, useSignTypedData, useWaitForTransactionReceipt } from 'wagmi';
 import { ASSAY, assayChain, explorer } from '../chain';
 import { assayAbi } from '../abi/Assay.generated';
 import { APPROVED_MEASUREMENTS, CHANNEL_TIMEOUT, USDG_ADDRESS } from '../lib/addresses.generated';
@@ -21,6 +21,7 @@ import { Code, HexValue, Num, Stamp, TitleBlock } from '../components/Stamp';
 import { ChannelsSection } from './Overview';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useOnChain } from '../components/Wallet';
+import { useTrackedWrite } from '../hooks/useTx';
 
 const ZERO_HASH = `0x${'0'.repeat(64)}` as Hex;
 const DEFAULT_MODEL_ID = 'meta-llama/llama-3.3-70b-instruct';
@@ -202,7 +203,7 @@ export function Channel() {
     true,
   );
 
-  const { writeContractAsync, data: txHash, isPending: writing } = useWriteContract();
+  const { write: writeContractAsync, data: txHash, isPending: writing } = useTrackedWrite(assayChain.id);
   const receipt = useWaitForTransactionReceipt({ hash: txHash });
 
   async function run(label: string, fn: () => Promise<unknown>) {
@@ -707,7 +708,7 @@ function VoucherPanel({ agent, channelIdDefault }: { agent?: string; channelIdDe
 function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; agent?: string }) {
   const chain = useOnChain();
   const publicClient = usePublicClient({ chainId: assayChain.id });
-  const { writeContractAsync, isPending } = useWriteContract();
+  const { write: writeContractAsync, isPending } = useTrackedWrite(assayChain.id);
   const [cid, setCid] = useState(channelIdDefault);
   const [cumulative, setCumulative] = useState('');
   const [req, setReq] = useState('');

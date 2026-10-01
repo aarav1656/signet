@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chiron A: Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,300..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#121315;--panel:#17191c;--line:#26292e;--ink:#e9e7e2;--mute:#8d9097;--amber:#f2b134;--red:#ef5a4c}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 'Archivo',sans-serif;min-height:100vh;
+ background-image:radial-gradient(900px 500px at 78% -10%,#1c1e22,transparent 70%)}
+.shell{display:grid;grid-template-columns:72px 1fr;min-height:100vh}
+.rail{border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:24px 0;gap:28px}
+.mark{width:28px;height:28px;border:2px solid var(--amber);border-radius:50%;position:relative}
+.mark:after{content:"";position:absolute;inset:6px;background:var(--amber);border-radius:50%}
+.rail span{writing-mode:vertical-rl;transform:rotate(180deg);font:500 11px 'IBM Plex Mono';letter-spacing:.06em;color:var(--mute)}
+main{padding:40px 56px;max-width:1368px;width:100%}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:56px;font-size:13px;color:var(--mute)}
+header b{color:var(--ink);font-weight:600;letter-spacing:.02em;font-stretch:115%}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:64px;align-items:start}
+h1{font-size:56px;line-height:1.02;letter-spacing:-.035em;font-weight:600;font-stretch:96%}
+h1 em{font-style:normal;color:var(--amber)}
+.lede{margin:24px 0 32px;color:#b5b3ad;max-width:44ch;font-size:17px}
+.cta{display:inline-flex;gap:10px;align-items:center;background:var(--amber);color:#1a1405;font-weight:600;padding:14px 22px;border-radius:6px;text-decoration:none;font-size:15px}
+.gloss{margin-top:44px;display:grid;gap:14px;max-width:46ch;font-size:13px;color:var(--mute)}
+.gloss p{border-left:1px solid var(--line);padding-left:14px}.gloss b{color:var(--ink);font-weight:600}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.lh{display:flex;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line);font:500 11px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.agent{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;gap:28px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.agent b{display:block;color:var(--ink);font:500 13px 'IBM Plex Mono'}
+.r{display:grid;grid-template-columns:20px 1fr auto;gap:14px;padding:15px 20px;border-bottom:1px solid var(--line);align-items:center;opacity:0;animation:in .5s forwards}
+.r:last-child{border:0}
+.r:nth-of-type(1){animation-delay:.1s}.r:nth-of-type(2){animation-delay:.2s}.r:nth-of-type(3){animation-delay:.3s}.r:nth-of-type(4){animation-delay:.4s}.r:nth-of-type(5){animation-delay:.5s}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.d{width:10px;height:10px;border-radius:50%;background:var(--amber)}
+.ref .d{background:transparent;border:2px solid var(--red)}
+.r h3{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.r p{font-size:13px;color:var(--mute)}
+.r code{font:500 12px 'IBM Plex Mono';color:var(--amber);white-space:nowrap}
+.ref{background:linear-gradient(90deg,#ef5a4c14,transparent 60%)}.ref code{color:var(--red)}
+@media(max-width:900px){.grid{grid-template-columns:1fr;gap:40px}}
+@media(max-width:600px){.shell{grid-template-columns:1fr}.rail{display:none}main{padding:24px 20px}header{margin-bottom:36px}
+ h1{font-size:38px}.r{grid-template-columns:16px 1fr}.r code{grid-column:2}.agent{gap:16px}}
+</style></head><body><div class="shell">
+<aside class="rail"><div class="mark"></div><span>Account 0x9c69...aa6D</span></aside>
+<main>
+<header><b>CHIRON</b><span>Robinhood Chain · 46630</span></header>
+<div class="grid"><section>
+<h1>An AI agent trades from your account only after its <em>hardware proves</em> what it is.</h1>
+<p class="lede">Caps per token. Big trades wait for you. Every trade records the model that made it, and every refusal is on the record too.</p>
+<a class="cta" href="#">Open the account &rarr;</a>
+<div class="gloss"><p><b>Attestation.</b> A signed report from the agent's Intel TDX chip, checked on chain by a Stylus contract.</p>
+<p><b>Measurement.</b> The fingerprint of the exact code the chip is running.</p></div>
+</section>
+<section class="log">
+<div class="lh"><span>Gate log</span><span>Live</span></div>
+<div class="agent"><div>Agent<b>0xdd24...A5c7</b></div><div>Measurement<b>0xeb2d9462...6829</b></div><div>Key expires<b>in 24 h</b></div></div>
+<div class="r"><i class="d"></i><div><h3>Buy testUSDG, inside the 10 cap</h3><p>Attested key, model recorded on the receipt</p></div><code>EXECUTED</code></div>
+<div class="r ref"><i class="d"></i><div><h3>Trade above the 10 per-trade cap</h3><p>Stopped by the account</p></div><code>ExceedsPerTradeCap</code></div>
+<div class="r"><i class="d"></i><div><h3>Proposal above the 2 approval line</h3><p>Waited for the owner, then approved</p></div><code>APPROVED</code></div>
+<div class="r ref"><i class="d"></i><div><h3>Owner revokes the agent, it tries again</h3><p>Measurement no longer trusted</p></div><code>NotAgent</code></div>
+<div class="r"><i class="d"></i><div><h3>1 USDG into TSLA</h3><p>Stock Token bought from the USDG pool</p></div><code>EXECUTED</code></div>
+</section></div></main></div></body></html>

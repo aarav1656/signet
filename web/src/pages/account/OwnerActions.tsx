@@ -5,7 +5,7 @@ import { rhcChain, rhcExplorer } from '../../chain';
 import { accountAbi } from '../../abi/AgentAccount.generated';
 import { Code, HexValue, Num, Spec, Fact } from '../../components/Stamp';
 import { useOnChain } from '../../components/Wallet';
-import { useTx, type TxState } from '../../hooks/useTx';
+import { useTx } from '../../hooks/useTx';
 import { fmtCountdown, fmtToken, short } from '../../lib/format';
 import { GATEWAY_MEASUREMENT, TEST_USDG } from '../../lib/rhc.generated';
 import type { Snapshot, TokenRow } from './read';
@@ -24,31 +24,6 @@ const parse = (v: string, decimals: number): bigint | null => {
 };
 const MAX_U128 = (1n << 128n) - 1n;
 const isBytes32 = (v: string): v is Hex => isHex(v, { strict: true }) && v.length === 66;
-
-function TxResult({ state }: { state: TxState }) {
-  if (state.phase === 'idle') return null;
-  if (state.phase === 'signing') return <div className="result"><span className="rl">{state.label}</span><span className="rv">Confirm in the wallet.</span></div>;
-  if (state.phase === 'mining')
-    return (
-      <div className="result">
-        <span className="rl">{state.label}</span>
-        <span className="rv">Sent <HexValue value={state.hash} head={6} tail={4} href={rhcExplorer.tx(state.hash)} />. Waiting for the receipt.</span>
-      </div>
-    );
-  if (state.phase === 'done')
-    return (
-      <div className="result">
-        <span className="rl">{state.label}</span>
-        <span className="rv">Mined in block {state.block.toLocaleString('en-US')} with status success: <HexValue value={state.hash} head={6} tail={4} href={rhcExplorer.tx(state.hash)} />.</span>
-      </div>
-    );
-  return (
-    <div className="result bad" role="alert">
-      <span className="rl">{state.label}</span>
-      <span className="rv">Refused: {state.message}{state.hash && <> <HexValue value={state.hash} head={6} tail={4} href={rhcExplorer.tx(state.hash)} /></>}</span>
-    </div>
-  );
-}
 
 function TokenPick({ tokens, value, onChange }: { tokens: TokenRow[]; value: number; onChange: (i: number) => void }) {
   return (
@@ -121,7 +96,6 @@ function FundsStep({ snap, refetch }: Ctx) {
             </button>
           )}
         </div>
-        <TxResult state={tx.state} />
       </div>
     </li>
   );
@@ -179,7 +153,6 @@ function CapsForm({ snap, refetch, t }: Ctx & { t: TokenRow }) {
           Set caps
         </button>
       </div>
-      <TxResult state={tx.state} />
     </>
   );
 }
@@ -234,7 +207,6 @@ function MeasurementStep({ snap, refetch }: Ctx) {
           <button className="btn" type="button" disabled={!!ownerReason || !valid || tx.busy} onClick={() => send(true)}>Approve</button>
           <button className="btn line" type="button" disabled={!!ownerReason || !valid || tx.busy} onClick={() => send(false)}>Withdraw approval</button>
         </div>
-        <TxResult state={tx.state} />
       </div>
     </li>
   );
@@ -292,7 +264,6 @@ function PendingStep({ snap, refetch, now }: Ctx & { now: bigint }) {
             })}
           </div>
         )}
-        <TxResult state={tx.state} />
       </div>
     </li>
   );

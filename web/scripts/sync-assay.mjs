@@ -56,6 +56,9 @@ const registerStep = rhc.liveCycle?.find((x) => x.step?.startsWith('Assay.regist
 if (!registerStep || !rhc.gatewayMeasurement || !rhc.modelId || !rhc.block) {
   throw new Error('deployments/46630.json is missing the gateway register step, gatewayMeasurement, modelId or block');
 }
+// Calls the account refused (reverted): a revert emits no log, so the web reads these hashes from the explorer.
+const refusalTxs = [...(rhc.liveCycle ?? []), ...(rhc.revokeDemo ?? [])].filter((x) => /execute/.test(x.step) && /revert/i.test(x.step)).map((x) => x.hash);
+if (refusalTxs.length === 0) throw new Error('deployments/46630.json names no reverted execute transaction');
 const abiOf = (name) => {
   const j = JSON.parse(readFileSync(join(contractsRoot, 'out', `${name}.sol`, `${name}.json`), 'utf8'));
   if (!Array.isArray(j.abi)) throw new Error(`${name}.json has no abi array`);
@@ -87,6 +90,7 @@ export const RHC_RECEIPT_VERIFIER = ${JSON.stringify(c.ReceiptVerifier)} as Addr
 export const GATEWAY_MEASUREMENT = ${JSON.stringify(rhc.gatewayMeasurement)} as \`0x\${string}\`;
 export const MODEL_ID = ${JSON.stringify(rhc.modelId)} as const;
 export const GATEWAY_REGISTER_TX = ${JSON.stringify(registerStep.hash)} as const;
+export const RHC_REFUSAL_TXS = ${JSON.stringify(refusalTxs)} as readonly \`0x\${string}\`[];
 `,
 );
 console.log(`wrote src/abi/AgentAccount.generated.ts (${accountAbi.length} + ${factoryAbi.length} ABI entries)`);

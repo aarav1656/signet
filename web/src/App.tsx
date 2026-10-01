@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
-import { BrowserRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { getAddress, isAddress } from 'viem';
+import { BrowserRouter, NavLink, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { ASSAY, assayChain, chainForPath, explorer, rhcExplorer, wagmiConfig } from './chain';
 import { DEMO_ACCOUNT } from './lib/rhc.generated';
 import { Wallet } from './components/Wallet';
+import { TxStatusPanel } from './components/TxStatus';
 import { Account } from './pages/Account';
 import { Overview } from './pages/Overview';
 import { Verify } from './pages/Verify';
@@ -26,6 +28,21 @@ function Footer() {
   );
 }
 
+/** The thin left rail: the mark, and the account the page is reading, set vertically. */
+function Rail() {
+  const [params] = useSearchParams();
+  const raw = params.get('account') ?? '';
+  const account = isAddress(raw) ? getAddress(raw) : DEMO_ACCOUNT;
+  return (
+    <aside className="rail">
+      <NavLink to="/" className="mark" aria-label="Chiron, the account" />
+      <a className="rail-acct" href={rhcExplorer.address(account)} target="_blank" rel="noreferrer" title={account}>
+        Account {account.slice(0, 6)}...{account.slice(-4)}
+      </a>
+    </aside>
+  );
+}
+
 function Page() {
   const loc = useLocation();
   return (
@@ -40,29 +57,43 @@ function Page() {
   );
 }
 
+function Header() {
+  const chain = chainForPath(useLocation().pathname);
+  return (
+    <header className="top">
+      <NavLink to="/" className="wordmark">
+        CHIRON
+      </NavLink>
+      <nav className="nav" aria-label="Primary">
+        <NavLink to="/" end>
+          Account
+        </NavLink>
+        <NavLink to="/refusal">Refusal</NavLink>
+        <NavLink to="/channel">Channels</NavLink>
+        <NavLink to="/verify">Verify a gateway</NavLink>
+      </nav>
+      <span className="net">
+        {chain.name} · {chain.id}
+      </span>
+      <Wallet />
+    </header>
+  );
+}
+
 export function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <div className="shell">
-            <header className="top">
-              <NavLink to="/" className="wordmark">
-                Chiron
-              </NavLink>
-              <nav className="nav" aria-label="Primary">
-                <NavLink to="/" end>
-                  Account
-                </NavLink>
-                <NavLink to="/refusal">Refusal</NavLink>
-                <NavLink to="/channel">Channels</NavLink>
-                <NavLink to="/verify">Verify a gateway</NavLink>
-              </nav>
-              <Wallet />
-            </header>
-            <Page />
-            <Footer />
+            <Rail />
+            <main className="main">
+              <Header />
+              <Page />
+              <Footer />
+            </main>
           </div>
+          <TxStatusPanel />
         </BrowserRouter>
       </QueryClientProvider>
     </WagmiProvider>

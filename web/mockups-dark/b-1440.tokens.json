@@ -1,0 +1,80 @@
+{
+ "title": "Chiron B: Seal",
+ "h1": {
+  "text": "Agents trade here only once sealed.",
+  "font": "\"Bricolage Grotesque\", sans-serif",
+  "size": "68px",
+  "weight": "700",
+  "tracking": "-3.06px",
+  "leading": "66.64px",
+  "color": "rgb(236, 235, 231)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "border": "0px none rgb(236, 235, 231)",
+  "transform": "none",
+  "features": "normal"
+ },
+ "h2": null,
+ "h3": null,
+ "body": {
+  "text": "Chiron\nAccount 0x9c69...aa6D\nAgents trade here only once sea",
+  "font": "\"Bricolage Grotesque\", sans-serif",
+  "size": "15px",
+  "weight": "400",
+  "tracking": "normal",
+  "leading": "22.5px",
+  "color": "rgb(236, 235, 231)",
+  "bg": "rgb(42, 43, 45)",
+  "radius": "0px",
+  "padding": "0px",
+  "border": "0px none rgb(236, 235, 231)",
+  "transform": "none",
+  "features": "normal"
+ },
+ "p": {
+  "text": "The agent's chip proves what code it runs. A contract on Rob",
+  "font": "\"Bricolage Grotesque\", sans-serif",
+  "size": "18px",
+  "weight": "400",
+  "tracking": "normal",
+  "leading": "27px",
+  "color": "rgb(196, 195, 191)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "border": "0px none rgb(196, 195, 191)",
+  "transform": "none",
+  "features": "normal"
+ },
+ "a": {
+  "text": "Open the account",
+  "font": "\"Bricolage Grotesque\", sans-serif",
+  "size": "16px",
+  "weight": "700",
+  "tracking": "-0.16px",
+  "leading": "24px",
+  "color": "rgb(22, 7, 0)",
+  "bg": "rgb(255, 90, 31)",
+  "radius": "999px",
+  "padding": "16px 26px",
+  "border": "0px none rgb(22, 7, 0)",
+  "transform": "none",
+  "features": "normal"
+ },
+ "button": null,
+ "input": null,
+ "loadedFonts": [
+  "Azeret Mono",
+  "Bricolage Grotesque"
+ ],
+ "htmlBg": "rgba(0, 0, 0, 0)",
+ "textLen": 515,
+ "height": 900,
+ "url": "file:///Users/kamal/Desktop/arbitrium/chiron/web/mockups-dark/b.html",
+ "viewport": [
+  1440,
+  900
+ ],
+ "lumaStddev": 30.6
+}

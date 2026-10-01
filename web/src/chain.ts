@@ -1,6 +1,5 @@
 import { createConfig, http } from 'wagmi';
 import { defineChain, type Address } from 'viem';
-import { injected, walletConnect } from 'wagmi/connectors';
 import { ASSAY_ADDRESS, CHAIN_ID, EXPLORER_URL, RPC_URL } from './lib/addresses.generated';
 import { RHC_CHAIN_ID, RHC_EXPLORER_URL } from './lib/rhc.generated';
 
@@ -29,15 +28,9 @@ export const rhcChain = defineChain({
 
 export const ASSAY: Address = ASSAY_ADDRESS;
 
-const wcProjectId = (import.meta.env.VITE_WC_PROJECT_ID as string | undefined)?.trim();
-
 export const wagmiConfig = createConfig({
   chains: [assayChain, rhcChain],
-  multiInjectedProviderDiscovery: false,
-  connectors: [
-    injected(),
-    ...(wcProjectId ? [walletConnect({ projectId: wcProjectId, showQrModal: true })] : []),
-  ],
+  multiInjectedProviderDiscovery: true,
   transports: { [assayChain.id]: http(), [rhcChain.id]: http() },
 });
 
