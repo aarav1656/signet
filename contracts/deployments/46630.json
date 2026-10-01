@@ -259,5 +259,100 @@
     "requestedModelHash": "0x245e10b5c3befa4510d11cba0fe4ad1aa3dc9f8def21eb6287a846f8c0b47b9a",
     "acceptedServedHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
     "setModelTx": "0x22a1883e013ca5e4c1e41167ef24bce5b6919cc6e07ddce328d6cbfa7fd2204f"
+  },
+  "agentCvmBoot2": {
+    "agent": "0xdd241EC759Ec0BA4A1d08C8bf19FC4a8a6aEA5c7",
+    "measurement": "0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829",
+    "composeHash": "c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
+    "note": "same app, compose and image as agentCvm; a boot has its own key and measurement"
+  },
+  "revokeDemo": [
+    {
+      "step": "owner funds the agent key with 0.0003 ETH",
+      "hash": "0x137a85e3c0ef3fd91c2ce2b116794743a1a9cba3f9c73d6161e144e13d1d4a64",
+      "block": 127186611
+    },
+    {
+      "step": "owner approves the measurement",
+      "hash": "0xe02b6d61239ea920589b0abdc8bc48f814e6c66f2baa5ca94cd1529f4a2aff69",
+      "block": 127186697
+    },
+    {
+      "step": "registerAgent",
+      "hash": "0x06ed38eb1fc614f1319b377bda6ce74a9b02909f9b838fc14e911b1d8a4a56c3",
+      "block": 127186719
+    },
+    {
+      "step": "owner setMeasurement(false): AgentRevoked, agent() zero",
+      "hash": "0x0b34701eaee5f698b39988a13810e835abee437363093ebc8949ae89bc258382",
+      "block": 127187329
+    },
+    {
+      "step": "revoked agent execute: eth_call NotAgent, transaction reverted (status 0)",
+      "hash": "0xc0b2e5bc95048ad424a246277a819dfad0238b394ba4bf08cf9dc0231c7e1e08",
+      "block": 127187358
+    },
+    {
+      "step": "owner setMeasurement(true): agent() still zero",
+      "hash": "0xc5e5bb9bc3e4ca17ace0b52c4352d5ae7cfed1a9a7a8a43b5f7d229fd6447822",
+      "block": 127187371
+    },
+    {
+      "step": "registerAgent with a fresh CVM quote",
+      "hash": "0x4694b617f4bafbd0e3a3f2a09dbe11b5afd0f96fc4023393aaf516ce68f69a66",
+      "block": 127187385
+    },
+    {
+      "step": "owner unapproves the earlier boot measurement 0x9dfd5de3...64c8",
+      "hash": "0xa1ca94aa286ebc2d2751e9f8df6b30e501d99b0c5d7bb8cb10509f2f78765149",
+      "block": 127189110
+    }
+  ],
+  "usdgVenue": {
+    "token": "0x7E955252E15c84f5768B83c41a71F9eba181802F",
+    "decimals": 6,
+    "poolId": "0x38f88da1f16ec1ddafcb2be5b3a0ee82ea9944da87a009e9b5e6fbfb94ba384b",
+    "fee": 3000,
+    "tickSpacing": 60,
+    "pricePerTsla": "250 USDG",
+    "liquidity": 3161961432401,
+    "script": "contracts/script/rhc/AddUSDGVenue.s.sol",
+    "transactions": [
+      {
+        "step": "account withdraws 0.2 TSLA to the owner",
+        "hash": "0xf3f942162cdb78b82e4b75b3723bd40c7692ab956a3dfe17fd02b3f3570870df",
+        "block": 127188194
+      },
+      {
+        "step": "initialize TSLA/USDG pool on the PoolManager",
+        "hash": "0x153afe0655f12e64710fc2b816f4831c99d0027c32cf2629080f224571169499",
+        "block": 127188201
+      },
+      {
+        "step": "mint full-range position (about 49.995 USDG and 0.2 TSLA)",
+        "hash": "0x81e7fc856b46cb01ff433a85dfd5694990404e2ca7eacba7bc9b400aa5b23cf9",
+        "block": 127188629
+      },
+      {
+        "step": "account setLimits(USDG): perTrade 10e6, daily 5e6, approvalAbove 2e6",
+        "hash": "0x251ef5cce13680cb8ba1f99b1b922d362ef0367ba1d30215672d4fb39b31422c",
+        "block": 127188646
+      },
+      {
+        "step": "account setPool(TSLA/USDG)",
+        "hash": "0xff7b103d718067b7759ab4c37c93bedb7bfedfee44033afc648b3872d516df53",
+        "block": 127188657
+      },
+      {
+        "step": "owner deposits 5 USDG into the account",
+        "hash": "0xf41107005b7af474f5107026daa0b76f4267c5ee0f39935980eb2fe46721f993",
+        "block": 127188667
+      },
+      {
+        "step": "attested agent buys TSLA with 1 USDG: TradeExecuted tradeId 3, amountOut 3910026278631909",
+        "hash": "0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03",
+        "block": 127188951
+      }
+    ]
   }
 }

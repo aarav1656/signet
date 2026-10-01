@@ -43,7 +43,7 @@ An agent that trades Stock Tokens onchain needs the same controls, enforced by t
 
 ## Deploy and live cycle
 
-`contracts/script/rhc/deploy-stylus.sh` deploys the `verifier/` and `receipt-verifier/` crates to RHC testnet and reads each back. `contracts/script/rhc/DeployAgentAccountRHC.s.sol` deploys testUSDG, Assay, the TSLA/testUSDG v4 pool and its liquidity, the factory and an account, configures limits, pool and model pin, funds the account and opens the inference channel, and reverts on any read-back mismatch. The venue's quote asset is `TestUSDG`, a fixture with open minting, and the pool's price is the one the script sets.
+`contracts/script/rhc/deploy-stylus.sh` deploys the `verifier/` and `receipt-verifier/` crates to RHC testnet and reads each back. `contracts/script/rhc/DeployAgentAccountRHC.s.sol` deploys testUSDG, Assay, the TSLA/testUSDG v4 pool and its liquidity, the factory and an account, configures limits, pool and model pin, funds the account and opens the inference channel, and reverts on any read-back mismatch. The first pool's quote asset is `TestUSDG`, a fixture with open minting, and the pool's price is the one the script sets; `AddUSDGVenue.s.sol` adds a TSLA/USDG pool on Paxos's testnet USDG and allows it on the account.
 
 The agent client's live-cycle modes each assert a post-condition that only completion can produce:
 
@@ -53,9 +53,15 @@ The agent client's live-cycle modes each assert a post-condition that only compl
 | `acct-overcap` | `amountIn = perTrade + 1` reverts `ExceedsPerTradeCap` by `eth_call` and by one real reverted transaction, balances unchanged |
 | `acct-approve` | `NeedsApproval`, then a proposal event, then the owner's approval emitting `TradeExecuted` with the proposal id and a balance delta, then a second approval reverting `ProposalNotPending` |
 
+## Business model
+
+The payer is the account owner: an agent operator running an attested agent for clients, or a trader running their own. The contracts meter two things the owner pays for. Each trade pays the pool's fee tier, which the owner approves per pool through `setPool` (the pools on this deployment are the 0.3% tier, `fee` 3000 in v4's hundredths of a basis point, 30 bps of `amountIn`, settled inside the swap). Each inference call is billed per call through Assay: the account opens a channel as its own agent, the agent key signs a cumulative voucher per call, and the provider is paid the increase in USDG by `redeemWithReceipt` only against a receipt that names the pinned model (0.30 USDG per call in the Arbitrum Sepolia run).
+
 ## Evidence
 
 - `make test` from a fresh clone: 296 passed, 0 failed, 1 skipped across 20 suites. The `AgentAccount` suites (unit, rolling-window fuzz against an exact reference, drain invariant) are 89 of them; 4 more run against live RHC testnet state, and the `ChironGate` fork suite reads the live Assay registry. The skipped suite is the real-USDG fork suite, which runs when `CHIRON_FUNDED_TEST_ACCOUNT` is set.
+- Revoke by measurement on Robinhood Chain testnet: the owner unapproves the agent's measurement (`0x0b34701e...8382`), the account de-admits the agent in that transaction, and the agent's next `execute` reverts `NotAgent` (`0xc0b2e5bc...1e08`); re-approval leaves `agent()` zero until a fresh quote admits the key (`0x4694b617...9a66`). `docs/e2e/robinhood-testnet-agent-account.md` lists every transaction.
+- Real USDG: the attested agent bought TSLA with 1 USDG of Paxos's testnet USDG `0x7E955252...802F` in a second TSLA/USDG pool the same account is allowed to trade (`0x0023f359...3b03`, `TradeExecuted` tradeId 3).
 - Mutation record: `docs/security/agent-account-mutations.md`, 109 of 110 mutants killed, the restored source green.
 - `agent` `npm test`: 27 passed, including the exact 64-byte `report_data` layout the quote must carry and the `Trade` encoding the owner's approval hashes.
 - `receipt-verifier` `cargo test`: 18 passed. `verifier` `cargo test`: 22 passed.

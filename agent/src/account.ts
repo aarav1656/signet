@@ -182,13 +182,24 @@ async function setup() {
 
 type Ctx = Awaited<ReturnType<typeof setup>>;
 
-async function read<T>(ctx: Ctx, functionName: string, args: readonly unknown[] = []): Promise<T> {
-  return (await ctx.publicClient.readContract({
-    address: ctx.account,
-    abi: agentAccountAbi,
-    functionName: functionName as never,
-    args: args as never,
-  })) as T;
+/// A read of the account. With `at`, the read is pinned to that block and retried while the RPC
+/// backend that answers has not caught up to it: a read at "latest" straight after a receipt can
+/// be served by a node one block behind and return the state from before the transaction.
+async function read<T>(ctx: Ctx, functionName: string, args: readonly unknown[] = [], at?: bigint): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return (await ctx.publicClient.readContract({
+        address: ctx.account,
+        abi: agentAccountAbi,
+        functionName: functionName as never,
+        args: args as never,
+        ...(at === undefined ? {} : { blockNumber: at }),
+      })) as T;
+    } catch (e) {
+      if (at === undefined || attempt >= 20) throw e;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
 }
 
 /// Step 1's post-condition, run before every mode: the chain is RHC testnet, the configured
@@ -261,11 +272,28 @@ async function inferenceReceipt(ctx: Ctx, pin: Pin, prompt: string): Promise<{ r
   return { receipt, served };
 }
 
-async function balances(ctx: Ctx, usdg: Address) {
-  const [u, s] = await Promise.all(
-    [usdg, TSLA].map((t) => ctx.publicClient.readContract({ address: t, abi: erc20Abi, functionName: 'balanceOf', args: [ctx.account] })),
-  );
-  return { usdg: u, tsla: s };
+/// Token balances of the account. With `at`, pinned to that block and retried until the RPC backend
+/// has it, so a read straight after a receipt cannot return the pre-transaction balance.
+async function balances(ctx: Ctx, usdg: Address, at?: bigint) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const [u, s] = await Promise.all(
+        [usdg, TSLA].map((t) =>
+          ctx.publicClient.readContract({
+            address: t,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [ctx.account],
+            ...(at === undefined ? {} : { blockNumber: at }),
+          }),
+        ),
+      );
+      return { usdg: u, tsla: s };
+    } catch (e) {
+      if (at === undefined || attempt >= 20) throw e;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
 }
 
 function revertName(err: unknown): { name?: string; args?: readonly unknown[] } {
@@ -287,8 +315,11 @@ async function expectRevert(p: Promise<unknown>, name: string): Promise<readonly
   throw new Error(`expected revert ${name}, but the call succeeded`);
 }
 
+/// The quote asset the agent trades against TSLA: the account's own `usdg()` unless QUOTE_TOKEN
+/// names another allowlisted token (the account trades any token the owner has given limits and
+/// a pool).
 async function market(ctx: Ctx) {
-  const usdg = await read<Address>(ctx, 'usdg');
+  const usdg = (env('QUOTE_TOKEN', '') || (await read<Address>(ctx, 'usdg'))) as Address;
   const key = poolKey(usdg, TSLA);
   if (!(await read<boolean>(ctx, 'allowedPool', [poolId(key)]))) throw new Error(`pool ${poolId(key)} is not allowlisted on the account.`);
   const [, perTrade, daily, approvalAbove] = await read<[boolean, bigint, bigint, bigint]>(ctx, 'limits', [usdg]);
@@ -364,7 +395,7 @@ async function executedLog(ctx: Ctx, hash: Hex): Promise<{ log: Executed; block:
   return { log: mine[0].args as unknown as Executed, block: rcpt.blockNumber };
 }
 
-/// TSLA delta == amountOut >= minOut, testUSDG delta == -amountIn, served hash == receipt's.
+/// TSLA delta == amountOut >= minOut, quote-token delta == -amountIn, served hash == receipt's.
 function assertBuyDeltas(
   before: { usdg: bigint; tsla: bigint },
   after: { usdg: bigint; tsla: bigint },
@@ -375,7 +406,7 @@ function assertBuyDeltas(
   const got = after.tsla - before.tsla;
   const spent = before.usdg - after.usdg;
   if (got !== log.amountOut || got < t.minOut) throw new Error(`TSLA delta ${got} != logged amountOut ${log.amountOut} or < minOut ${t.minOut}`);
-  if (spent !== log.amountIn || spent > t.amountIn) throw new Error(`testUSDG delta -${spent} does not match amountIn ${t.amountIn}`);
+  if (spent !== log.amountIn || spent > t.amountIn) throw new Error(`quote-token delta -${spent} does not match amountIn ${t.amountIn}`);
   if (log.servedModelHash !== served) throw new Error(`event servedModelHash ${log.servedModelHash} != receipt's ${served}`);
 }
 
@@ -389,19 +420,19 @@ export async function runAcctTrade(): Promise<void> {
   const { receipt, served } = await inferenceReceipt(
     ctx,
     pin,
-    `An account may buy TSLA with ${amountIn} raw testUSDG now. Reply BUY or HOLD.`,
+    `An account may buy TSLA with ${amountIn} raw USDG now. Reply BUY or HOLD.`,
   );
   const draft = m.buy(amountIn);
   const t = { ...draft, minOut: await quoteMinOut(ctx, draft, receipt) };
   const before = await balances(ctx, m.usdg);
   const hash = await ctx.agent.write({ functionName: 'execute', args: [t, receipt] });
   const { log, block } = await executedLog(ctx, hash);
-  const after = await balances(ctx, m.usdg);
+  const after = await balances(ctx, m.usdg, block);
   assertBuyDeltas(before, after, t, log, served);
   if (log.proposalId !== 0n) throw new Error('agent-direct trade logged a proposalId');
   if (!pin.accepted.includes(log.servedModelHash)) throw new Error('servedModelHash is not a pinned hash');
   console.log(
-    `step 2 ok: tx ${hash} block ${block} tradeId ${log.tradeId}: spent ${log.amountIn} testUSDG, got ${log.amountOut} TSLA (minOut ${t.minOut}); ` +
+    `step 2 ok: tx ${hash} block ${block} tradeId ${log.tradeId}: spent ${log.amountIn} raw quote token, got ${log.amountOut} TSLA (minOut ${t.minOut}); ` +
       `agentMeasurement ${log.agentMeasurement} servedModelHash ${log.servedModelHash}`,
   );
 }
@@ -411,7 +442,7 @@ export async function runAcctOvercap(): Promise<void> {
   await requireFreshAgent(ctx);
   const m = await market(ctx);
   const pin = await readPin(ctx);
-  const { receipt } = await inferenceReceipt(ctx, pin, `An account may buy TSLA with ${m.perTrade + 1n} raw testUSDG. Reply BUY or HOLD.`);
+  const { receipt } = await inferenceReceipt(ctx, pin, `An account may buy TSLA with ${m.perTrade + 1n} raw USDG. Reply BUY or HOLD.`);
   const t = m.buy(m.perTrade + 1n);
   const before = await balances(ctx, m.usdg);
   const args = await expectRevert(
@@ -423,7 +454,7 @@ export async function runAcctOvercap(): Promise<void> {
   const hash = await ctx.agent.write({ functionName: 'execute', args: [t, receipt], gas: 600_000n });
   const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'reverted') throw new Error(`over-cap tx ${hash} did not revert`);
-  const after = await balances(ctx, m.usdg);
+  const after = await balances(ctx, m.usdg, rcpt.blockNumber);
   if (after.usdg !== before.usdg || after.tsla !== before.tsla) throw new Error('balances changed across a reverted over-cap trade');
   console.log(`step 3 ok: eth_call reverted ExceedsPerTradeCap(${t.amountIn}, ${m.perTrade}); tx ${hash} block ${rcpt.blockNumber} reverted; balances unchanged`);
 }
@@ -435,7 +466,7 @@ export async function runAcctApprove(): Promise<void> {
   const pin = await readPin(ctx);
   const amountIn = BigInt(env('APPROVAL_AMOUNT_IN', String(m.approvalAbove + 1n)));
   if (amountIn <= m.approvalAbove || amountIn > m.perTrade) throw new Error(`APPROVAL_AMOUNT_IN ${amountIn} is not in band 2 (${m.approvalAbove}, ${m.perTrade}].`);
-  const { receipt, served } = await inferenceReceipt(ctx, pin, `An account may buy TSLA with ${amountIn} raw testUSDG, subject to owner approval. Reply BUY or HOLD.`);
+  const { receipt, served } = await inferenceReceipt(ctx, pin, `An account may buy TSLA with ${amountIn} raw USDG, subject to owner approval. Reply BUY or HOLD.`);
   const draft = m.buy(amountIn);
   await expectRevert(
     ctx.publicClient.simulateContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'execute', args: [draft, receipt], account: ctx.agent.address }),
@@ -459,7 +490,7 @@ export async function runAcctApprove(): Promise<void> {
   const before = await balances(ctx, m.usdg);
   const aHash = await ctx.ownerWallet.writeContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'approveTrade', args: [id, t] });
   const { log, block } = await executedLog(ctx, aHash);
-  const after = await balances(ctx, m.usdg);
+  const after = await balances(ctx, m.usdg, block);
   if (log.proposalId !== id) throw new Error(`TradeExecuted.proposalId ${log.proposalId} != ${id}`);
   assertBuyDeltas(before, after, t, log, served);
   await expectRevert(
@@ -493,6 +524,33 @@ async function cvmQuote(): Promise<CvmQuote> {
   return out;
 }
 
+/// registerAgent with a fresh CVM quote (its ArbSys window is the last 256 blocks). Post-condition:
+/// agent() is the CVM's key, admitted under `measurement`.
+async function registerFresh(ctx: Ctx, measurement: Hex): Promise<{ hash: Hex; block: bigint }> {
+  const fresh = await cvmQuote();
+  if (fresh.agent.toLowerCase() !== ctx.agent.address.toLowerCase()) throw new Error('the CVM agent key changed between quotes');
+  const hash = await ctx.ownerWallet.writeContract({
+    address: ctx.account,
+    abi: agentAccountAbi,
+    functionName: 'registerAgent',
+    args: [fresh.quote, fresh.refBlock],
+  });
+  const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
+  if (rcpt.status !== 'success') throw new Error(`registerAgent tx ${hash} reverted`);
+  const regs = parseEventLogs({ abi: agentAccountAbi, logs: rcpt.logs, eventName: 'AgentRegistered' }).filter(
+    (l) => l.address.toLowerCase() === ctx.account.toLowerCase(),
+  );
+  if (regs.length !== 1) throw new Error(`registerAgent emitted ${regs.length} AgentRegistered logs`);
+  const [agent, m, expiry] = await Promise.all([
+    read<Address>(ctx, 'agent', [], rcpt.blockNumber),
+    read<Hex>(ctx, 'agentMeasurement', [], rcpt.blockNumber),
+    read<bigint>(ctx, 'agentExpiry', [], rcpt.blockNumber),
+  ]);
+  if (agent.toLowerCase() !== ctx.agent.address.toLowerCase() || m !== measurement) throw new Error(`agent() ${agent} / agentMeasurement ${m} do not match the CVM quote`);
+  console.log(`registerAgent tx ${hash} block ${rcpt.blockNumber}: agent ${agent} measurement ${m} expiry ${expiry}`);
+  return { hash, block: rcpt.blockNumber };
+}
+
 /// Owner side of admission. The CVM supplies the quote (its key and the account's attestNonce in
 /// report_data); the Stylus Verifier is asked by eth_call which signer and measurement it
 /// returns; the owner approves that measurement; registerAgent is submitted with a fresh quote
@@ -511,33 +569,76 @@ export async function runAcctRegister(): Promise<void> {
   if (signer.toLowerCase() !== ctx.agent.address.toLowerCase()) throw new Error(`Verifier returned signer ${signer}, the CVM reports ${ctx.agent.address}.`);
   console.log(`Verifier accepts the CVM quote: signer ${signer} measurement ${measurement} (eth_call at refBlock ${first.refBlock})`);
 
+  let at: bigint | undefined;
   if (!(await read<boolean>(ctx, 'approvedMeasurement', [measurement]))) {
-    const hash = await ctx.ownerWallet.writeContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'setMeasurement', args: [measurement, true] });
-    const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
-    if (rcpt.status !== 'success') throw new Error(`setMeasurement tx ${hash} reverted`);
+    const { hash, rcpt } = await ownerSetMeasurement(ctx, measurement, true);
+    at = rcpt.blockNumber;
     console.log(`owner setMeasurement tx ${hash} block ${rcpt.blockNumber}`);
   }
-  if (!(await read<boolean>(ctx, 'approvedMeasurement', [measurement]))) throw new Error('measurement is not approved after setMeasurement');
+  if (!(await read<boolean>(ctx, 'approvedMeasurement', [measurement], at))) throw new Error('measurement is not approved after setMeasurement');
 
-  const fresh = await cvmQuote();
-  if (fresh.agent.toLowerCase() !== ctx.agent.address.toLowerCase()) throw new Error('the CVM agent key changed between quotes');
-  const hash = await ctx.ownerWallet.writeContract({
-    address: ctx.account,
-    abi: agentAccountAbi,
-    functionName: 'registerAgent',
-    args: [fresh.quote, fresh.refBlock],
-  });
+  await registerFresh(ctx, measurement);
+}
+
+
+async function ownerSetMeasurement(ctx: Ctx, measurement: Hex, approved: boolean) {
+  const hash = await ctx.ownerWallet.writeContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'setMeasurement', args: [measurement, approved] });
   const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
-  if (rcpt.status !== 'success') throw new Error(`registerAgent tx ${hash} reverted`);
-  const regs = parseEventLogs({ abi: agentAccountAbi, logs: rcpt.logs, eventName: 'AgentRegistered' }).filter(
+  if (rcpt.status !== 'success') throw new Error(`setMeasurement(${approved}) tx ${hash} reverted`);
+  return { hash, rcpt };
+}
+
+/// Revoke by measurement. The owner withdraws approval of the measurement the registered agent was
+/// admitted under; in that same transaction the account de-admits the agent (AgentRevoked, agent()
+/// is zero). The agent then attempts an in-cap trade: the eth_call reverts NotAgent and one real
+/// transaction reverts with balances unchanged. Re-approving the measurement does not re-admit the
+/// agent; only a fresh quote does, and the last step submits one so the account stays usable.
+export async function runAcctRevoke(): Promise<void> {
+  const ctx = await setup();
+  await requireFreshAgent(ctx);
+  const m = await market(ctx);
+  const pin = await readPin(ctx);
+  const agentAddr = ctx.agent.address;
+  const measurement = await read<Hex>(ctx, 'agentMeasurement');
+  if (!(await read<boolean>(ctx, 'approvedMeasurement', [measurement]))) throw new Error('the agent was admitted under a measurement that is not approved');
+
+  const off = await ownerSetMeasurement(ctx, measurement, false);
+  const revoked = parseEventLogs({ abi: agentAccountAbi, logs: off.rcpt.logs, eventName: 'AgentRevoked' }).filter(
     (l) => l.address.toLowerCase() === ctx.account.toLowerCase(),
   );
-  if (regs.length !== 1) throw new Error(`registerAgent emitted ${regs.length} AgentRegistered logs`);
-  const [agent, m, expiry] = await Promise.all([
-    read<Address>(ctx, 'agent'),
-    read<Hex>(ctx, 'agentMeasurement'),
-    read<bigint>(ctx, 'agentExpiry'),
+  if (revoked.length !== 1 || (revoked[0].args as { agent: Address }).agent.toLowerCase() !== agentAddr.toLowerCase()) {
+    throw new Error(`unapproving the measurement emitted ${revoked.length} AgentRevoked logs, not one for ${agentAddr}`);
+  }
+  const [agentNow, mNow, approvedNow] = await Promise.all([
+    read<Address>(ctx, 'agent', [], off.rcpt.blockNumber),
+    read<Hex>(ctx, 'agentMeasurement', [], off.rcpt.blockNumber),
+    read<boolean>(ctx, 'approvedMeasurement', [measurement], off.rcpt.blockNumber),
   ]);
-  if (agent.toLowerCase() !== ctx.agent.address.toLowerCase() || m !== measurement) throw new Error(`agent() ${agent} / agentMeasurement ${m} do not match the CVM quote`);
-  console.log(`registerAgent tx ${hash} block ${rcpt.blockNumber}: agent ${agent} measurement ${m} expiry ${expiry}`);
+  if (agentNow !== '0x0000000000000000000000000000000000000000' || mNow !== `0x${'0'.repeat(64)}` || approvedNow) {
+    throw new Error(`after unapproving: agent() ${agentNow}, agentMeasurement ${mNow}, approved ${approvedNow}`);
+  }
+  console.log(`revoke step 1 ok: owner setMeasurement(${measurement}, false) tx ${off.hash} block ${off.rcpt.blockNumber}: AgentRevoked(${agentAddr}), agent() is zero`);
+
+  const amountIn = BigInt(env('TRADE_AMOUNT_IN', '1000000'));
+  if (amountIn > m.approvalAbove) throw new Error(`TRADE_AMOUNT_IN ${amountIn} is above approvalAbove ${m.approvalAbove}: not band 1.`);
+  const { receipt } = await inferenceReceipt(ctx, pin, `An account may buy TSLA with ${amountIn} raw USDG now. Reply BUY or HOLD.`);
+  const t = m.buy(amountIn);
+  const before = await balances(ctx, m.usdg);
+  await expectRevert(
+    ctx.publicClient.simulateContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'execute', args: [t, receipt], account: agentAddr }),
+    'NotAgent',
+  );
+  const txHash = await ctx.agent.write({ functionName: 'execute', args: [t, receipt], gas: 600_000n });
+  const txRcpt = await ctx.publicClient.waitForTransactionReceipt({ hash: txHash });
+  if (txRcpt.status !== 'reverted') throw new Error(`revoked agent's trade tx ${txHash} did not revert`);
+  const after = await balances(ctx, m.usdg, txRcpt.blockNumber);
+  if (after.usdg !== before.usdg || after.tsla !== before.tsla) throw new Error('balances changed across a reverted revoked-agent trade');
+  console.log(`revoke step 2 ok: execute by ${agentAddr} reverts NotAgent by eth_call; tx ${txHash} block ${txRcpt.blockNumber} reverted; balances unchanged`);
+
+  const on = await ownerSetMeasurement(ctx, measurement, true);
+  if ((await read<Address>(ctx, 'agent', [], on.rcpt.blockNumber)) !== '0x0000000000000000000000000000000000000000') throw new Error('re-approving the measurement re-admitted the agent');
+  console.log(`revoke step 3 ok: owner setMeasurement(${measurement}, true) tx ${on.hash} block ${on.rcpt.blockNumber}; agent() is still zero`);
+
+  const reg = await registerFresh(ctx, measurement);
+  console.log(`revoke step 4 ok: registerAgent with a fresh CVM quote tx ${reg.hash} block ${reg.block}`);
 }

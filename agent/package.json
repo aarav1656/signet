@@ -16,6 +16,7 @@
     "acct-trade": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-trade",
     "acct-overcap": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-overcap",
     "acct-approve": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-approve",
+    "acct-revoke": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-revoke",
     "acct-register": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-register",
     "test": "node --env-file-if-exists=.env --test test/*.test.ts"
   },

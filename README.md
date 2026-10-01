@@ -39,7 +39,14 @@ report_data = agent address (20 bytes) || 12 zero bytes || nonce
 
 ## The venue on Robinhood Chain testnet
 
-Chain 46630. Trades route through the canonical Uniswap v4 PoolManager `0x8366a39CC670B4001A1121B8F6A443A643e40951`, whose runtime code hash is the same on testnet and mainnet (`0xbd38...5626`); the deploy script refuses to run if it differs. The stock side is Robinhood's official TSLA Stock Token `0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E`, funded from the official faucet. The quote side is `TestUSDG`, a 6-decimal fixture the deploy script deploys with open minting, because the testnet has no official USDG. `RHCVenue` creates the hookless 0.3% TSLA/testUSDG pool on the PoolManager and funds a full-range position through the PositionManager and Permit2 at a price the script sets (250 testUSDG per TSLA by default).
+Chain 46630. Trades route through the canonical Uniswap v4 PoolManager `0x8366a39CC670B4001A1121B8F6A443A643e40951`, whose runtime code hash is the same on testnet and mainnet (`0xbd38...5626`); the deploy script refuses to run if it differs. The stock side is Robinhood's official TSLA Stock Token `0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E`, funded from the official faucet. The quote side is two assets. `TestUSDG`, a 6-decimal fixture the deploy script deploys with open minting, quotes the first pool. Paxos's testnet USDG `0x7E955252E15c84f5768B83c41a71F9eba181802F` (6 decimals) quotes a second hookless 0.3% TSLA/USDG pool the same account is allowed to trade: the account takes any token the owner gives limits and any pool the owner allows, and `contracts/script/rhc/AddUSDGVenue.s.sol` creates the pool and configures the account. `RHCVenue` creates the hookless 0.3% TSLA/testUSDG pool on the PoolManager and funds a full-range position through the PositionManager and Permit2 at a price the script sets (250 testUSDG per TSLA by default).
+
+## Business model
+
+The payer is the account owner: an agent operator running an attested agent for clients, or a trader running their own. The contracts meter two things the owner pays for.
+
+- **Each trade pays the pool's fee tier.** The owner allows each pool through `setPool`, and the pool key's `fee` is part of what the owner approves (`PoolSet` records it). The pools on this deployment are the 0.3% tier, `fee` 3000 in v4's hundredths of a basis point, which is 30 bps of `amountIn` settled inside the swap.
+- **Each inference call is billed per call through Assay.** The account opens a channel as its own agent, the agent key signs a cumulative voucher per call, and the provider is paid the voucher's increase in USDG by `redeemWithReceipt` only against a receipt that names the pinned model. On Arbitrum Sepolia one call was 0.30 USDG.
 
 ## Verification
 
@@ -95,21 +102,31 @@ The agent runs inside a Phala Cloud dstack CVM (`agent/src/cvm.ts`, packaged by 
 
 | Step | Transaction | Result |
 |---|---|---|
-| Owner approves the CVM measurement `0x9dfd5de3...b364c8` | [`0x6512a61b...f892e0`](https://explorer.testnet.chain.robinhood.com/tx/0x6512a61b07949d06b349e52bfc63e86ae6599e5105322f4276f5ea8da6f892e0) | `approvedMeasurement` true |
+| Owner approves the first boot's measurement `0x9dfd5de3...b364c8` | [`0x6512a61b...f892e0`](https://explorer.testnet.chain.robinhood.com/tx/0x6512a61b07949d06b349e52bfc63e86ae6599e5105322f4276f5ea8da6f892e0) | `approvedMeasurement` true |
 | `registerAgent` with the CVM quote | [`0x1f15df28...a68134`](https://explorer.testnet.chain.robinhood.com/tx/0x1f15df28041e7b8938ca6653eb5a75231f525568ab015644ec535796caa68134) | `agent()` is the CVM key `0x4a0BCAE7...78eA8` |
 | In-cap buy, 1.000000 testUSDG | [`0xe5052266...ddfa2`](https://explorer.testnet.chain.robinhood.com/tx/0xe50522661b55c797071b56e43aaf2bc91d37c9745a295ff6a5976883dd4ddfa2) | `TradeExecuted`, 3984027527308004 TSLA out, served model hash `0xc8536dbf...78df59` recorded |
 | Over-cap, `perTrade + 1` | [`0xb1adb723...12528c`](https://explorer.testnet.chain.robinhood.com/tx/0xb1adb7231fbd38b77489769d7db754b30f36fa9b1ba97bf14f51980f3b12528c) | reverted `ExceedsPerTradeCap(10000001, 10000000)` |
 | Above the threshold, `propose` | [`0x4eb49253...895253`](https://explorer.testnet.chain.robinhood.com/tx/0x4eb4925389368436722b89721dd5db7e28b128923118dfa797e9a7cf42895253) | proposal 1 |
 | Owner `approveTrade(1)` | [`0x7f2a63f4...c4d81ead`](https://explorer.testnet.chain.robinhood.com/tx/0x7f2a63f44c439d6099133bad32da8f346414f66f2f8541a3fedca496c4d81ead) | `TradeExecuted`, proposalId 1, 7944291302953708 TSLA out |
 
-Full record with measurement, compose hash, receipts and read-backs: `docs/e2e/robinhood-testnet-agent-account.md` and `contracts/deployments/46630.json`.
+**Revoke by measurement.** A CVM boot has its own key and measurement; the current boot is agent `0xdd241EC7...A5c7` under `0xeb2d9462...6829`. The owner withdraws approval of that measurement (`npm run acct-revoke`), and in the same transaction the account de-admits the agent:
+
+| Step | Transaction | Result |
+|---|---|---|
+| Owner `setMeasurement(0xeb2d...6829, false)` | [`0x0b34701e...8382`](https://explorer.testnet.chain.robinhood.com/tx/0x0b34701eaee5f698b39988a13810e835abee437363093ebc8949ae89bc258382) | `AgentRevoked`, `agent()` is zero |
+| The revoked agent's in-cap `execute` | [`0xc0b2e5bc...1e08`](https://explorer.testnet.chain.robinhood.com/tx/0xc0b2e5bc95048ad424a246277a819dfad0238b394ba4bf08cf9dc0231c7e1e08) | reverted, `NotAgent()` by `eth_call`, balances unchanged |
+| Owner re-approves, then `registerAgent` with a fresh quote | [`0xc5e5bb9b...7822`](https://explorer.testnet.chain.robinhood.com/tx/0xc5e5bb9bc3e4ca17ace0b52c4352d5ae7cfed1a9a7a8a43b5f7d229fd6447822), [`0x4694b617...9a66`](https://explorer.testnet.chain.robinhood.com/tx/0x4694b617f4bafbd0e3a3f2a09dbe11b5afd0f96fc4023393aaf516ce68f69a66) | re-approval alone leaves `agent()` zero; the fresh quote admits the key again |
+
+**Real USDG.** The same account trades Paxos's testnet USDG against TSLA. The attested agent bought TSLA with 1 USDG in the second pool: [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03), `TradeExecuted` tradeId 3, 3910026278631909 TSLA out, account USDG 5.000000 to 4.000000. About 55 USDG is in play: the pool position and the account's deposit.
+
+Full record with measurements, compose hash, receipts and read-backs: `docs/e2e/robinhood-testnet-agent-account.md` and `contracts/deployments/46630.json`.
 
 
 ## Deploy and live cycle
 
 `contracts/script/rhc/deploy-stylus.sh` deploys the unchanged `verifier/` and `receipt-verifier/` crates to RHC testnet and reads each back: code exists, and `Verifier.verify` on a stored Phala quote under a nonce it does not carry reverts. `contracts/script/rhc/DeployAgentAccountRHC.s.sol` then deploys testUSDG, Assay, the pool and its liquidity, the factory and one account, configures the owner's limits, pool and model pin, funds the account, opens the inference channel, and reverts the script on any mismatch when it reads back the wiring, pool state, policy, limits and balances. It writes `contracts/deployments/46630.json`.
 
-The agent client runs four live-cycle modes against the deployed account (`acct-register` is the owner side of admission: it fetches the CVM quote, reads the measurement the Verifier returns, approves it and submits `registerAgent`) (keys are read by variable name and never printed):
+The agent client runs five live-cycle modes against the deployed account (`acct-register` is the owner side of admission: it fetches the CVM quote, reads the measurement the Verifier returns, approves it and submits `registerAgent`) (keys are read by variable name and never printed):
 
 ```
 cd agent
@@ -117,9 +134,10 @@ ACCOUNT_ADDRESS=0x... npm run acct-register  # CVM quote, Verifier eth_call, app
 ACCOUNT_ADDRESS=0x... npm run acct-trade     # in-policy buy with a real Phala receipt
 ACCOUNT_ADDRESS=0x... npm run acct-overcap   # amountIn = perTrade + 1
 ACCOUNT_ADDRESS=0x... npm run acct-approve   # band-2 trade: NeedsApproval, propose, approveTrade
+ACCOUNT_ADDRESS=0x... npm run acct-revoke    # owner unapproves the measurement, the agent's trade reverts NotAgent, owner re-admits
 ```
 
-Each mode asserts a post-condition only completion can produce. `acct-trade` decodes the `TradeExecuted` log and checks the account's token balance deltas against `amountOut` and the spent amount, and that the logged `servedModelHash` equals the pinned hash. `acct-overcap` confirms `ExceedsPerTradeCap` by `eth_call`, sends one real reverted transaction, and checks that balances did not move. `acct-approve` confirms `NeedsApproval`, the proposal event, the owner's approval emitting `TradeExecuted` with the proposal id and a balance delta, and a second `approveTrade` reverting `ProposalNotPending`.
+Each mode asserts a post-condition only completion can produce. `acct-trade` decodes the `TradeExecuted` log and checks the account's token balance deltas against `amountOut` and the spent amount, and that the logged `servedModelHash` equals the pinned hash. `acct-overcap` confirms `ExceedsPerTradeCap` by `eth_call`, sends one real reverted transaction, and checks that balances did not move. `acct-approve` confirms `NeedsApproval`, the proposal event, the owner's approval emitting `TradeExecuted` with the proposal id and a balance delta, and a second `approveTrade` reverting `ProposalNotPending`. `acct-revoke` confirms one `AgentRevoked` and a zero `agent()` at the unapproval's block, `NotAgent` by `eth_call` and a reverted transaction with balances unchanged, and that re-approval alone leaves `agent()` zero before a fresh quote admits the key again. `QUOTE_TOKEN=<token>` points `acct-trade` and `acct-revoke` at another allowed quote asset such as Paxos USDG.
 
 ## Inference billing: Assay, live on Arbitrum Sepolia
 

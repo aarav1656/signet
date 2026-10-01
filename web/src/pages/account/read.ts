@@ -5,8 +5,11 @@ import { GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK, TEST_USDG, TSLA } from '../../li
 export const ZERO_ADDR = '0x0000000000000000000000000000000000000000' as Address;
 export const ZERO_HASH = `0x${'0'.repeat(64)}` as Hex;
 
-/** The two tokens the account's pool pairs (testUSDG and the TSLA Stock Token). */
-export const TOKENS = [TEST_USDG, TSLA] as const;
+/** Paxos's testnet USDG on Robinhood Chain, the quote asset of the account's second pool. */
+export const PAXOS_USDG = '0x7E955252E15c84f5768B83c41a71F9eba181802F' as Address;
+
+/** The tokens the account's pools pair: testUSDG, Paxos USDG and the TSLA Stock Token. */
+export const TOKENS = [TEST_USDG, PAXOS_USDG, TSLA] as const;
 
 export type Limits = { allowed: boolean; perTrade: bigint; daily: bigint; approvalAbove: bigint };
 export type TokenRow = { address: Address; symbol: string; decimals: number; balance: bigint; limits: Limits; used: bigint };
