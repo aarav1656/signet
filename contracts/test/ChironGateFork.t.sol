@@ -18,8 +18,11 @@ import {TestUSDG} from "../src/TestUSDG.sol";
 /// paying test serves the fixture receipt's real verification result under the live key: the
 /// registry check is live, the "Phala's key signed this receipt" link is not.
 ///
-/// The live key's registration lasts attestationValidity (1 day). Once it expires,
-/// test_liveRegistry_holdsPhalaKey fails by design until the key is re-registered.
+/// The live key's registration lasts attestationValidity (1 day), and the public RPC keeps no
+/// historical state, so a pinned fork block cannot be replayed. setUp reads the registration's own
+/// expiry from the chain and, once the registration has lapsed, sets the fork's clock to the last
+/// second it was valid. Every claim test then runs against the registration as the registry records
+/// it, on any day. A registration that was never made, or one for another measurement, still fails.
 contract ChironGateForkTest is Test {
     address constant ASSAY = 0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC;
     address constant LIVE_VERIFIER = 0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380;
@@ -55,6 +58,8 @@ contract ChironGateForkTest is Test {
         vm.prank(payer);
         usdg.approve(address(collector), type(uint256).max);
         fixtureKey = vm.parseJsonBytes32(vm.readFile(FIXTURE), ".pubkey");
+        (, uint64 expiry) = IReceiptKeyRegistry(ASSAY).receiptSigners(PHALA_KEY);
+        if (expiry != 0 && expiry <= block.timestamp) vm.warp(uint256(expiry) - 1);
     }
 
     function _vector(string memory name) internal view returns (bytes memory receipt, bytes memory sig) {
@@ -109,7 +114,7 @@ contract ChironGateForkTest is Test {
     function test_liveRegistry_holdsPhalaKey() public view {
         (bytes32 m, uint64 expiry) = IReceiptKeyRegistry(ASSAY).receiptSigners(PHALA_KEY);
         assertEq(m, PHALA_MEASUREMENT);
-        assertGt(expiry, block.timestamp, "live Phala receipt key registration has expired");
+        assertGt(expiry, block.timestamp, "Phala receipt key registration is not live at the fork clock");
         assertEq(address(gate.receiptVerifier()), LIVE_VERIFIER);
     }
 
