@@ -1,0 +1,9 @@
+{
+  "source": "web/scripts/refusals.sh",
+  "kind": "eth_call, nothing broadcast",
+  "block": 127037215,
+  "refBlock": 127037214,
+  "attestNonce": "0xddd1cbd9cf1e295c63f5626763ed6270d45e3eb638f22df2daf11aefb7e85c73",
+  "quoteBytes": 5006,
+  "registerAgentRevertData": "0x98085a9ffd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149"
+}

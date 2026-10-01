@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { usePublicClient } from 'wagmi';
 import type { PublicClient } from 'viem';
+import { assayChain } from '../chain';
 
 export type AtBlock<T> = { value: T; block: bigint; timestamp: bigint };
 
@@ -12,10 +13,11 @@ export function useAtBlock<T>(
   key: readonly unknown[],
   fn: (client: PublicClient, block: bigint) => Promise<T>,
   enabled = true,
+  chainId: number = assayChain.id,
 ) {
-  const client = usePublicClient();
+  const client = usePublicClient({ chainId });
   return useQuery({
-    queryKey: ['atBlock', ...key],
+    queryKey: ['atBlock', chainId, ...key],
     enabled: enabled && !!client,
     refetchInterval: 15_000,
     retry: 1,

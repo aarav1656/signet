@@ -28,3 +28,9 @@ export function fmtCountdown(deltaSec: number): string {
   const body = d > 0 ? `${d}d ${pad(h)}h ${pad(m)}m` : `${pad(h)}h ${pad(m)}m ${pad(s)}s`;
   return neg ? `expired ${body} ago` : body;
 }
+
+/** Any token amount in its own decimals: "104.00", "1.0001", "0.01". */
+export function fmtToken(v: bigint, decimals: number): string {
+  const [whole, frac = ''] = formatUnits(v, decimals).split('.');
+  return `${BigInt(whole).toLocaleString('en-US')}.${frac.slice(0, 6).replace(/0+$/, '').padEnd(2, '0')}`;
+}

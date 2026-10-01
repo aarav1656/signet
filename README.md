@@ -2,6 +2,8 @@
 
 Hosted app: [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) . Repo: [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron).
 
+The hosted app opens on the agent account: the deployed `AgentAccount` read live from Robinhood Chain testnet as an inspection sheet (owner, balances, caps, daily window, approval threshold, registered agent and its attested measurement, approved measurements, last trades with their model hashes), the two refusals the account issues, and the owner's actions from a connected wallet (create an account, deposit, withdraw, set caps, approve a measurement, approve or reject a pending trade). The Assay receipts pages sit at `/refusal`, `/channel` and `/verify`.
+
 Named for the one trustworthy centaur: the attested agent among substitutes.
 
 Chiron is attested trading accounts for AI agents on Robinhood Chain. An `AgentAccount` holds USDG and Stock Tokens and swaps only through the canonical Uniswap v4 PoolManager. It accepts a trade from exactly one caller: an agent key that Intel TDX attestation put there, checked onchain by a Stylus contract against a workload measurement the owner approved. Every trade stays inside per-token caps the owner set, trades above the owner's approval threshold wait for the owner, and each trade's event records the agent's workload measurement and the verified inference receipt that preceded it. The agent's inference is billed from the same account through Assay, a pay-per-call USDG channel.

@@ -2,11 +2,11 @@ import { useState, type ReactNode } from 'react';
 import { explorer } from '../chain';
 
 /** "block 313,814,703", linked to the explorer. Every on-chain figure on screen sits next to one. */
-export function Stamp({ block, label = 'read at block' }: { block: bigint; label?: string }) {
+export function Stamp({ block, label = 'read at block', url = explorer.block }: { block: bigint; label?: string; url?: (n: bigint) => string }) {
   return (
     <span className="stamp">
       {label}{' '}
-      <a href={explorer.block(block)} target="_blank" rel="noreferrer">
+      <a href={url(block)} target="_blank" rel="noreferrer">
         {block.toLocaleString('en-US')}
       </a>
     </span>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { decodeFunctionResult, encodeFunctionData, isAddress, isAddressEqual, type Hex } from 'viem';
 import { usePublicClient } from 'wagmi';
-import { ASSAY, explorer } from '../chain';
+import { ASSAY, assayChain, explorer } from '../chain';
 import { assayAbi } from '../abi/Assay.generated';
 import {
   APPROVED_MEASUREMENTS,
@@ -127,7 +127,7 @@ function plainStatusLine(r: DryRun): string {
 }
 
 export function Verify() {
-  const client = usePublicClient();
+  const client = usePublicClient({ chainId: assayChain.id });
   const chain = useOnChain();
   useEffect(() => {
     document.title = 'Chiron: verify a TDX attestation and register';

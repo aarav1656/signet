@@ -563,7 +563,7 @@ async function latestTx(c: PublicClient, kind: 'Registered' | 'ReceiptKeyRegiste
 }
 
 export function KeysSection({ title = 'Registered gateway keys', drawn = false }: { title?: string; drawn?: boolean }) {
-  const client = usePublicClient();
+  const client = usePublicClient({ chainId: assayChain.id });
   const q = useAtBlock(['overview-keys', ASSAY], async (c, block) => {
     const [signer, receipt] = await Promise.all([
       c.readContract({ address: ASSAY, abi: assayAbi, functionName: 'signers', args: [SEED_SIGNER], blockNumber: block }) as Promise<readonly [Hex, bigint]>,

@@ -122,7 +122,7 @@ function enclaveText(req: Hex, resp: Hex): string {
 
 export function Channel() {
   const chain = useOnChain();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: assayChain.id });
   const { signTypedDataAsync } = useSignTypedData();
   const [params, setParams] = useSearchParams();
   const [channelId, setChannelIdState] = useState(() => (/^\d+$/.test(params.get('id') ?? '') ? (params.get('id') as string) : '0'));
@@ -706,7 +706,7 @@ function VoucherPanel({ agent, channelIdDefault }: { agent?: string; channelIdDe
 
 function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; agent?: string }) {
   const chain = useOnChain();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: assayChain.id });
   const { writeContractAsync, isPending } = useWriteContract();
   const [cid, setCid] = useState(channelIdDefault);
   const [cumulative, setCumulative] = useState('');
