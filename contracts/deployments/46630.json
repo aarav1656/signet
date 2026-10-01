@@ -1,0 +1,192 @@
+{
+  "block": 127033401,
+  "chainId": 46630,
+  "contracts": {
+    "AgentAccount": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+    "AgentAccountFactory": "0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e",
+    "Assay": "0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D",
+    "PoolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+    "PositionManager": "0x58daec3116aae6D93017bAAea7749052E8a04fA7",
+    "ReceiptVerifier": "0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380",
+    "TSLA": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
+    "TestUSDG": "0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC",
+    "Verifier": "0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c"
+  },
+  "deployer": "0x2aD12a72362704367e99a344cFf5affDDF7f5DEF",
+  "inferenceChannelId": 0,
+  "pool": {
+    "liquidity": 63239228648046,
+    "poolId": "0xd7ddef1d327b14b2156f6b2af0e5a4ec55d116053a9a8964f7557dff50bc3b69",
+    "sqrtPriceX96": "5010828967500958623728276031392126"
+  },
+  "transactions": "see deployScriptTransactions and liveCycle",
+  "stylus": {
+    "Verifier": {
+      "address": "0x3c19C10E5C9a82D01ED79E5c6026D73b9b2CAF8c",
+      "deployTx": "0xf500c6a6c5b17dde0d2e96d95f7f4d4873af7a78e71e5413396c1ae73c0d22d8",
+      "activationTx": "0x51206397c65caa23ceabd5397e7ef3c6cb1ce2b69a25713f6af914b8d7cac117"
+    },
+    "ReceiptVerifier": {
+      "address": "0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380",
+      "deployTx": "0xb936516b05299ec4bba8f9bbbd38e996b109107289647bf6fd8fd53ff9955b02",
+      "activationTx": "0x062445c238af15976d9ff73201026e5b94b6666fabc13ab3c1f1238001da2d78"
+    }
+  },
+  "deployScriptTransactions": [
+    {
+      "name": "TestUSDG",
+      "hash": "0x5c0324286ef538a446d3614fc178335b5336c2d8e8131121e9033cf2bd88723a",
+      "block": 127033507
+    },
+    {
+      "name": "Assay",
+      "hash": "0x51dd28f6bbd65536c9727ff1ca61000f079bf869dab0acafc6b96df9a7491305",
+      "block": 127033521
+    },
+    {
+      "name": "TestUSDG",
+      "hash": "0x78e933369f91982d11c8ba425c05f4bf05e81d251d29d1fffcabc4d085ceb649",
+      "block": 127033542
+    },
+    {
+      "name": "initialize((address,address,uint24,int24,address),uint160)",
+      "hash": "0xc8b909053f3068ac0d8e3e04f1a06ff211ca20d19a5959bad338b6bc63704b3e",
+      "block": 127033559
+    },
+    {
+      "name": "TestUSDG",
+      "hash": "0x7edd97d9c897a2b6be1231625402aceef1456ee115b422b9686052fc03beda00",
+      "block": 127033567
+    },
+    {
+      "name": "approve(address,uint256)",
+      "hash": "0x6a373fc114096b98d643b939d6718418fa2c1e854eafb9434f7cc919c6b3268d",
+      "block": 127033576
+    },
+    {
+      "name": "approve(address,address,uint160,uint48)",
+      "hash": "0xb2de8c05e4e40cfe3f9029e7e006fa9e7f4867f9cf45086241b2ddd3f11553c5",
+      "block": 127033592
+    },
+    {
+      "name": "approve(address,address,uint160,uint48)",
+      "hash": "0x18222205687fb8f8f71ca70c2402738c0eab7a187d7ca793983056b92ba0f12d",
+      "block": 127033607
+    },
+    {
+      "name": "modifyLiquidities(bytes,uint256)",
+      "hash": "0x67c1f6523eb688906f26a29c88ea9f290aafa6fab45db341ec967af0af407cfb",
+      "block": 127033620
+    },
+    {
+      "name": "AgentAccountFactory",
+      "hash": "0x4ca40562e73838829c0a28c37632e8b23e4950b8bfda116e8b98c1b9409a7bd5",
+      "block": 127033639
+    },
+    {
+      "name": "AgentAccountFactory",
+      "hash": "0x96bcaaf4b924cbb5276a25fde8b32f53e98b69c99401f6ef1ae98490f6e33cf7",
+      "block": 127033660
+    },
+    {
+      "name": "AgentAccount",
+      "hash": "0x11d4544d7a6a13a79a0e65542d6a1a7c6a844ea438a2efe1e42b96887000ce34",
+      "block": 127033671
+    },
+    {
+      "name": "AgentAccount",
+      "hash": "0x1638fbc62bdc581b7f842ba8e7e53b88a04feb888f492b5a40ac40e0097930c1",
+      "block": 127033690
+    },
+    {
+      "name": "AgentAccount",
+      "hash": "0xd2507669e5eedeec6e2812d10a3a8f5670a3031e22a8d125c61bcbf9ac727c32",
+      "block": 127033715
+    },
+    {
+      "name": "AgentAccount",
+      "hash": "0x4c8c5cc4d73e86f8596235bc8809d4eb7cb79d8319e920da680728122aef7c27",
+      "block": 127033728
+    },
+    {
+      "name": "TestUSDG",
+      "hash": "0x2c57967155d3b617c3ad30f67256e5975d324020a6db20d42742c320edd5a8b5",
+      "block": 127033741
+    },
+    {
+      "name": "transfer(address,uint256)",
+      "hash": "0xc79d421ca59e5fdf060b29b56420038eecd8e45d994d417ba3e490fafd54c5f1",
+      "block": 127033759
+    },
+    {
+      "name": "AgentAccount",
+      "hash": "0x49401a8a560deedc1fb0c9f1945102af3c493b5847d9c24d543ccf2d636f84f7",
+      "block": 127033779
+    }
+  ],
+  "liveCycle": [
+    {
+      "step": "owner deposit",
+      "hash": "0x34f3650dff287c1c5fea93364be2fac150069a91a11a45724ed4c6fbe31558e5",
+      "block": 127034842
+    },
+    {
+      "step": "owner deposit",
+      "hash": "0xb5c82cf607b95d465301a02e899613af4f9731a7bf17a8e6adf5c8ced437ec11",
+      "block": 127035033
+    },
+    {
+      "step": "owner caps",
+      "hash": "0x02e1d9f29980035b7519a6a8388e702510443f239fe81ab361056e90035221aa",
+      "block": 127035097
+    },
+    {
+      "step": "owner caps",
+      "hash": "0xf37394f3a1cf3332dfa58377e39111c1508f9bcb7f7bc8c933c0b2b1d6175a90",
+      "block": 127035221
+    },
+    {
+      "step": "owner approval ttl",
+      "hash": "0xecea35b9914a797c3a906e09d14d411cdbd21e832c1b96db422fa50932f34e4c",
+      "block": 127035453
+    },
+    {
+      "step": "owner approval ttl",
+      "hash": "0x6e39dbc8bde12738d4cbf11e38ed0247a590b9930c2283244b49008bdbdb4ccd",
+      "block": 127035504
+    },
+    {
+      "step": "owner withdraw",
+      "hash": "0xb825cbf6683bf01d4f80ed84743556100e866a8b8afe16b3154f561b606369ef",
+      "block": 127035569
+    },
+    {
+      "step": "mint testUSDG to owner",
+      "hash": "0x98ab173effb668ad0f59be3621b6424c62abaa9b13f596c9f95d4c062d000ef9",
+      "block": 127034725
+    },
+    {
+      "step": "Assay.register (gateway signer, fresh Phala TDX quote)",
+      "hash": "0x58c5a715f26b95c2dd9fff6a845f48cd3761e7f942a6131bbcd54ece65f11c05",
+      "block": 127035679
+    },
+    {
+      "step": "Assay.registerReceiptKey (Ed25519 receipt key)",
+      "hash": "0x31821e0bcf0d9f2083516dfd854adb9366636201d51bc0d34e5ee1566076432d",
+      "block": 127035712
+    }
+  ],
+  "explorer": "https://explorer.testnet.chain.robinhood.com",
+  "verification": {
+    "verifier": "blockscout",
+    "contracts": [
+      "TestUSDG",
+      "Assay",
+      "AgentAccountFactory",
+      "AgentAccount"
+    ]
+  },
+  "gatewayMeasurement": "0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149",
+  "modelId": "phala/qwen3.8-27b-uncensored",
+  "provider": "0x93e82363e3481039d2F8Ee3e4b4263B6D141EE5A"
+}

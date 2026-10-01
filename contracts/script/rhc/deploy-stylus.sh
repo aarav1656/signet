@@ -19,9 +19,9 @@ export FOUNDRY_DISABLE_NIGHTLY_WARNING=1
 deploy() {
   local crate="$1" log="$OUT/46630-$1.log"
   (cd "$ROOT/$crate" && cargo stylus check --endpoint "$RPC" && \
-    cargo stylus deploy --endpoint "$RPC" --private-key-path "$PRIVATE_KEY_PATH" --no-verify) 2>&1 | tee "$log"
+    cargo stylus deploy --endpoint "$RPC" --private-key-path "$PRIVATE_KEY_PATH" --no-verify) 2>&1 | tee "$log" >&2
   local addr
-  addr="$(grep -Eio 'deployed code at address:? *0x[0-9a-f]{40}' "$log" | grep -Eio '0x[0-9a-f]{40}' | tail -1)"
+  addr="$(sed $'s/\x1b\\[[0-9;]*m//g' "$log" | grep -Eio 'deployed code at address:? *0x[0-9a-f]{40}' | grep -Eio '0x[0-9a-f]{40}' | tail -1)"
   [ -n "$addr" ] || { echo "no deployed address in $log"; exit 1; }
   local size
   size="$(cast codesize "$addr" --rpc-url "$RPC")"
@@ -30,8 +30,8 @@ deploy() {
   printf '%s' "$addr"
 }
 
-VERIFIER="$(deploy verifier)"
-RECEIPT_VERIFIER="$(deploy receipt-verifier)"
+VERIFIER="${VERIFIER:-$(deploy verifier)}"
+RECEIPT_VERIFIER="${RECEIPT_VERIFIER:-$(deploy receipt-verifier)}"
 
 QUOTE="0x$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['intel_quote'])" "$ROOT/fixtures/legacy_report1.json")"
 if cast call "$VERIFIER" "verify(bytes,bytes32)(address,bytes32)" "$QUOTE" 0x$(printf '%064d' 0) --rpc-url "$RPC" >/dev/null 2>&1; then

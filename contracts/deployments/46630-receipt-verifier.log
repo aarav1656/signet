@@ -1,0 +1,274 @@
+2026-10-01T07:34:55.502Z INFO  [stylus_tools::core::build] Building project with Cargo.toml version: 0.1.0
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.26
+   Compiling quote v1.0.47
+   Compiling version_check v0.9.5
+   Compiling typenum v1.20.1
+   Compiling libc v0.2.189
+   Compiling paste v1.0.15
+   Compiling unicode-segmentation v1.13.3
+   Compiling generic-array v0.14.9
+   Compiling cfg-if v1.0.5
+   Compiling convert_case v0.10.0
+   Compiling heck v0.5.0
+   Compiling unicode-xid v0.2.6
+   Compiling const-hex v1.19.3
+   Compiling semver v1.0.28
+   Compiling hybrid-array v0.4.15
+   Compiling serde_core v1.0.229
+   Compiling ruint-macro v1.2.1
+   Compiling rustc_version v0.4.1
+   Compiling equivalent v1.0.2
+   Compiling dunce v1.0.5
+   Compiling hashbrown v0.17.1
+   Compiling memchr v2.8.3
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+   Compiling indexmap v2.14.2
+   Compiling itoa v1.0.18
+   Compiling syn v2.0.119
+   Compiling digest v0.11.3
+   Compiling proc-macro-error-attr3 v3.0.1
+   Compiling syn v3.0.6
+   Compiling zmij v1.0.23
+   Compiling cpufeatures v0.3.1
+   Compiling keccak v0.2.2
+   Compiling syn v1.0.109
+   Compiling sha3 v0.11.0
+   Compiling aho-corasick v1.1.5
+   Compiling ruint v1.16.0
+   Compiling proc-macro-error-attr v1.0.4
+   Compiling regex-syntax v0.8.11
+   Compiling foldhash v0.2.0
+   Compiling serde_json v1.0.151
+   Compiling serde v1.0.229
+   Compiling bytes v1.12.1
+   Compiling winnow v1.0.4
+   Compiling utf8parse v0.2.2
+   Compiling target-tuple v1.0.2
+   Compiling anstyle-parse v1.0.0
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling serde_spanned v1.1.1
+   Compiling crypto-common v0.1.6
+   Compiling block-buffer v0.10.4
+   Compiling regex-automata v0.4.18
+   Compiling cpufeatures v0.2.17
+   Compiling branches v0.4.6
+   Compiling proc-macro-error v1.0.4
+   Compiling anstyle v1.0.14
+   Compiling colorchoice v1.0.5
+   Compiling anstyle-query v1.1.5
+   Compiling is_terminal_polyfill v1.70.2
+   Compiling macro-string v0.2.0
+   Compiling syn-solidity v1.7.3
+   Compiling proc-macro-error3 v3.0.1
+   Compiling toml_writer v1.1.2+spec-1.1.0
+   Compiling anstream v1.0.0
+   Compiling toml v1.1.6+spec-1.1.0
+   Compiling derive_more-impl v2.1.1
+   Compiling serde_derive v1.0.229
+   Compiling regex v1.13.1
+   Compiling keccak v0.1.6
+   Compiling digest v0.10.7
+   Compiling curve25519-dalek v4.1.3
+   Compiling alloy-sol-macro-input v1.7.3
+   Compiling alloy-sol-macro-expander v1.7.3
+   Compiling glob v0.3.4
+   Compiling clap_lex v1.1.1
+   Compiling termcolor v1.4.1
+   Compiling lazy_static v1.5.0
+   Compiling dyn-clone v1.0.20
+   Compiling strsim v0.11.1
+   Compiling clap_builder v4.6.7
+   Compiling sha3 v0.10.9
+   Compiling clap_derive v4.6.7
+   Compiling trybuild v1.0.121
+   Compiling convert_case v0.6.0
+   Compiling derive_more v2.1.1
+   Compiling alloy-primitives v1.7.3
+   Compiling alloy-sol-macro v1.7.3
+   Compiling alloy-sol-types v1.7.3
+   Compiling signature v2.2.0
+   Compiling subtle v2.6.1
+   Compiling clap v4.6.7
+   Compiling ed25519 v2.2.3
+   Compiling rclite v0.4.1
+   Compiling sha2 v0.10.9
+   Compiling derivative v2.2.0
+   Compiling mini-alloc v1.0.0
+   Compiling hex v0.4.3
+   Compiling keccak-const v0.2.0
+   Compiling ed25519-dalek v2.2.0
+   Compiling stylus-core v0.10.9
+   Compiling stylus-proc v0.10.9
+   Compiling stylus-sdk v0.10.9
+   Compiling receipt-verify v0.1.0 (/Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier)
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:189:5
+    |
+189 |     #[entrypoint]
+    |     ^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `entrypoint` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `entrypoint` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+    = note: this warning originates in the attribute macro `entrypoint` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:188:1
+    |
+188 | / sol_storage! {
+189 | |     #[entrypoint]
+190 | |     pub struct ReceiptVerifier {}
+191 | | }
+    | |_^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `stylus_sdk::stylus_proc::storage` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `stylus_sdk::stylus_proc::storage` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the attribute macro `stylus_sdk::stylus_proc::storage` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:193:1
+    |
+193 | #[public]
+    | ^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `public` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `public` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the attribute macro `public` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: `receipt-verify` (lib) generated 3 warnings
+    Finished `release` profile [optimized] target(s) in 34.41s
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/Cargo.lock
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/Cargo.toml
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/rust-toolchain.toml
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/src/json.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/src/lib.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/src/main.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/tests/export_fixture.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/tests/vectors.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/tests/weak_key.rs
+project metadata hash computed on deployment: "5d7b8543247354b4a0c34c9fff0892fcc0a3c6d352bc1ebf55ddb5b50826cb33"
+2026-10-01T07:35:30.831Z INFO  [stylus_tools::core::check] contract size: 19.7 KB (19701 bytes)
+2026-10-01T07:35:31.527Z INFO  [stylus_tools::core::activation] wasm data fee: 0.000123 ETH (originally 0.000103 ETH with 20% bump)
+2026-10-01T07:35:32.011Z INFO  [stylus_tools::core::build] Building project with Cargo.toml version: 0.1.0
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:189:5
+    |
+189 |     #[entrypoint]
+    |     ^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `entrypoint` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `entrypoint` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+    = note: this warning originates in the attribute macro `entrypoint` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:188:1
+    |
+188 | / sol_storage! {
+189 | |     #[entrypoint]
+190 | |     pub struct ReceiptVerifier {}
+191 | | }
+    | |_^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `stylus_sdk::stylus_proc::storage` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `stylus_sdk::stylus_proc::storage` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the attribute macro `stylus_sdk::stylus_proc::storage` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:193:1
+    |
+193 | #[public]
+    | ^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `public` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `public` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the attribute macro `public` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: `receipt-verify` (lib) generated 3 warnings
+    Finished `release` profile [optimized] target(s) in 0.49s
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/Cargo.lock
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/Cargo.toml
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/rust-toolchain.toml
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/src/json.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/src/lib.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/src/main.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/tests/export_fixture.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/tests/vectors.rs
+File used for deployment hash: /Users/kamal/Desktop/arbitrium/chiron-wt-agent/receipt-verifier/tests/weak_key.rs
+project metadata hash computed on deployment: "5d7b8543247354b4a0c34c9fff0892fcc0a3c6d352bc1ebf55ddb5b50826cb33"
+2026-10-01T07:35:33.193Z INFO  [stylus_tools::core::check] contract size: 19.7 KB (19701 bytes)
+2026-10-01T07:35:33.832Z INFO  [stylus_tools::core::activation] wasm data fee: 0.000123 ETH (originally 0.000103 ETH with 20% bump)
+checking whether the contract has a constructor...
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:189:5
+    |
+189 |     #[entrypoint]
+    |     ^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `entrypoint` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `entrypoint` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+    = note: this warning originates in the attribute macro `entrypoint` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:188:1
+    |
+188 | / sol_storage! {
+189 | |     #[entrypoint]
+190 | |     pub struct ReceiptVerifier {}
+191 | | }
+    | |_^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `stylus_sdk::stylus_proc::storage` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `stylus_sdk::stylus_proc::storage` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the attribute macro `stylus_sdk::stylus_proc::storage` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `contract-client-gen`
+   --> src/lib.rs:193:1
+    |
+193 | #[public]
+    | ^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `debug`, `default`, `export-abi`, and `mini-alloc`
+    = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `public` crate for guidance on how handle this unexpected cfg
+    = help: the attribute macro `public` may come from an old version of the `stylus_proc` crate, try updating your dependency with `cargo update -p stylus_proc`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the attribute macro `public` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+2026-10-01T07:36:13.263Z INFO  [stylus_tools::core::deployment] deployed code at address: 0x9af7d9c3b27c4a8a11fb879041b931c38b712380
+2026-10-01T07:36:13.263Z INFO  [stylus_tools::core::deployment] deployment tx hash: 0xb936516b05299ec4bba8f9bbbd38e996b109107289647bf6fd8fd53ff9955b02
+2026-10-01T07:36:14.042Z INFO  [stylus_tools::core::activation] wasm data fee: 0.000123 ETH (originally 0.000103 ETH with 20% bump)
+2026-10-01T07:36:15.795Z INFO  [stylus_tools::core::activation] successfully activated contract 0x9af7d9c3b27c4a8a11fb879041b931c38b712380 with tx "062445c238af15976d9ff73201026e5b94b6666fabc13ab3c1f1238001da2d78"
+NOTE:
+        We recommend running cargo stylus cache bid 9af7d9c3b27c4a8a11fb879041b931c38b712380 0 to cache your activated contract in ArbOS.
+        Cached contracts benefit from cheaper calls.
+        To read more about the Stylus contract cache, see:
+        https://docs.arbitrum.io/stylus/how-tos/caching-contracts
