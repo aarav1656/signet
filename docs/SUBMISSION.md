@@ -2,57 +2,68 @@
 
 ## Tagline
 
-Pay per AI call only when a sealed gateway signs a receipt naming your model
+An onchain trading account for AI agents that trades only for a key attestation put there
 
 ## Description
 
-Chiron is a USDG payment channel on Arbitrum for AI agents that buy inference per call. Every payment is checked against the inference gateway's own evidence. First, a Stylus contract verifies the gateway's Intel TDX attestation quote and registers its signing keys. Then, for each call, a second Stylus contract verifies the gateway's Ed25519-signed receipt, and the channel pays only if the receipt says the model the agent pinned is the model that served the call. A gateway that routes a request to a cheaper model produces a receipt that can never pay that channel. The contracts are live on Arbitrum Sepolia against real Paxos USDG, with Phala's production gateway keys registered onchain from fresh attestation quotes.
+Chiron is attested trading accounts for AI agents on Robinhood Chain. An `AgentAccount` holds USDG and Stock Tokens and trades only through the canonical Uniswap v4 PoolManager. Its one trading caller is an agent key admitted by Intel TDX attestation: a Stylus contract parses the quote's certificate chain to Intel's root onchain, and the account accepts the key only when the quote's workload measurement is one the owner approved. Trades stay inside per-token caps the owner set. A trade above the owner's approval threshold becomes a proposal that only the owner can execute, as exactly the trade proposed. Every trade's event carries the agent's workload measurement and the verified inference receipt for the model that informed it, and the agent's inference is billed from the same account through Assay, a pay-per-call USDG channel.
 
 ## Problem
 
-An agent paying per call for an open-weight model cannot see which model answered. A gateway can route the request to a cheaper model, a smaller quantization, or an unattested server, and bill for the model that was asked for. Cai, Shi, Zhao and Song, "Are You Getting What You Pay For? Auditing Model Substitution in LLM APIs" ([arXiv 2504.04715](https://arxiv.org/abs/2504.04715)), find that detecting this from outputs alone is unreliable and propose trusted execution environments as the fix.
+Robinhood announced Robinhood Agents at HOOD Summit on 2026-09-29: a dedicated agentic account, trade approvals that default to on, limits the user sets, and Loops "coming soon", for eligible U.S. customers ([newsroom](https://robinhood.com/us/en/newsroom/hood-summit-2026/)). The same page states that "Robinhood does not control, supervise, monitor, recommend, or audit agents." The user chooses the model and trusts the agent software to be what it says.
 
-Phala's confidential gateway (also sold as RedPill) does that at the gateway. It refuses to forward a prompt to an upstream it cannot verify, and it signs a receipt for every response whose `upstream.verified` event names the model that served it, for example `Qwen/Qwen3.6-35B-A3B-FP8` ([receipts](https://docs.redpill.ai/confidential-ai/receipts.md), read 2026-09-29). Phala's verifier library (`@phala/aci-verifier`) checks those receipts in the client, after the request has been billed. Nothing made the payment depend on the check.
-
-Chiron catches one thing exactly: a response whose signed receipt names a different model id than the channel was opened for, or comes from a gateway whose attestation is not registered, is never paid. It does not judge how well a correctly named model is deployed, and a receipt names the model, not the weights: Phala lists weights provenance as Unknown for every confidential provider ([providers](https://docs.redpill.ai/confidential-ai/providers.md)). Pinning the full id, quantization suffix included, turns a silent quantization swap into an id mismatch.
+An agent that trades Stock Tokens onchain needs the same controls, enforced by the account instead of promised by an interface, plus an answer to the question the account can ask only through hardware: which software holds this key. A spend-limit contract checks the signature and the rules. It does not check what produced the signature.
 
 ## How it works
 
-**Register.** `Assay.register(quote, refBlock)` asks the Stylus `Verifier` to check a Phala TDX quote against Intel's certificate chain. The quote must commit to a nonce that Assay derives from the caller, a counter, and an Arbitrum block hash from the ArbSys precompile. ArbSys only answers for the last 256 blocks, about 66 seconds, so a quote cannot be fetched early and saved. The verifier returns the gateway's signing address and a measurement over nine TD report fields, and Assay stores the key only if that measurement is on its allowlist. `registerReceiptKey` does the same for the Ed25519 receipt key: Phala's attestation commits to a digest of the whole workload keyset, and the verifier recomputes that digest from the supplied keyset bytes before reading the key out of it.
+**Admit.** The owner approves a workload measurement. Anyone submits `registerAgent(quote, refBlock)`. The quote must carry `agent address || 12 zero bytes || nonce` with `nonce = keccak256(chainid, account, agentEpoch, arbBlockHash(refBlock))`; ArbSys answers only for the last 256 blocks, so a quote cannot be fetched early and saved. The Stylus `Verifier` checks the PCK certificate chain, the QE report and the quote signature, rejects the DEBUG attribute, and returns the signer and a measurement over nine TD report fields. The account stores the key only when the measurement is approved. Quotes are single use, each registration bumps an epoch that invalidates quotes in flight, registrations last 24 hours, and unapproving the measurement revokes the agent immediately.
 
-**Open.** The agent deposits USDG and pins the gateway measurement and a model id hash, for example `keccak256("meta-llama/llama-3.3-70b-instruct")`. The deposit caps what the provider can ever take. A channel pinned to a model is receipt-only.
+**Trade.** The agent supplies a typed `Trade` (pool key, direction, `amountIn`, `minOut`, deadline), never calldata. The account checks the agent, the pool and token allowlists, the per-trade cap, the approval threshold and a rolling 24-hour cap per token, then does the swap itself through the PoolManager and settles by balance delta: it reverts if more than `amountIn` left or less than `minOut` arrived.
 
-**Pay.** For each call the agent signs an EIP-712 voucher over the cumulative amount and the request and response hashes. The provider calls `redeemWithReceipt` with that voucher and Phala's receipt. Assay pays the difference from the last redeem only if:
+**Approve.** Above the threshold, `execute` reverts `NeedsApproval`. The agent calls `propose`; the owner's `approveTrade(id, trade)` runs exactly the proposed trade, once, before it expires.
 
-- the Stylus `ReceiptVerifier` accepts the Ed25519 signature over the receipt's canonical bytes;
-- the receipt's served model and requested model both hash to the channel's pinned model;
-- the receipt's request and response body hashes equal the voucher's;
-- the receipt key is registered, unexpired, and registered under the channel's measurement.
+**Record.** Each `TradeExecuted` event carries the TDX workload measurement the agent was admitted under, the served-model hash, and the request and response hashes of the receipt behind the trade. The receipt is verified by the Stylus `ReceiptVerifier` (Ed25519), must name the model the owner pinned, must come from a gateway key registered under the owner's pinned measurement, and can be used once.
 
-**Model-swap refusal.** The served model comes from the receipt's `upstream.verified` event, which the gateway's TEE signed. The provider cannot choose what goes there. If the gateway served any other model, `redeemWithReceipt` reverts `ModelMismatch`, and the agent keeps its deposit and recovers it through the timed close. The agent client (`npm run pay-receipt`) runs the same checks locally first and refuses to sign a voucher for a swapped call, so an honest agent spends no gas on it.
-
-**Close.** After an hour of inactivity the agent requests close; the provider has a one hour challenge window to redeem its last voucher; then the agent takes the remainder. There is no owner, no admin and no upgrade path.
+**Bill.** The account opens an Assay channel as its own agent. Vouchers signed by the agent key validate through the account's ERC-1271 check, scoped to that channel's voucher digest. The provider is paid by `redeemWithReceipt` only against a receipt naming the pinned model.
 
 ## What is new here
 
-- **The attestation check and the payment happen in the same transaction.** Phala's verifier and every client-side receipt check run after the caller has paid or been billed. In Chiron, the transaction that pays the provider is the one that verifies the receipt.
-- **Model pinning per call, signed inside the TEE.** The payment condition is a TEE-signed statement about which model served this specific request, bound to the exact request and response bytes. A measurement allowlist alone says which gateway image is running; the receipt, signed inside that image, names the model the upstream answered with. It carries the upstream's own model label, not a hash of the weights.
-- **TDX verification and Ed25519 verification as Stylus contracts.** Verifying a TDX DCAP quote chain costs 2,304,195 gas on the deployed Stylus verifier (`cast estimate` on a fresh Phala quote, Arbitrum Sepolia block 313704492). Registration runs once per key; the per-call path only verifies an Ed25519 signature.
-- **Freshness from Arbitrum itself.** The registration nonce includes an `ArbSys.arbBlockHash` value, so every quote is at most about 66 seconds older than the block that accepts it.
-
-- **Receipt-gated claims on x402's own payment channel.** `ChironGate` makes the x402 Foundation's `x402BatchSettlement` pay only against a Phala receipt naming the buyer's pinned model, without changing x402: the gate is the channel's receiver and the only party allowed to claim. Live on Arbitrum Sepolia: one x402 channel opened and one claim paid through the gate against a real receipt.
-
-Compared with nearby work: x402 settles a payment for an HTTP request but carries no evidence of what computed the answer. Automata's DCAP contracts verify TDX quotes as a standalone service without gating a payment. Chiron composes both halves for one job: paying for inference only when the served model is the one agreed.
+- **The account checks the software, not only the signature.** The TDX quote is verified onchain, in Stylus, in the transaction that admits the key. A TEE or TDX attestation verifier appears in none of the 116 Arbitrum Open House Singapore projects read from HackQuest's API on 2026-10-01 (the closest agent-safety project validates trades against a mandate and has no execution path).
+- **Caps, approvals and the workload record sit in one transaction with the swap.** The owner's limits are enforced by the account's own code at the moment of the trade, and the event records which attested workload and which verified model receipt produced it.
+- **Inference spend is part of the account.** The same account that trades pays for the model that decided to trade, through a channel that pays only when a TEE-signed receipt names the pinned model.
+- **Mutation-tested guards.** `contracts/test/mutation/agent_account_mutations.py` removes or weakens 110 guards one at a time; the suites go red for 109 of them, and the remaining mutant is documented as behavior-equivalent against the real Assay.
 
 ## Stack
 
-- Arbitrum Sepolia; Stylus (Rust, `stylus-sdk`) for the TDX quote verifier and the Ed25519 receipt verifier
-- Solidity 0.8.28, Foundry, OpenZeppelin (EIP-712, ECDSA, ERC-1271, SafeERC20)
-- Paxos USDG with EIP-2612 permit
-- Phala Confidential AI gateway: TDX attestation, legacy ECDSA signatures and ACI Ed25519 receipts
+- Robinhood Chain testnet (46630), canonical Uniswap v4 PoolManager and PositionManager, official TSLA Stock Token
+- Arbitrum Stylus (Rust, `stylus-sdk`) for the TDX quote verifier and the Ed25519 receipt verifier
+- Solidity 0.8.28, Foundry, OpenZeppelin (Ownable2Step, ReentrancyGuardTransient, ECDSA, ERC-1271, SafeERC20)
+- Phala Confidential AI gateway and Phala Cloud TDX guests: attestation quotes and Ed25519 receipts
 - Agent client: TypeScript, viem, `@noble/curves`; web app: React, Vite, wagmi
 
-## Deployed (Arbitrum Sepolia, chain 421614)
+## Deploy and live cycle
+
+`contracts/script/rhc/deploy-stylus.sh` deploys the `verifier/` and `receipt-verifier/` crates to RHC testnet and reads each back. `contracts/script/rhc/DeployAgentAccountRHC.s.sol` deploys testUSDG, Assay, the TSLA/testUSDG v4 pool and its liquidity, the factory and an account, configures limits, pool and model pin, funds the account and opens the inference channel, and reverts on any read-back mismatch. The venue's quote asset is `TestUSDG`, a fixture with open minting, and the pool's price is the one the script sets.
+
+The agent client's live-cycle modes each assert a post-condition that only completion can produce:
+
+| Mode | What it asserts |
+|---|---|
+| `acct-trade` | `TradeExecuted` decoded, account token balance deltas equal the logged amounts, logged `servedModelHash` equals the pinned hash |
+| `acct-overcap` | `amountIn = perTrade + 1` reverts `ExceedsPerTradeCap` by `eth_call` and by one real reverted transaction, balances unchanged |
+| `acct-approve` | `NeedsApproval`, then a proposal event, then the owner's approval emitting `TradeExecuted` with the proposal id and a balance delta, then a second approval reverting `ProposalNotPending` |
+
+## Evidence
+
+- `forge test`: 292 passed, 0 failed. The `AgentAccount` suites (unit, rolling-window fuzz against an exact reference, drain invariant) are 88 of them; 4 more run against live RHC testnet state through `RHC_FORK_URL`.
+- Mutation record: `docs/security/agent-account-mutations.md`, 109 of 110 mutants killed, the restored source green.
+- `agent` `npm test`: 23 passed, including the exact 64-byte `report_data` layout the quote must carry and the `Trade` encoding the owner's approval hashes.
+- `receipt-verifier` `cargo test`: 18 passed. `verifier` `cargo test`: 22 passed.
+- Assay's own record: four review rounds (`SECURITY-REVIEW.md`, `docs/security/assay-usdg-review.md`); each finding came with a test that failed before its fix.
+
+## Assay on Arbitrum Sepolia (chain 421614)
+
+Assay is the inference channel an account bills through. It is live on Arbitrum Sepolia against real Paxos USDG with Phala's production gateway keys registered from fresh TDX quotes, and it has paid three real inference calls through `redeemWithReceipt`.
 
 | Contract | Address |
 |---|---|
@@ -81,14 +92,6 @@ Compared with nearby work: x402 settles a payment for an HTTP request but carrie
 | Claim through ChironGate against a real Phala receipt, 0.30 USDG to the provider | [0xbfbd454e...82eb](https://sepolia.arbiscan.io/tx/0xbfbd454e9dff5623677d26b29e402f0390aa1bd53160b0ffa88cb803f60a82eb) |
 
 The agent (`0x2aD1...5DEF`) and the provider (`0x93e8...EE5A`) are separate wallets. `docs/e2e/chiron.md` lists every command and the post-condition read after it.
-
-## Security evidence
-
-- Four review rounds (`SECURITY-REVIEW.md`, `docs/security/assay-usdg-review.md`). The last two reviewed the deployed code; each of their findings came with a test that failed before the fix. The final verdict before deploying was DEPLOY.
-- Fixed in those rounds: a pinned channel could be paid through the model-blind path; an out-of-window block reference made the registration nonce predictable; one receipt could back payments for different requests; an agent's changed EIP-7702 delegation could void its vouchers; the receipt verifier accepted forgeries under a small-order Ed25519 key. Each fix was reverted to confirm its test fails, then restored.
-- Tests: `forge test` 61 passed, invariant 1 passed, 13 passed in a fork against the real Paxos USDG proxy, `receipt-verifier` 18 passed, `verifier` 22 passed, agent 17 passed.
-- The receipt verifier was checked on the live chain against receipts generated by its own Rust tests: an honest receipt returns matching model hashes, a model-swap receipt returns a different served-model hash, and a tampered signature returns false.
-- Paxos can pause, freeze and wipe USDG. The fork suite pins what that does to a channel, and the contract adds no escape hatch that would let a frozen address route funds around a freeze.
 
 ## Cost per redeem
 

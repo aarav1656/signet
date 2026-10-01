@@ -2,17 +2,81 @@
 
 Hosted app: [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) . Repo: [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron).
 
-Named for the one trustworthy centaur: the attested provider among substitutes.
+Named for the one trustworthy centaur: the attested agent among substitutes.
 
-Chiron is a USDG payment channel on Arbitrum for AI agents that buy inference per call. The agent's money moves only against proof checked onchain: a Stylus contract verifies the provider gateway's Intel TDX attestation, and a second Stylus contract verifies the gateway's signed receipt for each response. A channel pinned to a model pays only when the receipt says that model was served. If the gateway routed the call to a different model, the payment reverts.
+Chiron is attested trading accounts for AI agents on Robinhood Chain. An `AgentAccount` holds USDG and Stock Tokens and swaps only through the canonical Uniswap v4 PoolManager. It accepts a trade from exactly one caller: an agent key that Intel TDX attestation put there, checked onchain by a Stylus contract against a workload measurement the owner approved. Every trade stays inside per-token caps the owner set, trades above the owner's approval threshold wait for the owner, and each trade's event records the agent's workload measurement and the verified inference receipt that preceded it. The agent's inference is billed from the same account through Assay, a pay-per-call USDG channel.
 
-The contract is `Assay` (`contracts/src/Assay.sol`).
+The contracts are `AgentAccount` and `AgentAccountFactory` (`contracts/src/`), the Stylus `Verifier` and `ReceiptVerifier` (`verifier/`, `receipt-verifier/`), and `Assay` (`contracts/src/Assay.sol`).
+
+## Why the account checks the software
+
+Robinhood announced Robinhood Agents at HOOD Summit on 2026-09-29: a dedicated agentic account, trade approvals that default to on, limits the user sets, and Loops "coming soon", for eligible U.S. customers ([Robinhood newsroom](https://robinhood.com/us/en/newsroom/hood-summit-2026/)). The same page states that "Robinhood does not control, supervise, monitor, recommend, or audit agents." Chiron puts the same account shape on Robinhood Chain and moves the audit into the contract: the account trades for a key only after a Stylus verifier has parsed that key's TDX quote chain to Intel's root and the quote's measurement is one the owner approved. Owner caps and approvals are enforced by the account's code, in the same transaction as the swap.
+
+## How it works
+
+**1. The owner configures the account.** `AgentAccountFactory.createAccount(owner)` deploys one account per owner. The owner sets `setLimits(token, {allowed, perTrade, daily, approvalAbove})` for each token, in raw units of the token that leaves the account; `setPool` for each hookless v4 pool the agent may use (both tokens must be allowed first); `setMeasurement` for each agent workload measurement it trusts; and `setModel` to pin the requested model hash, up to four served-model hashes, and the gateway measurement that receipts must come from. A new account can do nothing until it is configured.
+
+**2. The agent key is admitted by attestation.** Anyone can call `registerAgent(quote, refBlock)`. The nonce the quote must commit to is derived by the account:
+
+```
+nonce  = keccak256(chainid, account, agentEpoch, arbBlockHash(refBlock))
+report_data = agent address (20 bytes) || 12 zero bytes || nonce
+```
+
+`arbBlockHash` answers only for the last 256 L2 blocks, so a quote cannot be fetched ahead and banked. The Stylus `Verifier` checks the quote's PCK certificate chain, QE report and quote signature against Intel's root, rejects the TDX DEBUG attribute, and returns the agent address and a measurement over nine TD report fields. The account stores the agent only if that measurement is one the owner approved and the agent is not the owner. Each quote is single use, each registration or revocation bumps `agentEpoch` (which invalidates every quote in flight), and a registration lasts 24 hours. Unapproving the measurement the current agent was admitted under revokes that agent in the same transaction.
+
+**3. The agent trades a typed `Trade`.** `execute(trade, receipt)` takes a pool key, a direction, `amountIn`, `minOut` and a deadline, never calldata. The tokens in and out are derived from the pool key and direction. The account checks, in order: caller is the registered agent, unexpired, not paused; deadline; non-zero amounts; pool and both tokens allowed; `amountIn <= perTrade`; `amountIn <= approvalAbove`; the rolling 24-hour spend for the token in; and the inference receipt. Then the account itself calls `unlock`, `swap`, `settle` and `take` on the PoolManager and takes the output to itself. It never approves a spender for trading, and settlement is by balance delta: `spent <= amountIn` and `received >= minOut`, or the transaction reverts. The 24-hour cap is a rolling window over 25 hourly buckets, so any 24-hour interval is covered by one check.
+
+**4. Trades above the threshold need the owner.** When `amountIn` is above `approvalAbove`, `execute` reverts `NeedsApproval`. The agent calls `propose(trade, receipt)` instead, which stores the trade's hash and the receipt record. The owner's `approveTrade(id, trade)` runs exactly that trade, once, only while the proposal is unexpired (the earlier of the trade deadline and `approvalTtl`), the proposing agent is still the registered agent, the trade still passes the pool, token and per-trade checks, and the account is not paused. The owner can `rejectTrade`, and the agent can `cancelProposal`.
+
+**5. Each trade records its workload.** `TradeExecuted` carries `agentMeasurement` (the TDX workload measurement the agent was admitted under), `servedModelHash`, `requestHash`, `responseHash` and the `proposalId` for approved trades. The receipt behind it is a Phala gateway receipt verified by the Stylus `ReceiptVerifier` (Ed25519 over the receipt's canonical bytes). The account requires the requested model to equal the owner's pin, the served model to be in the owner's accepted set, the receipt key to be registered in Assay under the pinned gateway measurement and unexpired, and the receipt's request and response hashes never to have been used before.
+
+**6. Inference is billed from the account.** `openInferenceChannel(provider, amount)` opens an Assay channel with the account as the channel's agent, pinned to the account's model and gateway measurement. Vouchers the agent key signs are valid for that channel only: the account's ERC-1271 `isValidSignature` accepts an Assay voucher digest for the account's own open channel, signed by the current unexpired agent while the account is not paused, and answers `0xffffffff` for every other digest. The provider is paid through Assay's `redeemWithReceipt`, described below.
+
+**Owner powers.** `pause`, `revokeAgent`, `withdraw`, `withdrawETH`, and every policy setter are owner-only. Ownership transfer is two-step, `renounceOwnership` reverts, and the agent key can never become the owner, so it can never approve its own proposals.
+
+## The venue on Robinhood Chain testnet
+
+Chain 46630. Trades route through the canonical Uniswap v4 PoolManager `0x8366a39CC670B4001A1121B8F6A443A643e40951`, whose runtime code hash is the same on testnet and mainnet (`0xbd38...5626`); the deploy script refuses to run if it differs. The stock side is Robinhood's official TSLA Stock Token `0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E`, funded from the official faucet. The quote side is `TestUSDG`, a 6-decimal fixture the deploy script deploys with open minting, because the testnet has no official USDG. `RHCVenue` creates the hookless 0.3% TSLA/testUSDG pool on the PoolManager and funds a full-range position through the PositionManager and Permit2 at a price the script sets (250 testUSDG per TSLA by default).
+
+## Verification
+
+| Check | Result |
+|---|---|
+| `forge test`, whole repo | 292 passed, 0 failed |
+| `AgentAccount` unit, window fuzz and invariant suites | 88 passed |
+| `AgentAccount` RHC fork tests against live testnet state (`RHC_FORK_URL=https://rpc.testnet.chain.robinhood.com`) | 4 passed |
+| Mutation runner, one guard removed or weakened at a time | 109 of 110 killed, 1 equivalent mutant documented, restored suite green: `docs/security/agent-account-mutations.md` |
+| `agent` `npm test` | 23 passed |
+
+The mutation runner (`contracts/test/mutation/agent_account_mutations.py`) builds under its own `mutation` profile with a separate output and cache directory and restores the source on exit. Each mutant removes one guard (the quote replay check, the measurement allowlist, the per-trade cap on each path, the rolling-window arithmetic, the receipt model checks, the reentrancy guards, the ERC-1271 scope, and so on). The unit, window and invariant suites must go red for each, and the restored source must go green.
+
+## Deploy and live cycle
+
+`contracts/script/rhc/deploy-stylus.sh` deploys the unchanged `verifier/` and `receipt-verifier/` crates to RHC testnet and reads each back: code exists, and `Verifier.verify` on a stored Phala quote under a nonce it does not carry reverts. `contracts/script/rhc/DeployAgentAccountRHC.s.sol` then deploys testUSDG, Assay, the pool and its liquidity, the factory and one account, configures the owner's limits, pool and model pin, funds the account, opens the inference channel, and reverts the script on any mismatch when it reads back the wiring, pool state, policy, limits and balances. It writes `contracts/deployments/46630.json`.
+
+The agent client runs three live-cycle modes against the deployed account (keys are read by variable name and never printed):
+
+```
+cd agent
+ACCOUNT_ADDRESS=0x... npm run acct-trade     # in-policy buy with a real Phala receipt
+ACCOUNT_ADDRESS=0x... npm run acct-overcap   # amountIn = perTrade + 1
+ACCOUNT_ADDRESS=0x... npm run acct-approve   # band-2 trade: NeedsApproval, propose, approveTrade
+```
+
+Each mode asserts a post-condition only completion can produce. `acct-trade` decodes the `TradeExecuted` log and checks the account's token balance deltas against `amountOut` and the spent amount, and that the logged `servedModelHash` equals the pinned hash. `acct-overcap` confirms `ExceedsPerTradeCap` by `eth_call`, sends one real reverted transaction, and checks that balances did not move. `acct-approve` confirms `NeedsApproval`, the proposal event, the owner's approval emitting `TradeExecuted` with the proposal id and a balance delta, and a second `approveTrade` reverting `ProposalNotPending`.
+
+## Inference billing: Assay, live on Arbitrum Sepolia
+
+Assay is a USDG payment channel on Arbitrum for AI agents that buy inference per call. The agent's money moves only against proof checked onchain: a Stylus contract verifies the provider gateway's Intel TDX attestation, and a second Stylus contract verifies the gateway's signed receipt for each response. A channel pinned to a model pays only when the receipt says that model was served. If the gateway routed the call to a different model, the payment reverts.
+
+The contract is `Assay` (`contracts/src/Assay.sol`); an `AgentAccount` is one of its channel agents.
 
 **Paid live on Arbitrum Sepolia.** Three real inference calls through Phala's gateway, each paid by `redeemWithReceipt` only after the Stylus verifier accepted the gateway's receipt naming the pinned model: [`0x16270367...a55d`](https://sepolia.arbiscan.io/tx/0x16270367e3c3e563bd4433d9cb33d9bdf5db84d44fb25fd0f44679aad681a55d), [`0x4c83cf96...43b7`](https://sepolia.arbiscan.io/tx/0x4c83cf961efedc3678c00d18e332aa502ac71e583ec3f5c42f24a1a5589043b7), [`0x4ed9077a...f868`](https://sepolia.arbiscan.io/tx/0x4ed9077a367495ddfb1acf4a3bbc54bf4b79b0d9898e4614fbe9148ec12cf868). Channel 2 paid 0.90 USDG to the provider, read back as `channels(2).paid` = 900000.
 
-## What the receipt proves, and what it does not
+## What the receipt proves
 
-Proves: a TEE running the allowlisted image measurement signed a receipt naming the model it served and hashes of the exact request and response bytes, so a swapped model or an unattested gateway never gets paid. Does not prove: that the answer is correct. Chiron makes model substitution unprofitable; it makes no claim about output quality. Only the redeemed call's receipt is checked onchain: the highest voucher wins per channel, so a provider who serves one bad call among many good ones and never gets that specific call redeemed is not caught by this contract. Earlier calls in a session rely on the agent's own local check (see "What the agent does before it signs anything"), not an onchain one.
+A TEE running the allowlisted image measurement signed a receipt naming the model it served and hashes of the exact request and response bytes, so a swapped model or an unattested gateway never gets paid. Chiron makes model substitution unprofitable. The channel's check is bound to the redeemed call: the highest voucher wins per channel, and the receipt behind that voucher is verified onchain, while the agent's own local check (see "What the agent does before it signs anything") covers each earlier call in a session.
 
 Attestations are valid 24 hours by design (`attestationValidity` is immutable at 86400 seconds). The provider re-registers its keys daily; see "Keeping keys fresh" below.
 
@@ -25,9 +89,9 @@ Chain 421614, deployed 2026-09-28 from `0x2aD12a72362704367e99a344cFf5affDDF7f5D
 | Assay | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://sepolia.arbiscan.io/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | The payment channel. Source verified on Sourcify (exact match, creation and runtime). |
 | Verifier | [`0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c`](https://sepolia.arbiscan.io/address/0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c) | Stylus (Rust). Verifies an Intel TDX DCAP quote chain and returns the gateway's signer and image measurement. |
 | ReceiptVerifier | [`0x9af7d9c3b27c4a8a11fb879041b931c38b712380`](https://sepolia.arbiscan.io/address/0x9af7d9c3b27c4a8a11fb879041b931c38b712380) | Stylus (Rust). Verifies one Ed25519-signed Phala inference receipt and returns the requested model, served model, request hash and response hash. |
-| USDG | [`0xFFC95faa3d63Cde504a05B567C600B78C0b41892`](https://sepolia.arbiscan.io/address/0xFFC95faa3d63Cde504a05B567C600B78C0b41892) | Paxos Global Dollar on Arbitrum Sepolia. Not deployed by this repo. |
+| USDG | [`0xFFC95faa3d63Cde504a05B567C600B78C0b41892`](https://sepolia.arbiscan.io/address/0xFFC95faa3d63Cde504a05B567C600B78C0b41892) | Paxos Global Dollar on Arbitrum Sepolia, Assay's settlement token. |
 
-Assay is source verified (Sourcify, exact match). `Verifier` and `ReceiptVerifier` are Stylus contracts; Arbiscan's Stylus verification and `cargo stylus verify` both need a reproducible Docker build (`cargo-stylus 0.10.9`, `rustc 1.91.0`, target `wasm32-unknown-unknown`, pinned in each crate's `rust-toolchain.toml`). Docker Desktop would not stay up long enough to run that build here; a non-Docker local build of `verifier/` already mismatches the deployed bytecode by 176 bytes (`Verification failed: uncompressed wasm size mismatch (tx: 121531, build: 121707)`), which is exactly why the Docker-pinned build exists. Verifying both contracts needs a machine that can run Docker.
+Assay is source verified (Sourcify, exact match). `Verifier` and `ReceiptVerifier` are Stylus contracts, built reproducibly with `cargo-stylus 0.10.9`, `rustc 1.91.0` and target `wasm32-unknown-unknown`, pinned in each crate's `rust-toolchain.toml`.
 
 Live transactions on this deployment:
 
@@ -76,9 +140,9 @@ Phala's confidential gateway (also sold as RedPill) is that fix at the gateway: 
 
 What was missing is a payment that depends on that receipt. A client library can check it, but only after the call was billed. Chiron makes the check and the payment the same transaction, so the case it catches is exact: a response whose signed receipt names a different model id than the one the channel was opened for, or a receipt from a gateway whose attestation is not registered, never gets paid.
 
-What it does not catch: how well a correctly named model is deployed. Two vendors serving the same model id can differ in quality, and a receipt names the model, not the weights; Phala's own provider table lists `model_weights_provenance` as Unknown for every confidential provider ([providers](https://docs.redpill.ai/confidential-ai/providers.md)). Pinning the full id, quantization suffix included, makes a silent quantization swap an id mismatch. Binding the weights themselves needs a weights commitment in the receipt, which no provider exposes yet.
+A receipt names the model, and pinning the full id, quantization suffix included, makes a silent quantization swap an id mismatch.
 
-## How it works
+## How Assay works
 
 ![Chiron architecture](docs/diagrams/architecture.png)
 
@@ -126,7 +190,7 @@ It proves the gateway's key lives in a TDX guest whose nine-field measurement is
 
 The receipt is the gateway's signed statement, made inside the TEE, of which model the upstream served for this one request and response. Phala records that in the receipt's `upstream.verified` event from the live response. The measurement does not say which weights a model provider loaded behind that; the receipt carries the upstream's own model label.
 
-Assay checks certificate dates but does not read Intel's TCB status, QE identity or PCK revocation list. Those need Intel's live collateral, which a contract cannot fetch. The allowlist carries a single measurement so that a TCB decision is made once, by whoever deploys, rather than inferred per quote.
+Assay checks the certificate chain and its validity dates against `block.timestamp`, the DEBUG attribute, and the measurement allowlist. The allowlist carries a single measurement so that the trust decision is made once, by whoever deploys, rather than inferred per quote.
 
 ## Security
 
