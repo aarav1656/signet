@@ -55,11 +55,11 @@ The agent client's live-cycle modes each assert a post-condition that only compl
 
 ## Evidence
 
-- `forge test`: 292 passed, 0 failed. The `AgentAccount` suites (unit, rolling-window fuzz against an exact reference, drain invariant) are 88 of them; 4 more run against live RHC testnet state through `RHC_FORK_URL`.
+- `make test` from a fresh clone: 296 passed, 0 failed, 1 skipped across 20 suites. The `AgentAccount` suites (unit, rolling-window fuzz against an exact reference, drain invariant) are 89 of them; 4 more run against live RHC testnet state, and the `ChironGate` fork suite reads the live Assay registry. The skipped suite is the real-USDG fork suite, which runs when `CHIRON_FUNDED_TEST_ACCOUNT` is set.
 - Mutation record: `docs/security/agent-account-mutations.md`, 109 of 110 mutants killed, the restored source green.
 - `agent` `npm test`: 27 passed, including the exact 64-byte `report_data` layout the quote must carry and the `Trade` encoding the owner's approval hashes.
 - `receipt-verifier` `cargo test`: 18 passed. `verifier` `cargo test`: 22 passed.
-- Assay's own record: four review rounds (`SECURITY-REVIEW.md`, `docs/security/assay-usdg-review.md`); each finding came with a test that failed before its fix.
+- `docs/SECURITY.md`: four independent review rounds on Assay and the verifiers, two on `ChironGate`; every finding is resolved and ships with a test that fails without its fix.
 
 ## Deployed on Robinhood Chain testnet (chain 46630)
 

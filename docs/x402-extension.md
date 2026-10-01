@@ -77,4 +77,4 @@ Funds that reach the gate any other way (a direct transfer, or a channel naming 
 
 ### Deployments
 
-`x402BatchSettlement` is used unmodified at its canonical CREATE2 address `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003`. On Arbitrum One that is the live deployment. On Arbitrum Sepolia, any contract at that address is the official x402BatchSettlement bytecode, redeployed by us on Arbitrum Sepolia at the same CREATE2 address, using `contracts/script/x402/DeployX402BatchSettlement.s.sol`, which refuses to broadcast unless the compiled init code hashes to that address. `ChironGate` is not deployed yet.
+`x402BatchSettlement` is used unmodified at its canonical CREATE2 address `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003`. On Arbitrum One that is the live deployment. On Arbitrum Sepolia, any contract at that address is the official x402BatchSettlement bytecode, redeployed by us on Arbitrum Sepolia at the same CREATE2 address, using `contracts/script/x402/DeployX402BatchSettlement.s.sol`, which refuses to broadcast unless the compiled init code hashes to that address.

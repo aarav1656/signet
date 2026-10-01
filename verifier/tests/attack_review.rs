@@ -1,4 +1,4 @@
-//! Red and robustness tests for SECURITY-REVIEW.md.
+//! Red and robustness tests for docs/SECURITY.md.
 use assay_verify::Verifier;
 use stylus_sdk::alloy_primitives::FixedBytes;
 use stylus_sdk::testing::*;
@@ -85,7 +85,7 @@ fn every_truncation_errs_without_panic() {
 }
 
 /// Green robustness: maximal u32 length fields error cleanly (on 64-bit hosts; on
-/// wasm32 `off + len` wraps, see SECURITY-REVIEW.md L-2).
+/// wasm32 `off + len` wraps, see docs/SECURITY.md L-2).
 #[test]
 fn max_length_fields_err_without_panic() {
     let base = quote("quote_legacy1.hex");

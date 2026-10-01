@@ -45,11 +45,12 @@ Chain 46630. Trades route through the canonical Uniswap v4 PoolManager `0x8366a3
 
 | Check | Result |
 |---|---|
-| `forge test`, whole repo | 292 passed, 0 failed |
-| `AgentAccount` unit, window fuzz and invariant suites | 88 passed |
-| `AgentAccount` RHC fork tests against live testnet state (`RHC_FORK_URL=https://rpc.testnet.chain.robinhood.com`) | 4 passed |
+| `make test` from a fresh clone (`forge test`, 20 suites) | 296 passed, 0 failed, 1 skipped |
+| `AgentAccount` unit, window fuzz and invariant suites | 89 passed |
+| `AgentAccount` RHC fork tests against live testnet state (`make test` sets `RHC_FORK_URL=https://rpc.testnet.chain.robinhood.com`) | 4 passed |
 | Mutation runner, one guard removed or weakened at a time | 109 of 110 killed, 1 equivalent mutant documented, restored suite green: `docs/security/agent-account-mutations.md` |
-| `agent` `npm test` | 23 passed |
+| `agent` `npm test` | 27 passed |
+| `receipt-verifier` `cargo test`, `verifier` `cargo test` | 18 passed, 22 passed |
 
 The mutation runner (`contracts/test/mutation/agent_account_mutations.py`) builds under its own `mutation` profile with a separate output and cache directory and restores the source on exit. Each mutant removes one guard (the quote replay check, the measurement allowlist, the per-trade cap on each path, the rolling-window arithmetic, the receipt model checks, the reentrancy guards, the ERC-1271 scope, and so on). The unit, window and invariant suites must go red for each, and the restored source must go green.
 
@@ -176,7 +177,7 @@ x402's batch-settlement contract lets a buyer stream cumulative vouchers to a se
 
 Live through the gate: the agent deposited 1 USDG into an x402 channel with the gate as receiver ([`0x2e35e165...d347`](https://sepolia.arbiscan.io/tx/0x2e35e16523145ae25f7525321c6ccce71dc005facbb0fbe7806e67c31d89d347)), and the provider claimed 0.30 USDG against a real Phala receipt through `claimWithReceipt` ([`0xbfbd454e...82eb`](https://sepolia.arbiscan.io/tx/0xbfbd454e9dff5623677d26b29e402f0390aa1bd53160b0ffa88cb803f60a82eb), 347,363 gas, `ClaimedWithReceipt` emitted). The same claim with a receipt naming another model reverts `ModelMismatch` (`npm run gate-refuse`, an eth_call). A channel can accept up to four served labels because upstreams label models differently: RedPill routes `meta-llama/llama-3.3-70b-instruct` to an upstream whose receipt says `llama3-3-70b`.
 
-The gate went through an independent review (one High found and fixed: the replay record is keyed per channel, so a buyer cannot burn a receipt on a throwaway channel) and a second review of the label set; both ended DEPLOY (`docs/security/assay-usdg-review.md`). 26 of 26, then 31 of 31, guards fail the tests when removed.
+The gate went through an independent review (one High found and fixed: the replay record is keyed per channel, so a buyer cannot burn a receipt on a throwaway channel) and a second review of the label set; both ended DEPLOY (`docs/SECURITY.md`). 26 of 26, then 31 of 31, guards fail the tests when removed.
 
 ## Keeping keys fresh
 
@@ -248,7 +249,7 @@ Assay checks the certificate chain and its validity dates against `block.timesta
 
 ## Security
 
-Four review rounds; the record is in `SECURITY-REVIEW.md` and `docs/security/assay-usdg-review.md`. The last two ran against the code deployed here, and each finding came with a test that failed on the unfixed code:
+Four review rounds; the outcome and the regression test for every finding are in `docs/SECURITY.md`. The last two ran against the code deployed here, and each finding came with a test that failed on the unfixed code:
 
 | Finding | Fix |
 |---|---|
@@ -262,16 +263,7 @@ Each fix was checked by reverting it and confirming its test goes red, then rest
 
 Assay holds real Paxos USDG, whose issuer can pause, freeze and wipe. The fork suite runs against the real USDG proxy and pins what that means: a pause that outlasts the challenge window lets the agent close first, and a frozen agent's refund waits in Assay until Paxos unfreezes (`test_demo_M1_unfreezeRestoresRefund` shows the full refund arriving afterwards). No `refundTo` escape was added, since it would let a frozen party route around the freeze.
 
-Tests on the deployed code:
-
-| Suite | Result |
-|---|---|
-| `forge test` (unit, attack, fuzz, hardening, re-review regressions) | 61 passed |
-| Invariant (escrow conservation) | 1 passed |
-| Fork suite against real Paxos USDG at a recent Arbitrum Sepolia block | 13 passed |
-| `receipt-verifier` `cargo test` | 18 passed |
-| `verifier` `cargo test` | 22 passed |
-| `agent` `npm test` | 17 passed |
+Tests on the deployed code: the Assay unit, attack, fuzz, hardening, re-review and invariant suites run inside `make test` (296 passed, 0 failed, 1 skipped; see Verification). The skipped suite is the real-USDG fork suite, which runs when `CHIRON_FUNDED_TEST_ACCOUNT` names a funded Arbitrum Sepolia USDG holder.
 
 ## Gas
 
@@ -290,7 +282,7 @@ Registration runs once per key rotation. The per-call path is `redeemWithReceipt
 ## Run it
 
 ```
-cd contracts && forge test
+make test                        # pinned libs, every Foundry profile, then the whole forge suite
 cd receipt-verifier && cargo test
 cd verifier && cargo test
 cd agent && npm test

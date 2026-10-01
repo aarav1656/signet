@@ -25,7 +25,7 @@ import {Assay} from "../src/Assay.sol";
 ///                        deploys no token of its own: an internal security review
 ///                        found the prior optional-env-var shape could silently fall
 ///                        back to a fresh, open-mint TestUSDG on a real deploy (see
-///                        SECURITY-REVIEW.md, H-1); making this required removes that
+///                        docs/SECURITY.md, H-1); making this required removes that
 ///                        failure mode entirely instead of relying on a post-deploy
 ///                        `usdg()` check to catch it.
 ///   PRIVATE_KEY          optional (otherwise pass --private-key)

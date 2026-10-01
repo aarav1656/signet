@@ -67,9 +67,10 @@ the call actually runs to a terminal state.
 
 | Suite | Command | Result |
 |---|---|---|
-| Solidity (fast + invariant + fork) | `cd contracts && forge test` (with `CHIRON_FUNDED_TEST_ACCOUNT` set) | 61 fast + invariant tests plus 13 fork tests against real Paxos USDG, all pass |
-| Rust (receipt verifier) | `cd verifier && cargo test` | 18 passed, 0 failed |
-| Agent client | `cd agent && npm test` | 17 passed, 0 failed |
+| Solidity (unit, invariant, fork) | `make test` from a fresh clone | 296 passed, 0 failed, 1 skipped (the real-USDG fork suite, which runs with `CHIRON_FUNDED_TEST_ACCOUNT` set) |
+| Rust (receipt verifier) | `cd receipt-verifier && cargo test` | 18 passed, 0 failed |
+| Rust (TDX verifier) | `cd verifier && cargo test` | 22 passed, 0 failed |
+| Agent client | `cd agent && npm test` | 27 passed, 0 failed |
 
 ## Re-verification of this document
 

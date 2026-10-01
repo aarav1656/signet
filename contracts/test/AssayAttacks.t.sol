@@ -80,7 +80,7 @@ contract AssayAttacksTest is AssayTestBase {
     /// amount by resigning a new payerSig over it. Caught by consumedReceipt
     /// (keyed on provider+requestHash+responseHash) now that the weaker,
     /// same-channel-only lastResponseHash guard has been removed as dead code
-    /// subsumed by it (see SECURITY-REVIEW.md).
+    /// subsumed by it (see docs/SECURITY.md).
     function test_attack_sameResponseHashReplayedWithHigherAmount_reverts() public {
         _register(signerAddr, APPROVED_MEASUREMENT);
         uint256 channelId = _openChannel(1_000e6);

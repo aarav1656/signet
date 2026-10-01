@@ -179,7 +179,7 @@ for how their marketing hero looks.
 - Files: `refs/phala-proof-1440.png` (full page), `refs/phala-proof-390.png`, `refs/phala-proof-1440.tokens.json`.
 - What it is: the attestation vendor's own verification tool: paste a hex quote, press Verify, see a list of
   recent report hashes with a pass or fail shield.
-- Move worth stealing: one idea only. The input is honest about what it takes: the placeholder is the real
+- Move worth stealing: one idea only. The input is honest about what it takes: the hint text is the real
   first bytes of a quote (`0x030002000000...`) set in mono, so the user knows the format before pasting.
   Chiron's Verify textarea should show the real shape of the attestation JSON the same way.
 - Numbers, empty state, primary action: h1 Lato 36px weight 900, tracking -0.9px, leading 40px; small caps

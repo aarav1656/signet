@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {AssayTestBase} from "./AssayTestBase.sol";
 import {Assay} from "../src/Assay.sol";
 
-/// Converted tests for SECURITY-REVIEW.md, each now asserting the SAFE behaviour
+/// Converted tests for docs/SECURITY.md, each now asserting the SAFE behaviour
 /// after the fix (they were red against the pre-fix Assay.sol; see git history /
 /// the review doc for the original failing assertions).
 /// Run the green suite without them: forge test --no-match-contract AttackReview

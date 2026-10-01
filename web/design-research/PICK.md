@@ -7,8 +7,8 @@ and the identity registry, from `mockups/{a,b,c}-{1440,390}.png`.
 |---|---|---|---|
 | 5-second test | 5/10 | 8/10 | 4/10 |
 | Big-metric template | absent | present (huge model id, small label, stats right, accent) | absent |
-| Status pills / stock stepper | absent | partial (9-dot stepper) | absent |
-| Unnecessary detail | partial | lowest | partial |
+| Status pills / stock stepper | none | 9-dot stepper | none |
+| Unnecessary detail | some | lowest | some |
 | Other tells | absent | absent | absent |
 
 ## Why A
