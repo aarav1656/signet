@@ -89,7 +89,7 @@ export async function readAccount(c: PublicClient, account: Address, block: bigi
       ],
     });
 
-  const tokens: TokenRow[] = await Promise.all(
+  const rows: TokenRow[] = await Promise.all(
     TOKENS.map(async (t) => {
       const [symbol, decimals, balance, lim, used] = await c.multicall({
         ...at,
@@ -104,6 +104,8 @@ export async function readAccount(c: PublicClient, account: Address, block: bigi
       return { address: t, symbol, note: t === TEST_USDG ? 'first venue test token' : undefined, decimals, balance, limits: { allowed: lim[0], perTrade: lim[1], daily: lim[2], approvalAbove: lim[3] }, used };
     }),
   );
+  // The first venue's test token shows only on accounts that hold it or allow it.
+  const tokens = rows.filter((r) => r.address !== TEST_USDG || r.balance > 0n || r.limits.allowed);
 
   const range = { fromBlock: RHC_DEPLOY_BLOCK, toBlock: block } as const;
   const [measurementLogs, executedLogs, proposedLogs] = await Promise.all([
