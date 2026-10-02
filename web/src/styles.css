@@ -180,6 +180,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .r.ref { background: linear-gradient(90deg, rgba(239, 90, 76, 0.09), transparent 60%); }
 .r.ref code { color: var(--red); }
 .when { white-space: nowrap; }
+.r .rcpt { font: 500 12px/1.4 var(--mono); color: var(--red); }
+.r .rcpt.ok { color: var(--ink); }
 .more {
   display: block; width: 100%; padding: 13px 20px; border: 0; border-top: 1px solid var(--line); background: none; cursor: pointer;
   text-align: left; font: 500 12px/1.4 var(--mono); letter-spacing: 0.04em; color: var(--mute);

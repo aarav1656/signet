@@ -24,6 +24,8 @@ export type GateRow = {
   block: bigint;
   order: number;
   time?: bigint;
+  /** What a trade row's receipt hash is recomputed from: the recorded hashes and the tx whose calldata carries the receipt. */
+  receipt?: { requestHash: Hex; responseHash: Hex; served: Hex; carrierTx: Hex };
 };
 
 export type TokenInfo = { address: Address; symbol: string; decimals: number };
@@ -142,6 +144,12 @@ export function buildGateRows(logs: AccountLog[], refusals: Refusal[], times: Ma
           title: `${via ? `Proposal ${a.proposalId} approved: ` : ''}${amount(tokens, a.tokenIn, a.amountIn)} into ${amount(tokens, a.tokenOut, a.amountOut)}`,
           sub: `Trade ${a.tradeId} · served model ${modelLabel(a.servedModelHash)} recorded`,
           tag: via ? 'APPROVED' : 'EXECUTED',
+          receipt: {
+            requestHash: a.requestHash,
+            responseHash: a.responseHash,
+            served: a.servedModelHash,
+            carrierTx: via ? (logs.find((x) => x.eventName === 'TradeProposed' && (x.args as Record<string, unknown>).proposalId === a.proposalId)?.transactionHash ?? l.transactionHash) : l.transactionHash,
+          },
         });
         break;
       }

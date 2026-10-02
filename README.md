@@ -96,6 +96,23 @@ Read from the chain on this deployment:
 - The guards answer on chain: `execute` and `propose` accept only the registered agent (every other caller, the owner included, gets `NotAgent`), `approveTrade` accepts only a pending proposal (`ProposalNotPending`), and `setLimits` keeps the approval threshold at or below the per-trade cap (`BadLimits`).
 - Inference channel 0 on Assay lists the account as its agent, the provider wallet `0x93e82363e3481039d2F8Ee3e4b4263B6D141EE5A`, a 5 testUSDG deposit, the gateway measurement above and the channel's model pin `keccak256("phala/qwen3.8-27b-uncensored")`. The account's own receipt pin for trades is `keccak256("meta-llama/llama-3.3-70b-instruct")`, with served model `llama3-3-70b`.
 
+## Agents can check Chiron themselves
+
+`mcp/` is a Model Context Protocol server, built on `@modelcontextprotocol/sdk` 1.31.0, that lets Claude, Cursor or Codex verify a Chiron trade without trusting this page. Add it to Claude Code:
+
+```
+cd mcp && npm install
+claude mcp add chiron npx tsx $(pwd)/src/server.ts
+```
+
+Three tools read Robinhood Chain testnet (46630) directly with viem:
+
+- `verify_receipt(tx_hash)` reads the trade event, recomputes the receipt hash from the receipt bytes in the calldata exactly as `AgentAccount._consumeReceipt` keys it, and checks the recorded served model hash against the account's model pin. It returns `verified` with every check listed, and the answer is false unless every check passes.
+- `account_state(account)` returns the agent, measurement, expiry, caps and recent trades.
+- `explain_refusal(tx_hash)` decodes a reverted transaction's custom error (`NotAgent`, `ExceedsPerTradeCap`, `MeasurementNotApproved`) into plain words.
+
+`npm test` in `mcp/` checks the real first trade of the live account (`0xe5052266...ddfa2`) and returns `verified: true` with seven passing checks, and a different model hash turns the answer to `verified: false`. The gate log on the hosted app runs the same hashing in the browser and marks each trade green once its recomputed receipt hash matches the chain.
+
 ## The attested agent, live
 
 The agent runs inside a Phala Cloud dstack CVM (`agent/src/cvm.ts`, packaged by `agent-cvm/build-image.sh`, deployed from `agent-cvm/docker-compose.yml` with the image pinned by digest). It generates its key in memory, asks the CVM for a TDX quote whose `report_data` is its address plus the account's `attestNonce`, and signs `execute` and `propose` there. The owner key stays on the operator machine: it approves the measurement the Stylus `Verifier` returns for that quote, and approves trades above the threshold.

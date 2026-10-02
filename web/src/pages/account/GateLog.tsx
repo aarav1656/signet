@@ -4,7 +4,8 @@ import { rhcExplorer } from '../../chain';
 import { HexValue } from '../../components/Stamp';
 import { fmtCountdown, fmtWhen } from '../../lib/format';
 import { agentView } from './agent';
-import { buildGateRows, modelName, useGateLog, type TokenInfo } from './gateRows';
+import { buildGateRows, modelName, useGateLog, type AccountLog, type GateRow, type TokenInfo } from './gateRows';
+import { useReceiptCheck } from './receiptCheck';
 import { ZERO_HASH, type Snapshot } from './read';
 
 const FIRST = 6;
@@ -58,6 +59,18 @@ function AgentPanel({ snap }: { snap?: Snapshot }) {
   );
 }
 
+function ReceiptBadge({ account, row, logs }: { account: Address; row: GateRow; logs: AccountLog[] }) {
+  const r = useReceiptCheck(account, row, logs);
+  if (!r) return null;
+  const ok = r.state === 'verified';
+  const failed = r.state === 'not-verified' ? r.checks.filter((c) => !c.ok).map((c) => c.name).join(', ') || r.reason : undefined;
+  return (
+    <p className={ok ? 'rcpt ok' : 'rcpt'} title={r.state === 'checking' ? undefined : r.checks.map((c) => `${c.ok ? 'pass' : 'FAIL'} ${c.name}`).join('\n')}>
+      {ok ? `Receipt hash recomputed in your browser, ${r.checks.length} checks match` : r.state === 'checking' ? 'Not verified: recomputing the receipt hash' : `Not verified${failed ? `: ${failed}` : ''}`}
+    </p>
+  );
+}
+
 export function GateLog({ account, snap, snapBlock, probe }: { account: Address; snap?: Snapshot; snapBlock?: bigint; probe?: { block: bigint; refused: boolean; name?: string } }) {
   const q = useGateLog(account);
   const [all, setAll] = useState(false);
@@ -101,6 +114,7 @@ export function GateLog({ account, snap, snapBlock, probe }: { account: Address;
                 <div>
                   <h3>{r.title}</h3>
                   <p>{r.sub}{r.time !== undefined && <span className="when"> · {fmtWhen(r.time)}</span>}</p>
+                  {q.data && <ReceiptBadge account={account} row={r} logs={q.data.logs} />}
                 </div>
                 <code>{r.tag}</code>
               </a>
