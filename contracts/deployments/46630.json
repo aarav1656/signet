@@ -372,6 +372,11 @@
       "step": "Assay redeemWithReceipt on channel 1 with the first trade real Phala receipt (served llama3-3-70b), reverted ModelMismatch, paid 0",
       "hash": "0xfe0f13f09e8dc00f99ad8d94024352a127f21150a9340497d3288aec96818eab",
       "block": 127634120
+    },
+    {
+      "step": "USDG Assay redeemWithReceipt on channel 0 (permit-opened, pinned to phala/qwen3.8-27b-uncensored) with the first trade real Phala receipt and a 1 USDG voucher, reverted ModelMismatch, paid 0",
+      "hash": "0x9f2bd92252dce7827bebac226e269f46956e4d5cc368eb3f6dc7e8253eca8bdb",
+      "block": 127658321
     }
   ],
   "agentCvmBoot3": {

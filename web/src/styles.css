@@ -137,10 +137,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ---------- the home stage: headline, gate log, glosses ---------- */
 .stage {
   display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 64px; align-items: start;
-  grid-template-areas: 'hd log' 'lede log' 'cta log' 'gloss log'; grid-template-rows: auto auto auto 1fr;
+  grid-template-areas: 'prob log' 'hd log' 'lede log' 'inno log' 'cta log' 'gloss log'; grid-template-rows: auto auto auto auto auto 1fr;
 }
 .hd { grid-area: hd; font: 600 56px/1.02 var(--body); font-stretch: 96%; letter-spacing: -0.035em; }
 .hd em { font-style: normal; color: var(--amber); }
+.prob { grid-area: prob; margin: 0 0 18px; max-width: 44ch; font-size: 15px; line-height: 1.5; color: var(--mute); }
+.inno { grid-area: inno; margin: 0 0 28px; max-width: 46ch; padding-left: 14px; border-left: 2px solid var(--amber); font-size: 14px; line-height: 1.55; color: var(--soft); }
+.inno b { color: var(--ink); font-weight: 600; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.r p .inl { font: 500 12px/1 var(--mono); color: var(--ink); white-space: nowrap; }
+.r p b.tick { color: var(--ink); font: 500 13px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.proof .r { align-items: start; }
+.proof .r .d { margin-top: 6px; }
+.tour .log { animation: none; }
+.tour .r { align-items: start; }
+.tour .r .d { margin-top: 6px; }
+.loghost .log { animation: none; }
 .lede { grid-area: lede; margin: 24px 0 32px; color: var(--soft); max-width: 44ch; font-size: 17px; line-height: 1.5; }
 .cta-row { grid-area: cta; }
 .glosses { grid-area: gloss; margin-top: 44px; display: grid; gap: 14px; max-width: 46ch; font-size: 13px; color: var(--mute); }
@@ -164,7 +176,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .agent b.tick { font-variant-numeric: tabular-nums; }
 .readmit { flex-basis: 100%; margin: 0; color: var(--amber); font-size: 13px; font-weight: 600; }
 .readmit span { color: var(--mute); font-weight: 400; }
-.readmit.expired { color: var(--red); }
 .probe { padding: 12px 20px; border-bottom: 1px solid var(--line); font-size: 12.5px; line-height: 1.55; color: var(--mute); }
 .probe code { font: 500 12px/1 var(--mono); color: var(--red); }
 .probe.bad { color: var(--ink); background: var(--red-wash); }
@@ -198,7 +209,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 @keyframes row-in { from { opacity: 0; transform: translateY(6px); } }
 @keyframes dot-in { from { transform: scale(0.3); opacity: 0; } }
 /* one orchestrated load: headline, subline, action, glosses, then the panel, then its rows in order */
-.hd { animation: row-in 560ms var(--ease) backwards; }
+.prob { animation: row-in 560ms var(--ease) backwards; }
+.hd { animation: row-in 560ms var(--ease) 40ms backwards; }
+.inno { animation: row-in 560ms var(--ease) 130ms backwards; }
 .lede { animation: row-in 560ms var(--ease) 90ms backwards; }
 .cta-row { animation: row-in 560ms var(--ease) 160ms backwards; }
 .glosses { animation: row-in 560ms var(--ease) 230ms backwards; }
@@ -479,7 +492,7 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line
   .tb-cell:nth-child(n + 4) { border-top: 1px solid var(--line); }
 }
 @media (max-width: 900px) {
-  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'hd' 'log' 'lede' 'cta' 'gloss'; grid-template-rows: none; }
+  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'prob' 'hd' 'log' 'lede' 'inno' 'cta' 'gloss'; grid-template-rows: none; }
   .hd { margin-bottom: 28px; }
   .lede { margin-top: 28px; }
   .sheet-cols { grid-template-columns: minmax(0, 1fr); }

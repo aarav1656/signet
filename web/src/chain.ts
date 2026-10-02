@@ -29,7 +29,8 @@ export const rhcChain = defineChain({
 export const wagmiConfig = createConfig({
   chains: [rhcChain, arbChain],
   multiInjectedProviderDiscovery: true,
-  transports: { [rhcChain.id]: http(), [arbChain.id]: http() },
+  // JSON-RPC batching: the home page fires many reads at once, and unbatched they queue behind the browser's per-host connection limit.
+  transports: { [rhcChain.id]: http(undefined, { batch: { batchSize: 30, wait: 16 } }), [arbChain.id]: http(undefined, { batch: { batchSize: 30, wait: 16 } }) },
 });
 
 declare module 'wagmi' {

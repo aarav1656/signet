@@ -53,7 +53,7 @@ async function readRefusals(c: PublicClient, block: bigint): Promise<Live> {
   return { notAgent, agent, gatewayApproved };
 }
 
-export const useRefusals = () => useAtBlock(['refusals', DEMO_ACCOUNT], readRefusals, true, rhcChain.id);
+export const useRefusals = (enabled = true) => useAtBlock(['refusals', DEMO_ACCOUNT], readRefusals, enabled, rhcChain.id);
 
 const recorded = decodeErrorResult({ abi: accountAbi, data: sim.registerAgentRevertData as Hex });
 const recordedMeasurement = (recorded.errorName === 'MeasurementNotApproved' ? recorded.args?.[0] : undefined) as Hex | undefined;

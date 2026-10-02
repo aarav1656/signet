@@ -7,6 +7,7 @@ import { rhcChain, rhcExplorer } from '../chain';
 import { factoryAbi } from '../abi/AgentAccount.generated';
 import { Fact, HexValue, Num, Spec } from '../components/Stamp';
 import { EligibilityGate } from '../components/Eligibility';
+import { Lifecycle, ProofPanel, useTour } from './tour/Tour';
 import { corporateActionLabel } from './account/corp';
 import { Wallet } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
@@ -171,8 +172,12 @@ export function Account() {
     document.title = 'Chiron: give an AI agent a mandate, not your keys';
   }, []);
 
-  const snapQ = useAtBlock(['account', account], (c, b) => readAccount(c, account, b), true, rhcChain.id);
-  const refusals = useRefusals();
+  // The tour is the first screen: the account's heavier reads (event scans, refusal probes) start once it has
+  // answered, so they never queue ahead of it on the browser's connections. Any other account starts at once.
+  const tour = useTour();
+  const ready = account !== DEMO_ACCOUNT || !!tour.data || tour.isError;
+  const snapQ = useAtBlock(['account', account], (c, b) => readAccount(c, account, b), ready, rhcChain.id);
+  const refusals = useRefusals(ready);
   const mineQ = useQuery({
     queryKey: ['mine', conn.address],
     enabled: !!conn.address && !!client,
@@ -194,22 +199,34 @@ export function Account() {
   return (
     <>
       <div className="stage">
+        <p className="prob">An AI agent that holds a wallet can drain it, and nobody can prove which code or which model was running when it traded.</p>
         <h1 className="hd">Give an AI agent a <em>mandate</em>, not your keys.</h1>
-        <GateLog account={account} snap={snap} snapBlock={snapQ.data?.block} probe={account === DEMO_ACCOUNT ? probe : undefined} />
-        <p className="lede">Caps per token. Big trades wait for you. Every trade records the model that made it, and every refusal is on the record too.</p>
-        {account === DEMO_ACCOUNT && (
-          <p className="small stage-acct">
-            Reading <HexValue value={DEMO_ACCOUNT} head={6} tail={4} href={rhcExplorer.address(DEMO_ACCOUNT)} />: Paxos USDG on both legs, ERC-8056 corporate-action guard,
-            one attested operator agent. The first venue account, with the live trade cycle on TestUSDG, is one click away under Account.
-          </p>
-        )}
-        <div className="cta-row"><a className="btn" href="#account">Open the account <span aria-hidden="true">&rarr;</span></a></div>
+        <ProofPanel />
+        <p className="lede">
+          A Chiron account on Robinhood Chain takes a trade only from a key that an Intel TDX quote proves is running code its owner
+          approved. The owner&apos;s caps bound every trade, big trades wait for the owner, and each trade records the model that made it.
+        </p>
+        <p className="inno"><b>Hardware-attested agent keys, verified on chain.</b> The Intel TDX DCAP quote check is a Stylus program on Robinhood Chain, so admission is a transaction anyone can replay, not a server&apos;s word.</p>
+        <div className="cta-row">
+          <a className="btn" href="#tour">Walk the lifecycle <span aria-hidden="true">&darr;</span></a>
+          <a className="btn line" href="#account">Open the account</a>
+        </div>
         <div className="glosses">
           <p><b>Mandate.</b> The caps, approval line and approved measurements the owner sets. The account enforces them whatever the agent does.</p>
           <p><b>Attestation.</b> A signed report from the agent&apos;s Intel TDX chip, checked on chain by a Stylus contract.</p>
           <p><b>Measurement.</b> The fingerprint, a 32-byte hash, of the exact code the chip is running. The owner approves it in advance.</p>
         </div>
       </div>
+
+      <div id="tour"><Lifecycle /></div>
+
+      <section className="section" aria-labelledby="live-h">
+        <div className="section-head">
+          <h2 id="live-h" className="t-section">This account&apos;s gate log</h2>
+          {account === DEMO_ACCOUNT && <span className="stamp">the Paxos USDG account; the first venue account is under Account</span>}
+        </div>
+        <div className="loghost">{ready && <GateLog account={account} snap={snap} snapBlock={snapQ.data?.block} probe={account === DEMO_ACCOUNT ? probe : undefined} />}</div>
+      </section>
 
       {snapQ.isError && (
         <div className="alarm" role="alert">

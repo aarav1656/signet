@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Network | Robinhood Chain testnet (46630); Assay billing also on Arbitrum Sepolia (421614) |
-| App | [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) |
+| App | [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app): the first screen reads one admission and one refusal from the chain, then an eight-step lifecycle where each row resolves only when its receipt matches; no wallet needed |
 | Account the app opens on | [`0xFaaAa4d1ee944d317b10233505D8c57425C53b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55): Paxos USDG, ERC-8056 corporate-action guard, operator agent admitted |
 | Attested trade | [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03): the TDX-attested agent buys TSLA with 1 Paxos USDG, receipt-checked model hash in `TradeExecuted` |
 | Refusal | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8): a real TDX quote from a different workload, `registerAgent` reverts `MeasurementNotApproved` |
@@ -178,7 +178,7 @@ A client admits the operator from the hosted app: open the account, step 4 "Admi
 
 | Attack | Transaction | Result |
 |---|---|---|
-| Stolen signer: a genuine Intel TDX quote from a different workload (Phala's inference gateway, asked to sign this account's `attestNonce`) submitted to `registerAgent` | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8) | reverted `MeasurementNotApproved(0xfd34caab...0149)` after the Stylus `Verifier` checked the full quote (2,348,030 gas); `agent()` unchanged. The hardware is real, the code is not the approved image, so the key is refused |
+| Stolen signer: a genuine Intel TDX quote from a different workload (Phala's inference gateway, asked to sign this account's `attestNonce`) submitted to `registerAgent` | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8) | reverted `MeasurementNotApproved(0xfd34caab...0149)` after the Stylus `Verifier` checked the full quote (2,349,054 gas); `agent()` unchanged. The hardware is real, the code is not the approved image, so the key is refused |
 | Wrong model: the real Phala-signed receipt from the first trade (served `llama3-3-70b`) presented to `Assay.redeemWithReceipt` on a channel pinned to `phala/qwen3.8-27b-uncensored` ([open](https://explorer.testnet.chain.robinhood.com/tx/0x7770a689e6c7445d43b64cbcabb665e4924b62412562bf6b9274fed61818a9f2)) | [`0xfe0f13f0...8eab`](https://explorer.testnet.chain.robinhood.com/tx/0xfe0f13f09e8dc00f99ad8d94024352a127f21150a9340497d3288aec96818eab) | reverted `ModelMismatch()` (`0xa407e5f7`), channel paid 0. The signature is valid and the key is registered; the model is wrong, so nothing is paid |
 
 `npm run assay-model-swap` in `agent/` replays the second one end to end. The gate log on the hosted app lists the first among the account's refusals.
