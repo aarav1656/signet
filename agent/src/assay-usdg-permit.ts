@@ -7,7 +7,7 @@
 import { createPublicClient, createWalletClient, defineChain, http, keccak256, parseAbi, parseEventLogs, toBytes, type Address, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { assayAbi } from '../../web/src/abi/Assay.generated.ts';
-import { RHC_TESTNET_ID } from './account.ts';
+import { RHC_CHAIN_ID } from './account.ts';
 
 const RPC = process.env.RHC_RPC_URL ?? 'https://rpc.testnet.chain.robinhood.com';
 const ASSAY: Address = (process.env.USDG_ASSAY_ADDRESS as Address | undefined) ?? '0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d';
@@ -30,7 +30,7 @@ function key(name: string): Hex {
 }
 
 const chain = defineChain({
-  id: RHC_TESTNET_ID,
+  id: RHC_CHAIN_ID,
   name: 'Robinhood Chain Testnet',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: { default: { http: [RPC] } },
@@ -55,7 +55,7 @@ if (balBefore < AMOUNT) throw new Error(`payer holds ${balBefore} USDG, needs ${
 // Paxos's USDG has no version(); "1" is the version whose domain separator equals DOMAIN_SEPARATOR() on chain.
 const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
 const sig = await payer.signTypedData({
-  domain: { name, version: '1', chainId: RHC_TESTNET_ID, verifyingContract: USDG },
+  domain: { name, version: '1', chainId: RHC_CHAIN_ID, verifyingContract: USDG },
   types: { Permit: [
     { name: 'owner', type: 'address' },
     { name: 'spender', type: 'address' },

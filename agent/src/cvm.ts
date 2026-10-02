@@ -17,7 +17,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { createPublicClient, createWalletClient, defineChain, getAddress, http, isAddress, type Address, type Hex } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { agentAccountAbi } from './account-abi.ts';
-import { agentReportData, RHC_TESTNET_ID } from './account.ts';
+import { agentReportData, RHC_CHAIN_ID } from './account.ts';
 import { fromWire, toWire } from './wire.ts';
 
 const SOCKET = process.env.DSTACK_SOCKET ?? '/var/run/dstack.sock';
@@ -78,7 +78,7 @@ async function main() {
   const account = need('ACCOUNT_ADDRESS') as Address;
   const token = need('CONTROL_TOKEN');
   const chain = defineChain({
-    id: RHC_TESTNET_ID,
+    id: RHC_CHAIN_ID,
     name: 'Robinhood Chain Testnet',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: { default: { http: [rpc] } },
@@ -87,7 +87,7 @@ async function main() {
   const publicClient = createPublicClient({ chain, transport: http(rpc) });
   const wallet = createWalletClient({ account: agent, chain, transport: http(rpc) });
   const chainId = await publicClient.getChainId();
-  if (chainId !== RHC_TESTNET_ID) throw new Error(`RPC chain id ${chainId}, expected ${RHC_TESTNET_ID}`);
+  if (chainId !== RHC_CHAIN_ID) throw new Error(`RPC chain id ${chainId}, expected ${RHC_CHAIN_ID}`);
 
   const server = createServer(async (req, res) => {
     try {

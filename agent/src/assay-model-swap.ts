@@ -24,7 +24,7 @@ import {
 import { privateKeyToAccount } from 'viem/accounts';
 import { assayAbi } from '../../web/src/abi/Assay.generated.ts';
 import { agentAccountAbi } from './account-abi.ts';
-import { RHC_TESTNET_ID } from './account.ts';
+import { RHC_CHAIN_ID } from './account.ts';
 
 const RPC = process.env.RHC_RPC_URL ?? 'https://rpc.testnet.chain.robinhood.com';
 const ASSAY: Address = ((process.env.ASSAY_ADDRESS ?? '').trim() || '0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D') as Address;
@@ -48,7 +48,7 @@ function key(name: string): Hex {
 }
 
 const chain = defineChain({
-  id: RHC_TESTNET_ID,
+  id: RHC_CHAIN_ID,
   name: 'Robinhood Chain Testnet',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: { default: { http: [RPC] } },
@@ -108,7 +108,7 @@ if ((await pub.getBalance({ address: provider.account.address })) < parseEther('
   await mined(await payer.sendTransaction({ to: provider.account.address, value: parseEther('0.0003') }), 'fund provider');
 }
 const payerSig = await payer.signTypedData({
-  domain: { name: 'Assay', version: '1', chainId: RHC_TESTNET_ID, verifyingContract: ASSAY },
+  domain: { name: 'Assay', version: '1', chainId: RHC_CHAIN_ID, verifyingContract: ASSAY },
   types: { Voucher: [
     { name: 'channelId', type: 'uint256' },
     { name: 'cumulativeAmount', type: 'uint256' },

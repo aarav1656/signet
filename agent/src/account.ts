@@ -48,7 +48,9 @@ import {
   verifyReceiptLocally,
 } from './phala.ts';
 
-export const RHC_TESTNET_ID = 46630;
+/// Robinhood Chain id the agent signs for: 46630 testnet by default, 4663 mainnet. In the CVM this comes from the
+/// compose file, so it is part of the measurement.
+export const RHC_CHAIN_ID = Number(process.env.RHC_CHAIN_ID ?? 46630);
 export const TSLA: Address = '0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E';
 const FEE = 3000;
 const TICK_SPACING = 60;
@@ -142,7 +144,7 @@ async function agentSigner(
   const cvm = (process.env.CVM_URL ?? '').trim().replace(/\/$/, '');
   if (cvm) {
     const info = fromWire<{ agent: Address; account: Address; chainId: number }>(await (await fetch(`${cvm}/info`)).text());
-    if (info.chainId !== RHC_TESTNET_ID) throw new Error(`CVM is on chain ${info.chainId}, expected ${RHC_TESTNET_ID}.`);
+    if (info.chainId !== RHC_CHAIN_ID) throw new Error(`CVM is on chain ${info.chainId}, expected ${RHC_CHAIN_ID}.`);
     return {
       address: info.agent,
       write: async (c) => {
@@ -164,7 +166,7 @@ async function agentSigner(
 async function setup() {
   const rpc = env('RHC_RPC_URL', 'https://rpc.testnet.chain.robinhood.com');
   const chain = defineChain({
-    id: RHC_TESTNET_ID,
+    id: RHC_CHAIN_ID,
     name: 'Robinhood Chain Testnet',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: { default: { http: [rpc] } },
@@ -204,7 +206,7 @@ async function read<T>(ctx: Ctx, functionName: string, args: readonly unknown[] 
 /// agent key is the account's current agent, and its registration has more than 20 h left.
 async function requireFreshAgent(ctx: Ctx) {
   const id = await ctx.publicClient.getChainId();
-  if (id !== RHC_TESTNET_ID) throw new Error(`RPC chain id ${id}, expected ${RHC_TESTNET_ID}`);
+  if (id !== RHC_CHAIN_ID) throw new Error(`RPC chain id ${id}, expected ${RHC_CHAIN_ID}`);
   const [agent, expiry, owner, paused] = await Promise.all([
     read<Address>(ctx, 'agent'),
     read<bigint>(ctx, 'agentExpiry'),
