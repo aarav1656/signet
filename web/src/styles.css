@@ -86,6 +86,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .nav a:hover { color: var(--ink); }
 .nav a.active { color: var(--ink); border-bottom-color: var(--amber); }
 .net { margin-left: auto; font-size: 13px; color: var(--mute); white-space: nowrap; }
+.wallet { margin-left: auto; }
+.netbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin: 0; padding: 10px 0 12px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--mute); }
+.netbar b { color: var(--ink); font-weight: 500; }
+.netbar a { color: var(--soft); text-decoration: none; border-bottom: 1px solid transparent; padding-bottom: 1px; }
+.netbar a:hover { color: var(--ink); }
+.netbar a.on { color: var(--ink); border-bottom-color: var(--amber); }
+.netbar .small { flex-basis: 100%; }
 .wallet { display: flex; align-items: center; gap: 12px; position: relative; font-size: 13px; }
 .addr { font: 500 12px/1 var(--mono); color: var(--ink); }
 .wallet-menu {

@@ -57,6 +57,8 @@ if (!registerStep || !rhc.gatewayMeasurement || !rhc.modelId || !rhc.block) {
   throw new Error('deployments/46630.json is missing the gateway register step, gatewayMeasurement, modelId or block');
 }
 // Calls the account refused (reverted): a revert emits no log, so the web reads these hashes from the explorer.
+const u = rhc.usdgAssay;
+if (!u?.address || !u.usdg || !u.deployTx || !u.register) throw new Error('deployments/46630.json is missing usdgAssay address, usdg, deployTx or register');
 const refusalTxs = [...(rhc.liveCycle ?? []), ...(rhc.revokeDemo ?? []), ...(rhc.refusalDemo ?? [])]
   .filter((x) => /execute|registerAgent/.test(x.step) && /revert/i.test(x.step))
   .map((x) => x.hash);
@@ -93,6 +95,10 @@ export const GATEWAY_MEASUREMENT = ${JSON.stringify(rhc.gatewayMeasurement)} as 
 export const MODEL_ID = ${JSON.stringify(rhc.modelId)} as const;
 export const GATEWAY_REGISTER_TX = ${JSON.stringify(registerStep.hash)} as const;
 export const RHC_REFUSAL_TXS = ${JSON.stringify(refusalTxs)} as readonly \`0x\${string}\`[];
+export const USDG_ASSAY = ${JSON.stringify(u.address)} as Address;
+export const PAXOS_USDG = ${JSON.stringify(u.usdg)} as Address;
+export const USDG_ASSAY_DEPLOY_TX = ${JSON.stringify(u.deployTx)} as \`0x\${string}\`;
+export const USDG_ASSAY_REGISTER_TX = ${JSON.stringify(u.register)} as \`0x\${string}\`;
 `,
 );
 console.log(`wrote src/abi/AgentAccount.generated.ts (${accountAbi.length} + ${factoryAbi.length} ABI entries)`);

@@ -13,9 +13,9 @@ import {
   type Hex,
 } from 'viem';
 import { usePublicClient, useSignTypedData, useWaitForTransactionReceipt } from 'wagmi';
-import { ASSAY, assayChain, explorer } from '../chain';
+import { ASSAY, assayChain, assayNet, explorer, USDG_ADDRESS } from '../chain';
 import { assayAbi } from '../abi/Assay.generated';
-import { APPROVED_MEASUREMENTS, CHANNEL_TIMEOUT, USDG_ADDRESS } from '../lib/addresses.generated';
+import { APPROVED_MEASUREMENTS, CHANNEL_TIMEOUT } from '../lib/addresses.generated';
 import { fmtCountdown, fmtStamp, fmtUsdg, short } from '../lib/format';
 import { Code, HexValue, Num, Stamp, TitleBlock } from '../components/Stamp';
 import { ChannelsSection } from './Overview';
@@ -49,11 +49,11 @@ const ERROR_HELP: Record<string, string> = {
   QuoteAlreadyUsed: 'Neither signature is at fault: this exact quote was already submitted to register. Fetch a fresh quote with the current nonce.',
   ModelMismatch: 'This channel accepts only one redemption path: a model-pinned channel refuses the legacy signature-only redeem, and a legacy (unpinned) channel can never match redeemWithReceipt. Use the path this channel was opened for.',
   RequestHashMismatch: "redeemWithReceipt failed: the receipt's own request hash does not equal this voucher's requestHash. The provider must submit the receipt for the exact request this voucher pays for.",
-  StaleRefBlock: "The refBlock used for a registration nonce fell outside Arbitrum's 256-block window (about 66 seconds). Read a fresh nextRegisterNonce and register immediately, or run the agent CLI (cd agent && npm run register), which does all three steps inside that window.",
+  StaleRefBlock: `The refBlock used for a registration nonce fell outside the chain's 256-block window (${assayNet.refWindow} on ${assayChain.name}).`+" Read a fresh nextRegisterNonce and register immediately, or run the agent CLI (cd agent && npm run register), which does all three steps inside that window.",
   NotAgent: 'The caller is not the channel agent. Only the agent may call this.',
   NotProvider: 'The caller is not the channel provider. Only the provider address may call redeem.',
   ChannelClosedErr: 'The channel is closed.',
-  BadParams: 'The channel does not exist (provider is zero) or a parameter is zero.',
+  BadParams: 'BadParams: the channel id holds a zero provider, or a parameter is zero.',
   ECDSAInvalidSignature: 'A signature is malformed and recovery itself throws.',
   ECDSAInvalidSignatureLength: 'A signature is not 64 or 65 bytes long.',
   ECDSAInvalidSignatureS: 'A signature has an malleable s value outside the half order.',
@@ -828,7 +828,7 @@ function RedeemPanel({ channelIdDefault, agent }: { channelIdDefault: string; ag
       }
 
       if (ch.closed) lines.push('Channel is closed: redeem reverts ChannelClosedErr() before either signature is checked.');
-      else if (ch.closeRequestedAt !== 0n) lines.push('Close was requested but finalize has not run: redeem still succeeds inside the challenge window.');
+      else if (ch.closeRequestedAt !== 0n) lines.push('Close requested and inside the challenge window: redeem still succeeds until finalizeClose runs.');
       if (cum <= ch.paid) lines.push(`Cumulative ${cum.toString()} is not above paid ${ch.paid.toString()}: redeem reverts AmountNotIncreasing().`);
       if (cum > ch.deposit) lines.push(`Cumulative ${cum.toString()} is above the deposit ${ch.deposit.toString()}: redeem reverts AmountExceedsDeposit().`);
 

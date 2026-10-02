@@ -1,9 +1,9 @@
 import { createConfig, http } from 'wagmi';
 import { defineChain, type Address } from 'viem';
-import { ASSAY_ADDRESS, CHAIN_ID, EXPLORER_URL, RPC_URL } from './lib/addresses.generated';
-import { RHC_CHAIN_ID, RHC_EXPLORER_URL } from './lib/rhc.generated';
+import { ASSAY_ADDRESS, ASSAY_DEPLOY_TX as ARB_DEPLOY_TX, CHAIN_ID, EXPLORER_URL, REGISTER_TX as ARB_REGISTER_TX, RPC_URL, USDG_ADDRESS as ARB_USDG } from './lib/addresses.generated';
+import { PAXOS_USDG, RHC_CHAIN_ID, RHC_EXPLORER_URL, USDG_ASSAY, USDG_ASSAY_DEPLOY_TX, USDG_ASSAY_REGISTER_TX } from './lib/rhc.generated';
 
-export const assayChain = defineChain({
+export const arbChain = defineChain({
   id: CHAIN_ID as number,
   name: 'Arbitrum Sepolia',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
@@ -26,12 +26,10 @@ export const rhcChain = defineChain({
   contracts: { multicall3: { address: '0xcA11bde05977b3631167028862bE2a173976CA11' } },
 });
 
-export const ASSAY: Address = ASSAY_ADDRESS;
-
 export const wagmiConfig = createConfig({
-  chains: [assayChain, rhcChain],
+  chains: [rhcChain, arbChain],
   multiInjectedProviderDiscovery: true,
-  transports: { [assayChain.id]: http(), [rhcChain.id]: http() },
+  transports: { [rhcChain.id]: http(), [arbChain.id]: http() },
 });
 
 declare module 'wagmi' {
@@ -40,17 +38,31 @@ declare module 'wagmi' {
   }
 }
 
-export const explorer = {
-  address: (a: string) => `${EXPLORER_URL}/address/${a}`,
-  tx: (h: string) => `${EXPLORER_URL}/tx/${h}`,
-  block: (n: bigint | number) => `${EXPLORER_URL}/block/${n.toString()}`,
-};
+const explorerAt = (url: string) => ({
+  address: (a: string) => `${url}/address/${a}`,
+  tx: (h: string) => `${url}/tx/${h}`,
+  block: (n: bigint | number) => `${url}/block/${n.toString()}`,
+});
+export const rhcExplorer = explorerAt(RHC_EXPLORER_URL);
 
-export const rhcExplorer = {
-  address: (a: string) => `${RHC_EXPLORER_URL}/address/${a}`,
-  tx: (h: string) => `${RHC_EXPLORER_URL}/tx/${h}`,
-  block: (n: bigint | number) => `${RHC_EXPLORER_URL}/block/${n.toString()}`,
-};
+/// Assay is live on two networks. The Paxos USDG Assay on Robinhood Chain testnet is the default;
+/// `?net=arb` reads the Arbitrum Sepolia Assay, which holds the paid calls. Verifier, receipt
+/// verifier, measurement, validity and timeouts are the same on both (read from each constructor),
+/// so only the fields below differ. Chosen once per page load; the header's selector reloads.
+export type NetKey = 'rhc' | 'arb';
+const NETS = {
+  rhc: { key: 'rhc', chain: rhcChain, assay: USDG_ASSAY, usdg: PAXOS_USDG, deployTx: USDG_ASSAY_DEPLOY_TX, registerTx: USDG_ASSAY_REGISTER_TX, explorer: rhcExplorer, refWindow: 'about 39 seconds' },
+  arb: { key: 'arb', chain: arbChain, assay: ASSAY_ADDRESS, usdg: ARB_USDG, deployTx: ARB_DEPLOY_TX, registerTx: ARB_REGISTER_TX, explorer: explorerAt(EXPLORER_URL), refWindow: 'about 66 seconds' },
+} as const;
+export const NET_KEY: NetKey = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('net') === 'arb' ? 'arb' : 'rhc';
+export const assayNet = NETS[NET_KEY];
+export const otherNet = NETS[NET_KEY === 'rhc' ? 'arb' : 'rhc'];
+export const assayChain = assayNet.chain;
+export const ASSAY: Address = assayNet.assay;
+export const USDG_ADDRESS: Address = assayNet.usdg;
+export const ASSAY_DEPLOY_TX = assayNet.deployTx;
+export const REGISTER_TX = assayNet.registerTx;
+export const explorer = assayNet.explorer;
 
-/** The agent account is the front page; the receipts product on Arbitrum Sepolia keeps its own routes. */
+/** The agent account is the front page and always reads Robinhood Chain; the Assay routes read the selected network. */
 export const chainForPath = (pathname: string) => (pathname === '/' ? rhcChain : assayChain);

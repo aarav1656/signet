@@ -68,7 +68,7 @@ function TokenSpec({ t, now }: { t: TokenRow; now: bigint }) {
       subject={
         <>
           <span className="t-subject">{t.symbol}</span>
-          <span className="small">{t.limits.allowed ? 'trading allowed' : 'trading not allowed'}</span>
+          <span className="small">{t.note ? `${t.note}, ` : ''}{t.limits.allowed ? 'trading allowed' : 'trading not allowed'}</span>
         </>
       }
     >
@@ -113,7 +113,7 @@ function Mandate({ snap, block, now, mine, onPick }: { snap: Snapshot; block: bi
           <div className="doc-rows">
             <div className="drow"><span className="t-label">Owner</span><span className="v"><HexValue value={snap.owner} head={6} tail={4} href={rhcExplorer.address(snap.owner)} />{you && <span className="small"> you</span>}</span></div>
             {snap.tokens.map((t) => (
-              <div className="drow" key={t.address}><span className="t-label">{t.symbol}</span><span className="v tnum">{fmtToken(t.balance, t.decimals)}</span></div>
+              <div className="drow" key={t.address}><span className="t-label">{t.symbol}{t.note && <span className="small"> {t.note}</span>}</span><span className="v tnum">{fmtToken(t.balance, t.decimals)}</span></div>
             ))}
             <div className="drow"><span className="t-label">Paused</span><span className="v">{snap.paused ? 'yes, the agent cannot trade' : 'no'}</span></div>
           </div>

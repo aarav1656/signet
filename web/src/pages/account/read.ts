@@ -9,10 +9,11 @@ export const ZERO_HASH = `0x${'0'.repeat(64)}` as Hex;
 export const PAXOS_USDG = '0x7E955252E15c84f5768B83c41a71F9eba181802F' as Address;
 
 /** The tokens the account's pools pair: testUSDG, Paxos USDG and the TSLA Stock Token. */
-export const TOKENS = [TEST_USDG, PAXOS_USDG, TSLA] as const;
+/** Paxos USDG and the Stock Token lead; testUSDG is the first venue's test quote token and reads last. */
+export const TOKENS = [PAXOS_USDG, TSLA, TEST_USDG] as const;
 
 export type Limits = { allowed: boolean; perTrade: bigint; daily: bigint; approvalAbove: bigint };
-export type TokenRow = { address: Address; symbol: string; decimals: number; balance: bigint; limits: Limits; used: bigint };
+export type TokenRow = { address: Address; symbol: string; note?: string; decimals: number; balance: bigint; limits: Limits; used: bigint };
 
 export type TradeStruct = {
   key: { currency0: Address; currency1: Address; fee: number; tickSpacing: number; hooks: Address };
@@ -100,7 +101,7 @@ export async function readAccount(c: PublicClient, account: Address, block: bigi
           { ...base, functionName: 'windowUsed', args: [t] },
         ],
       });
-      return { address: t, symbol, decimals, balance, limits: { allowed: lim[0], perTrade: lim[1], daily: lim[2], approvalAbove: lim[3] }, used };
+      return { address: t, symbol, note: t === TEST_USDG ? 'first venue test token' : undefined, decimals, balance, limits: { allowed: lim[0], perTrade: lim[1], daily: lim[2], approvalAbove: lim[3] }, used };
     }),
   );
 

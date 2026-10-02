@@ -71,7 +71,7 @@ function ReceiptBadge({ account, row, logs }: { account: Address; row: GateRow; 
   const failed = r.state === 'not-verified' ? r.checks.filter((c) => !c.ok).map((c) => c.name).join(', ') || r.reason : undefined;
   return (
     <p className={ok ? 'rcpt ok' : 'rcpt'} title={r.state === 'checking' ? undefined : r.checks.map((c) => `${c.ok ? 'pass' : 'FAIL'} ${c.name}`).join('\n')}>
-      {ok ? `Receipt hash recomputed in your browser, ${r.checks.length} checks match` : r.state === 'checking' ? 'Not verified: recomputing the receipt hash' : `Not verified${failed ? `: ${failed}` : ''}`}
+      {ok ? `Receipt hash recomputed in your browser, ${r.checks.length} checks match` : r.state === 'checking' ? 'Recomputing the receipt hash in your browser' : `Receipt hash mismatch${failed ? `: ${failed}` : ''}`}
     </p>
   );
 }
