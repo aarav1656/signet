@@ -47,6 +47,7 @@ The payer is the account owner: an agent operator running an attested agent for 
 
 - **Each trade pays the pool's fee tier.** The owner allows each pool through `setPool`, and the pool key's `fee` is part of what the owner approves (`PoolSet` records it). The pools on this deployment are the 0.3% tier, `fee` 3000 in v4's hundredths of a basis point, which is 30 bps of `amountIn` settled inside the swap.
 - **Each inference call is billed per call through Assay.** The account opens a channel as its own agent, the agent key signs a cumulative voucher per call, and the provider is paid the voucher's increase in USDG by `redeemWithReceipt` only against a receipt that names the pinned model. On Arbitrum Sepolia one call was 0.30 USDG.
+- **Who earns.** The inference provider keeps every unit the voucher moves: `redeemWithReceipt` sends the whole increase to the channel's provider (`_push(c.provider, delta)` in `contracts/src/Assay.sol`), and Assay takes no protocol fee, so a provider's price is the agent's whole cost. The pool's liquidity providers earn the 30 bps fee tier on each trade. The owner pays both, and only for trades inside the mandate and calls whose receipt names the pinned model.
 
 ## Verification
 
@@ -62,6 +63,8 @@ The payer is the account owner: an agent operator running an attested agent for 
 The mutation runner (`contracts/test/mutation/agent_account_mutations.py`) builds under its own `mutation` profile with a separate output and cache directory and restores the source on exit. Each mutant removes one guard (the quote replay check, the measurement allowlist, the per-trade cap on each path, the rolling-window arithmetic, the receipt model checks, the reentrancy guards, the ERC-1271 scope, and so on). The unit, window and invariant suites must go red for each, and the restored source must go green.
 
 ## Live on Robinhood Chain testnet (chain 46630)
+
+Inference on this account bills through Assay, which is already paid live in real Paxos USDG on Arbitrum Sepolia: three Phala calls, each settled by `redeemWithReceipt` against a verified receipt ([`0x16270367...a55d`](https://sepolia.arbiscan.io/tx/0x16270367e3c3e563bd4433d9cb33d9bdf5db84d44fb25fd0f44679aad681a55d), [`0x4c83cf96...43b7`](https://sepolia.arbiscan.io/tx/0x4c83cf961efedc3678c00d18e332aa502ac71e583ec3f5c42f24a1a5589043b7), [`0x4ed9077a...f868`](https://sepolia.arbiscan.io/tx/0x4ed9077a367495ddfb1acf4a3bbc54bf4b79b0d9898e4614fbe9148ec12cf868)), 0.90 USDG to the provider in total (`channels(2).paid` = 900000, token `0xFFC95faa...1892`).
 
 Deployed 2026-10-01 from `0x2aD12a72362704367e99a344cFf5affDDF7f5DEF`, which owns the account. Every contract below was read back after deployment; `contracts/deployments/46630.json` holds the full record with every transaction hash, and each transaction's `cast receipt` status is success.
 
