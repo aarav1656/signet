@@ -19,7 +19,7 @@ function useNowSec() {
   return now;
 }
 
-type Row = { title: string; body: ReactNode; tag: string; refusal?: boolean; ok: boolean; href: string };
+type Row = { title: string; body: ReactNode; tag: string; refusal?: boolean; ok: boolean; href: string; tx?: keyof typeof TX };
 
 /** A gate row: amber dot when the chain confirms the claim, red ring for a refusal the chain confirms. */
 function GateRow({ row, i }: { row: Row; i: number }) {
@@ -37,7 +37,7 @@ function GateRow({ row, i }: { row: Row; i: number }) {
   );
 }
 
-const rcpt = (t: Tour, k: keyof typeof TX, expect: Outcome) => ({ ok: matches(t.receipts[k], expect), href: rhcExplorer.tx(TX[k]) });
+const rcpt = (t: Tour, k: keyof typeof TX, expect: Outcome) => ({ ok: matches(t.receipts[k], expect), href: rhcExplorer.tx(TX[k]), tx: k });
 const blk = (t: Tour, k: keyof typeof TX) => `block ${t.receipts[k].block.toLocaleString('en-US')}`;
 
 /** The first screen's evidence: one admission, one refusal, and the verifier being a Stylus program. */
@@ -76,8 +76,44 @@ export function ProofPanel() {
       </div>
       {q.isError && <p className="log-wait">The chain did not answer. It is read again every 15 seconds.</p>}
       {!t && !q.isError && <p className="log-wait">Reading the admission, the refusal and the verifier from the chain.</p>}
+      {t && matches(t.receipts.stolenSigner, 'reverted') && (
+        <a className="proof-num" href={rhcExplorer.tx(TX.stolenSigner)} target="_blank" rel="noreferrer">
+          <b>{t.receipts.stolenSigner.gasUsed.toLocaleString('en-US')} gas</b>
+          <span>a full Intel TDX DCAP quote checked on chain in Stylus, then refused because the code it measured was never approved</span>
+        </a>
+      )}
       {t && <ol className="rows">{rows.map((r, i) => <GateRow key={r.title} row={r} i={i} />)}</ol>}
     </div>
+  );
+}
+
+/** One lifecycle step: collapsed to its verdict, or open with the receipt it rests on. */
+function Step({ row, t, i, open, onOpen }: { row: Row; t: Tour; i: number; open: boolean; onOpen: () => void }) {
+  const r = row.tx ? t.receipts[row.tx] : undefined;
+  return (
+    <li className={open ? 'step-open' : undefined} style={{ '--i': i } as React.CSSProperties}>
+      <button type="button" className={row.refusal ? 'r ref' : 'r'} aria-expanded={open} onClick={onOpen}>
+        <span className="d" aria-hidden="true" />
+        <h3>{row.title}</h3>
+        <code>{row.ok ? row.tag : 'MISMATCH'}</code>
+      </button>
+      {open && (
+        <div className="step-body">
+          <p>{row.ok ? row.body : 'The chain does not match this claim right now. Open the transaction to see what it says.'}</p>
+          <p className="step-proof">
+            {r ? (
+              <>
+                <HexValue value={r.hash} head={8} tail={6} href={row.href} /> · block {r.block.toLocaleString('en-US')} · receipt status {r.status} · {r.gasUsed.toLocaleString('en-US')} gas
+              </>
+            ) : (
+              <>
+                read live at block {t.block.toLocaleString('en-US')} · <a href={row.href} target="_blank" rel="noreferrer">open on the explorer</a>
+              </>
+            )}
+          </p>
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -85,6 +121,7 @@ export function ProofPanel() {
 export function Lifecycle() {
   const q = useTour();
   const now = useNowSec();
+  const [active, setActive] = useState(0);
   const t = q.data?.value;
   const served = (h: Hex) => modelName(h) ?? short(h);
   const usdgIn = (amt: bigint, token?: string) => `${fmtToken(amt, 6)} ${token && isPaxosUsdg(token as `0x${string}`) ? 'Paxos USDG' : 'testUSDG'}`;
@@ -159,7 +196,18 @@ export function Lifecycle() {
       <div className="log">
         {!t && !q.isError && <p className="log-wait">Reading eight steps from Robinhood Chain.</p>}
         {q.isError && <p className="log-wait">The chain did not answer. It is read again every 15 seconds.</p>}
-        {t && <ol className="rows">{rows.map((r, i) => <GateRow key={r.title} row={r} i={i} />)}</ol>}
+        {t && (
+          <>
+            <div className="stepper" role="group" aria-label="Step through the lifecycle">
+              <span className="step-count">Step {active + 1} of {rows.length}</span>
+              <button type="button" className="ctl-ghost" disabled={active === 0} onClick={() => setActive((a) => a - 1)}>Previous</button>
+              <button type="button" className="ctl-ghost" disabled={active === rows.length - 1} onClick={() => setActive((a) => a + 1)}>Next</button>
+            </div>
+            <ol className="rows steps-list">
+              {rows.map((r, i) => <Step key={r.title} row={r} t={t} i={i} open={i === active} onOpen={() => setActive(i)} />)}
+            </ol>
+          </>
+        )}
       </div>
     </section>
   );

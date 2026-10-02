@@ -34,6 +34,7 @@ const erc8056 = (['uiMultiplier', 'newUIMultiplier', 'effectiveAt'] as const).ma
 } as const));
 
 export type Tour = {
+  block: bigint;
   receipts: Record<keyof typeof TX, Receipt>;
   verifierPrefix: string;
   verifierBytes: number;
@@ -82,6 +83,7 @@ export async function readTour(c: PublicClient, block: bigint): Promise<Tour> {
   const a = parseEventLogs({ abi: accountAbi, logs: logsOf('approve'), eventName: 'TradeExecuted' })[0]?.args;
 
   return {
+    block,
     receipts,
     verifierPrefix: code.slice(0, 10),
     verifierBytes: (code.length - 2) / 2,

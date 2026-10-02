@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { getAddress, isAddress } from 'viem';
 import { BrowserRouter, NavLink, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
-import { ASSAY, assayChain, assayNet, chainForPath, explorer, NET_KEY, otherNet, rhcChain, rhcExplorer, wagmiConfig } from './chain';
+import { ASSAY, assayChain, assayNet, chainForPath, explorer, NET_KEY, otherNet, rhcExplorer, wagmiConfig } from './chain';
 import { DEMO_ACCOUNT } from './lib/rhc.generated';
 import { Wallet } from './components/Wallet';
 import { TxStatusPanel } from './components/TxStatus';
@@ -60,14 +60,7 @@ function Page() {
 /** Which chain this view reads. The account is always on Robinhood Chain; the Assay routes offer both networks. */
 function NetBar() {
   const { pathname } = useLocation();
-  if (pathname === '/') {
-    return (
-      <p className="netbar">
-        <span className="t-label">Reads</span> <b>{rhcChain.name} · {rhcChain.id}</b>
-        <span className="small">the agent account; Assay billing is on the Channels, Refusal and Verify views</span>
-      </p>
-    );
-  }
+  if (pathname === '/') return null;
   const link = (key: string) => `${pathname}?net=${key}`;
   return (
     <p className="netbar" role="group" aria-label="Assay network">
