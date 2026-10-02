@@ -1,6 +1,6 @@
 # Security
 
-Chiron's contracts went through independent adversarial review by a reviewer who did not write the code: four rounds on Assay, the Stylus `Verifier` and the Stylus `ReceiptVerifier`, and two on `ChironGate`. `AgentAccount` is covered by a mutation runner that removes or weakens one guard at a time. Every review finding was resolved in code, and each one ships with a test that fails without its fix.
+Chiron's contracts went through internal adversarial review rounds, each run by a separate session from the one that wrote the code: four rounds on Assay, the Stylus `Verifier` and the Stylus `ReceiptVerifier`, and two on `ChironGate`. `AgentAccount` is covered by a mutation runner that removes or weakens one guard at a time. Every review finding was resolved in code, and each one ships with a test that fails without its fix.
 
 ## Run it
 

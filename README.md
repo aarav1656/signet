@@ -261,7 +261,7 @@ x402's batch-settlement contract lets a buyer stream cumulative vouchers to a se
 
 Live through the gate: the agent deposited 1 USDG into an x402 channel with the gate as receiver ([`0x2e35e165...d347`](https://sepolia.arbiscan.io/tx/0x2e35e16523145ae25f7525321c6ccce71dc005facbb0fbe7806e67c31d89d347)), and the provider claimed 0.30 USDG against a real Phala receipt through `claimWithReceipt` ([`0xbfbd454e...82eb`](https://sepolia.arbiscan.io/tx/0xbfbd454e9dff5623677d26b29e402f0390aa1bd53160b0ffa88cb803f60a82eb), 347,363 gas, `ClaimedWithReceipt` emitted). The same claim with a receipt naming another model reverts `ModelMismatch` (`npm run gate-refuse`, an eth_call). A channel can accept up to four served labels because upstreams label models differently: RedPill routes `meta-llama/llama-3.3-70b-instruct` to an upstream whose receipt says `llama3-3-70b`.
 
-The gate went through an independent review (one High found and fixed: the replay record is keyed per channel, so a buyer cannot burn a receipt on a throwaway channel) and a second review of the label set; both ended DEPLOY (`docs/SECURITY.md`). 26 of 26, then 31 of 31, guards fail the tests when removed.
+The gate went through an internal review by a separate session from the one that wrote it (one High found and fixed: the replay record is keyed per channel, so a buyer cannot burn a receipt on a throwaway channel) and a second review of the label set; both ended DEPLOY (`docs/SECURITY.md`). 26 of 26, then 31 of 31, guards fail the tests when removed.
 
 ## Keeping keys fresh
 

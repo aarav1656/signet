@@ -65,7 +65,7 @@ The payer is the account owner: an agent operator running an attested agent for 
 - Mutation record: `docs/security/agent-account-mutations.md`, 109 of 110 mutants killed, the restored source green.
 - `agent` `npm test`: 27 passed, including the exact 64-byte `report_data` layout the quote must carry and the `Trade` encoding the owner's approval hashes.
 - `receipt-verifier` `cargo test`: 18 passed. `verifier` `cargo test`: 22 passed.
-- `docs/SECURITY.md`: four independent review rounds on Assay and the verifiers, two on `ChironGate`; every finding is resolved and ships with a test that fails without its fix.
+- `docs/SECURITY.md`: four internal review rounds on Assay and the verifiers, two on `ChironGate`, each by a separate session from the one that wrote the code; every finding is resolved and ships with a test that fails without its fix.
 
 ## Deployed on Robinhood Chain testnet (chain 46630)
 
