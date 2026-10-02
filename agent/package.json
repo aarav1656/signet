@@ -19,7 +19,8 @@
     "acct-revoke": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-revoke",
     "acct-register": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-register",
     "test": "node --env-file-if-exists=.env --test test/*.test.ts",
-    "assay-model-swap": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/assay-model-swap.ts"
+    "assay-model-swap": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/assay-model-swap.ts",
+    "assay-usdg-permit": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/assay-usdg-permit.ts"
   },
   "dependencies": {
     "@noble/curves": "^1.9.1",

@@ -379,5 +379,21 @@
     "setMeasurement": "0x2186a1c6fe7e3b2257a991e4e6ad6c59a24ecc4b03786b26d7309b79942f93f7",
     "registerAgent": "0x470b7b86b5b55b1fc29c0369acdbc2cdc0bb0bf21d34b5a982e3ffd03867029e",
     "keeperRenewal": "0xbb5b3f0236640f4fca532fe793e1dd205281def2ee19c39b4c6bef842e74f119"
+  },
+  "usdgAssay": {
+    "address": "0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d",
+    "usdg": "0x7E955252E15c84f5768B83c41a71F9eba181802F",
+    "deployTx": "0xb26c84951b40601c9392a2e0e6ad3c451b7a4443ba1a307df5461b065a8aadcd",
+    "sourceVerified": "Blockscout, Pass - Verified",
+    "register": "0xf82fbe2ff2ca2307ab5e37c9aacabc592a2c0e0a96568b2386b49323170bfec9",
+    "registerReceiptKey": "0x24c1c46d3f60a9704d31ee78201b8eefbf8b385c6192e319469d5193f2c40716",
+    "openChannelWithPermit": {
+      "hash": "0xb8ea952fca22696105f5a0bdf65a416d92cbe52c1615639957e84edb0cb06e47",
+      "block": 127639515,
+      "channelId": 0,
+      "amount": "1000000",
+      "permitNonce": "0 -> 1",
+      "pinnedModel": "phala/qwen3.8-27b-uncensored"
+    }
   }
 }

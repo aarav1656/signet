@@ -7,12 +7,8 @@ import { Code, HexValue, Num, Spec, Fact } from '../../components/Stamp';
 import { useOnChain } from '../../components/Wallet';
 import { useTx } from '../../hooks/useTx';
 import { fmtCountdown, fmtToken, short } from '../../lib/format';
-import { GATEWAY_MEASUREMENT, TEST_USDG } from '../../lib/rhc.generated';
+import { GATEWAY_MEASUREMENT } from '../../lib/rhc.generated';
 import type { Snapshot, TokenRow } from './read';
-
-const testUsdgMintAbi = [
-  { type: 'function', name: 'mint', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [] },
-] as const;
 
 const parse = (v: string, decimals: number): bigint | null => {
   try {
@@ -89,11 +85,10 @@ function FundsStep({ snap, refetch }: Ctx) {
             onClick={() => tx.run(`Withdraw ${t.symbol}`, () => writeContractAsync({ address: snap.account, abi: accountAbi, functionName: 'withdraw', args: [t.address, to, wei as bigint], chainId: rhcChain.id }))}>
             Withdraw to owner
           </button>
-          {t.address === TEST_USDG && (
-            <button className="textbtn" type="button" disabled={!!anyReason || tx.busy}
-              onClick={() => tx.run('Mint testUSDG', () => writeContractAsync({ address: TEST_USDG, abi: testUsdgMintAbi, functionName: 'mint', args: [to, 100_000_000n], chainId: rhcChain.id }))}>
-              Mint 100 testUSDG to this wallet
-            </button>
+          {/USDG/.test(t.symbol) && (
+            <a className="textbtn" href="https://faucet.paxos.com/" target="_blank" rel="noreferrer">
+              Get Paxos USDG on Robinhood Chain testnet
+            </a>
           )}
         </div>
       </div>
