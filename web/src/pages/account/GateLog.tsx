@@ -37,16 +37,21 @@ function AgentPanel({ snap }: { snap?: Snapshot }) {
       </div>
       <div>
         Key expires
-        <b className={view.state === 'live' ? 'tick' : undefined} title={view.state === 'none' ? undefined : fmtWhen(snap.agentExpiry)}>
-          {view.state === 'live' ? `in ${fmtCountdown(view.left)}` : view.state === 'expired' ? fmtWhen(snap.agentExpiry) : 'not applicable'}
+        <b className={view.state === 'live' || view.state === 'near' ? 'tick' : undefined} title={view.state === 'none' ? undefined : fmtWhen(snap.agentExpiry)}>
+          {view.state === 'live' || view.state === 'near' ? `in ${fmtCountdown(view.left)}` : view.state === 'expired' ? fmtWhen(snap.agentExpiry) : 'not applicable'}
         </b>
       </div>
       <div>
         Model pin
         <b>{pin}</b>
       </div>
-      {view.state === 'expired' && (
+      {view.state === 'near' && (
         <p className="readmit" role="status">
+          Re-admission due in {fmtCountdown(view.left)}. <span>A fresh quote from the agent extends the key another 24 hours.</span>
+        </p>
+      )}
+      {view.state === 'expired' && (
+        <p className="readmit expired" role="status">
           Attestation expired, re-admission needed. <span>A fresh quote from the agent registers it again; trades wait until then.</span>
         </p>
       )}

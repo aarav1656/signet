@@ -157,6 +157,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .agent b.tick { font-variant-numeric: tabular-nums; }
 .readmit { flex-basis: 100%; margin: 0; color: var(--amber); font-size: 13px; font-weight: 600; }
 .readmit span { color: var(--mute); font-weight: 400; }
+.readmit.expired { color: var(--red); }
 .probe { padding: 12px 20px; border-bottom: 1px solid var(--line); font-size: 12.5px; line-height: 1.55; color: var(--mute); }
 .probe code { font: 500 12px/1 var(--mono); color: var(--red); }
 .probe.bad { color: var(--ink); background: var(--red-wash); }
