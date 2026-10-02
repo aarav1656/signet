@@ -7,6 +7,7 @@ import { rhcChain, rhcExplorer } from '../chain';
 import { factoryAbi } from '../abi/AgentAccount.generated';
 import { Fact, HexValue, Num, Spec } from '../components/Stamp';
 import { EligibilityGate } from '../components/Eligibility';
+import { corporateActionLabel } from './account/corp';
 import { Wallet } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useTx } from '../hooks/useTx';
@@ -62,7 +63,6 @@ function CreateAction({ onCreated }: { onCreated: (a: Address) => void }) {
 }
 
 function TokenSpec({ t, now }: { t: TokenRow; now: bigint }) {
-  void now;
   const ratio = t.limits.daily === 0n ? 0 : Math.min(100, Number((t.used * 10_000n) / t.limits.daily) / 100);
   return (
     <Spec
@@ -74,6 +74,7 @@ function TokenSpec({ t, now }: { t: TokenRow; now: bigint }) {
       }
     >
       <Fact label="Per trade">{t.limits.allowed ? fmtToken(t.limits.perTrade, t.decimals) : 'none'}</Fact>
+      {t.corp && <Fact label="Corporate action, ERC-8056" wide>{corporateActionLabel(t.corp, now).text}</Fact>}
       <Fact label="Approval threshold">{t.limits.allowed ? fmtToken(t.limits.approvalAbove, t.decimals) : 'none'}</Fact>
       <Fact label="Daily window, used of cap">
         <span className="tnum">{fmtToken(t.used, t.decimals)} of {t.limits.allowed ? fmtToken(t.limits.daily, t.decimals) : '0.00'}</span>

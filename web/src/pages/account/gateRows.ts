@@ -84,6 +84,7 @@ const REFUSAL_GLOSS: Record<string, string> = {
   TokenNotAllowed: 'Token the owner has not allowed',
   IsPaused: 'Account paused by the owner',
   ReceiptInvalid: 'Receipt did not verify',
+  CorporateActionPending: 'Stock Token corporate action pending, agent stays out',
 };
 
 const tokenOf = (tokens: TokenInfo[], a: string) => tokens.find((t) => t.address.toLowerCase() === a.toLowerCase());

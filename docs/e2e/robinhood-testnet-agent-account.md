@@ -139,3 +139,14 @@ The CVM was restarted at 14:03:15 UTC: agent `0x00e052627F691ca075BCd0dbc7220B57
 | `setMeasurement(0x993b...8e9a, true)`, `registerAgent` | `0x98559ec5...`, `0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d` | agent `0x71f1...3461`, expiry 1791043621 |
 | Owner sends 4 USDG | `0x31f90cd2d83ff5112a80a785bc2e68d7821f7dc64e8a16d54a2db39dbcd3c720` | |
 | `openInferenceChannel(provider, 1 USDG)` | `0xed6e42b7840a47e76e548980b8e62026b3e75c6622443069bdf055a3829a1d32` | Assay channel 1: agent = the account, 1000000, pin qwen; account USDG 3000000 after |
+
+## Factory v3: ERC-8056 corporate-action guard (2026-10-02)
+
+`AgentAccountFactory` `0x14103f1928AB34b45Cc376fF56fb59d798Deed03` (deploy `0xd958d6434a4c1aa23ff0370f65a5d55b5a10707ba5c79774a955bdf854ccc681`, Blockscout verified), same constructor arguments as v2, with the guarded `AgentAccount` (16,032 runtime bytes). Live TSLA on testnet reads `uiMultiplier` 1e18, `newUIMultiplier` 1e18, `effectiveAt` 0, so the guard is open for it.
+
+| Step | Transaction | Result |
+|---|---|---|
+| `createAccount(owner)` | `0x47076397ffb90ba98bbbb34248c1b3aa91241aa69ba23017ce05b1e62d380e62` | account `0xFaaAa4d1ee944d317b10233505D8c57425C53b55`, `CORPORATE_ACTION_COOLDOWN()` 86400 |
+| `setModel(qwen)`, `setLimits(USDG)`, `setLimits(TSLA)`, `setPool` | `0x90f97f85...`, `0x094fa172...`, `0x0b10068f...`, `0xe392657e...` | as account 3 |
+| `setMeasurement(0x993b...8e9a, true)`, `registerAgent` | `0x2ed88066...`, `0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a` | agent `0x71f1...3461` |
+| Owner sends 4 USDG | `0xa1787366d080b3223cf59d329f6bff2b2d519f741c61aec82979029f1bae3e58` | account USDG 4000000 |

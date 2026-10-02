@@ -11,7 +11,8 @@
     "TSLA": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
     "TestUSDG": "0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC",
     "Verifier": "0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c",
-    "AgentAccountFactoryUSDG": "0xB9F7eB234C2F562475668c1Dc9b6850f235373c3"
+    "AgentAccountFactoryUSDG": "0xB9F7eB234C2F562475668c1Dc9b6850f235373c3",
+    "AgentAccountFactoryGuarded": "0x14103f1928AB34b45Cc376fF56fb59d798Deed03"
   },
   "deployer": "0x2aD12a72362704367e99a344cFf5affDDF7f5DEF",
   "inferenceChannelId": 0,
@@ -430,6 +431,10 @@
       {
         "account": "0x06AAadCc83873775D8A72F42B912f57ab3dc2506",
         "registerAgent": "0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d"
+      },
+      {
+        "account": "0xFaaAa4d1ee944d317b10233505D8c57425C53b55",
+        "registerAgent": "0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a"
       }
     ]
   },
@@ -452,5 +457,19 @@
       "deposit": "1000000",
       "pin": "phala/qwen3.8-27b-uncensored"
     }
+  },
+  "guardedAccount": {
+    "factory": "0x14103f1928AB34b45Cc376fF56fb59d798Deed03",
+    "factoryDeployTx": "0xd958d6434a4c1aa23ff0370f65a5d55b5a10707ba5c79774a955bdf854ccc681",
+    "guard": "ERC-8056 corporate-action guard: agent execute/propose refuse a token with newUIMultiplier != uiMultiplier or within CORPORATE_ACTION_COOLDOWN (86400) of effectiveAt",
+    "account": "0xFaaAa4d1ee944d317b10233505D8c57425C53b55",
+    "createAccount": "0x47076397ffb90ba98bbbb34248c1b3aa91241aa69ba23017ce05b1e62d380e62",
+    "setModelQwen": "0x90f97f85014577e41eafc2c1bfc3df19dc38ce9daade27e85a18196e9b408b80",
+    "setLimitsUSDG": "0x094fa1720391a5e19b0e0cc4804374a8af94b5c2c8638c4c1f1b43cbccaefffd",
+    "setLimitsTSLA": "0x0b10068fa1dc24883dc42c38a61e025793baabd9fcc7e563d313c6fd227fdc21",
+    "setPool": "0xe392657e16d83bff7538eb4ba3e59f8e026d82fe2480e4d2be6694251205dfcc",
+    "setMeasurement": "0x2ed88066856d6e66d201d95c6a81946be226d478e56de6e35e32b8dbbf2d5e7b",
+    "registerAgent": "0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a",
+    "depositUSDG": "0xa1787366d080b3223cf59d329f6bff2b2d519f741c61aec82979029f1bae3e58"
   }
 }
