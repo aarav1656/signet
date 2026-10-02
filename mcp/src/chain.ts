@@ -107,7 +107,29 @@ const GLOSS: Record<string, string> = {
   ProposalNotPending: 'The proposal is already executed, rejected or cancelled.',
   ProposalExpired: 'The proposal lifetime ran out.',
   TradeMismatch: 'The trade passed to approveTrade differs from the proposed one.',
+  CorporateActionPending: 'A Stock Token in the trade has an ERC-8056 multiplier change pending or took one effect within the last day, so the agent stays out; the owner can still approve a proposal.',
+  AgentIsOwner: 'The quote names the owner key as the agent. Owner and agent must be different keys.',
+  ApprovalNotNeeded: 'The trade is inside the approval line, so the agent executes it directly instead of proposing it.',
+  BadLimits: 'The approval threshold is above the per-trade cap.',
+  HookedPool: 'The pool has a hook contract. The account trades only hookless pools.',
+  NativeCurrency: 'The pool uses native ETH. The account trades ERC-20 pairs only.',
+  NoCode: 'An address the account needs has no contract code.',
+  NotPoolManager: 'Only the Uniswap v4 PoolManager may call the unlock callback.',
+  NotSwapping: 'The unlock callback ran outside a swap the account started.',
+  OverSpent: 'The pool took more of the input token than the trade allowed.',
+  OwnableInvalidOwner: 'The new owner address is invalid (zero).',
+  OwnableUnauthorizedAccount: 'Only the account owner may call this.',
+  ProposerNotCurrentAgent: 'The proposal came from an agent that is no longer the registered one.',
+  QuoteAlreadyUsed: 'This TDX quote already admitted an agent. Each admission needs a fresh quote.',
+  ReentrancyGuardReentrantCall: 'A call tried to re-enter the account during another call.',
+  RenounceDisabled: 'The owner cannot renounce ownership; the account always has an owner.',
+  SafeERC20FailedOperation: 'A token transfer or approval failed.',
+  StaleRefBlock: 'The quote names a block more than 256 blocks old; ask the CVM for a fresh quote.',
+  ZeroAmount: 'The trade amount is zero.',
+  ZeroMinOut: 'The trade sets no minimum output; the account requires slippage protection.',
 };
+/** Exported for the test that every custom error in the account ABI has a plain-words line. */
+export const REFUSAL_GLOSS = GLOSS;
 
 export async function explainRefusal(c: PublicClient, txHash: Hex) {
   const tx = await c.getTransaction({ hash: txHash });
