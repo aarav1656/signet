@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterAllowedConnectors, walletLabel } from './Wallet';
+import { filterAllowedConnectors, walletLabel, connectHint } from './Wallet';
 
 const conn = (rdns?: string | string[]) => ({ rdns });
 
@@ -52,5 +52,18 @@ describe('walletLabel', () => {
     expect(walletLabel('io.metamask')).toBe('MetaMask');
     expect(walletLabel('com.coinbase.wallet')).toBe('Coinbase Wallet');
     expect(walletLabel('app.phantom')).toBe('Phantom');
+  });
+});
+
+describe('connectHint', () => {
+  it('tells the person to unlock and approve on a 4001, including a wrapped one', () => {
+    expect(connectHint({ code: 4001 }, 'Rabby')).toMatch(/Open Rabby, unlock it if it is locked, approve the connection/);
+    expect(connectHint({ message: 'x', cause: { code: 4001 } }, 'Rabby')).toMatch(/unlock it/);
+  });
+  it('points at the waiting request on -32002', () => {
+    expect(connectHint({ code: -32002 }, 'MetaMask')).toMatch(/already waiting in MetaMask/);
+  });
+  it('never falls back to a bare failure line', () => {
+    expect(connectHint(new Error('boom'), 'Rabby')).toMatch(/Open Rabby, check it is unlocked/);
   });
 });
