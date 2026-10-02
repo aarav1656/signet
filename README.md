@@ -65,7 +65,7 @@ The contracts meter two things the account owner pays for.
 
 | Check | Result |
 |---|---|
-| `make test` from a fresh clone (`forge test`, 20 suites) | 296 passed, 0 failed, 1 skipped |
+| `make test` from a fresh clone of `bac4c37` (`forge test`, 21 suites, log in `docs/test-logs/`) | 314 passed, 0 failed, 0 skipped |
 | `AgentAccount` unit, window fuzz and invariant suites | 89 passed |
 | `AgentAccount` RHC fork tests against live testnet state (`make test` sets `RHC_FORK_URL=https://rpc.testnet.chain.robinhood.com`) | 4 passed |
 | Mutation runner, one guard removed or weakened at a time | 109 of 110 killed, 1 equivalent mutant documented, restored suite green: `docs/security/agent-account-mutations.md` |
@@ -349,7 +349,7 @@ Each fix was checked by reverting it and confirming its test goes red, then rest
 
 Assay holds real Paxos USDG, whose issuer can pause, freeze and wipe. The fork suite runs against the real USDG proxy and pins what that means: a pause that outlasts the challenge window lets the agent close first, and a frozen agent's refund waits in Assay until Paxos unfreezes (`test_demo_M1_unfreezeRestoresRefund` shows the full refund arriving afterwards). No `refundTo` escape was added, since it would let a frozen party route around the freeze.
 
-Tests on the deployed code: the Assay unit, attack, fuzz, hardening, re-review and invariant suites run inside `make test` (296 passed, 0 failed, 1 skipped; see Verification). The skipped suite is the real-USDG fork suite, which runs when `CHIRON_FUNDED_TEST_ACCOUNT` names a funded Arbitrum Sepolia USDG holder.
+Tests on the deployed code: the Assay unit, attack, fuzz, hardening, re-review and invariant suites run inside `make test` (314 passed, 0 failed, 0 skipped; see Verification). That includes the 13-test real-USDG fork suite, which forks Arbitrum Sepolia through an archive endpoint against Paxos USDG, and the 5 ERC-8056 corporate-action tests.
 
 ## Gas
 
