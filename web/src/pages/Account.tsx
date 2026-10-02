@@ -10,7 +10,7 @@ import { Wallet } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useTx } from '../hooks/useTx';
 import { fmtToken, short } from '../lib/format';
-import { DEMO_ACCOUNT, FACTORY, GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK } from '../lib/rhc.generated';
+import { DEMO_ACCOUNT, FACTORIES, FACTORY, GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK } from '../lib/rhc.generated';
 import { Compare } from './account/Compare';
 import { OwnerActions } from './account/OwnerActions';
 import { Refusals, useRefusals } from './account/Refusals';
@@ -49,7 +49,7 @@ function CreateAction({ onCreated }: { onCreated: (a: Address) => void }) {
         ) : (
           <Wallet />
         )}
-        <span className="small">The factory deploys an account that only your wallet controls.</span>
+        <span className="small">The factory deploys an account that only your wallet controls. It holds Paxos USDG and pays for inference in Paxos USDG.</span>
       </div>
       {made && (
         <p className="note">
@@ -176,10 +176,10 @@ export function Account() {
     enabled: !!conn.address && !!client,
     refetchInterval: 15_000,
     queryFn: async () => {
-      const logs = await client!.getContractEvents({
-        address: FACTORY, abi: factoryAbi, eventName: 'AccountCreated', args: { owner: conn.address }, fromBlock: RHC_DEPLOY_BLOCK, toBlock: 'latest',
-      });
-      return logs.map((l) => l.args.account as Address);
+      const logs = await Promise.all(FACTORIES.map((address) => client!.getContractEvents({
+        address, abi: factoryAbi, eventName: 'AccountCreated', args: { owner: conn.address }, fromBlock: RHC_DEPLOY_BLOCK, toBlock: 'latest',
+      })));
+      return logs.flat().map((l) => l.args.account as Address);
     },
   });
   const mine = mineQ.data ?? [];

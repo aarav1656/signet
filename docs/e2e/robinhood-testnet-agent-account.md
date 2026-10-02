@@ -126,3 +126,16 @@ The CVM was restarted at 14:03:15 UTC: agent `0x00e052627F691ca075BCd0dbc7220B57
 | Account 2 `setMeasurement(0x993b...8e9a, false)` | `0x1d34d37a52a7e099a9741ffa2ff04fbd0e09e9dabefb5731a0f93cee635b8008` | 127666780 | at 127666780: account 2 `agent()` zero; account 1 `agent()` `0x71f1...3461`, measurement still approved there |
 | Account 2 re-approve, re-admit | `0x47eb49a788edcd1ec319fb5dd0457809c7dae3ac492262669527205ac9acc17e`, `0x8737f5cb2d091b154af0a722ebd1dc2bea1c891cbdeb9730ae1afffbd9487806` | 127666840, 127666867 | admitted again |
 | Keeper (launchd, window forced) renews both | `0x20209f03a0232b7db7406b69ab68c265340e0d316688ad71aea29089768f5555`, `0xb6e4dc44288956d22d443ff137326932b1093e484a7e6bc8bc57f59dbc90aa4e` | 127667386, 127667473 | both `agentExpiry()` moved forward |
+
+## Factory v2 and a real-USDG account (2026-10-02)
+
+`AgentAccountFactory` `0xB9F7eB234C2F562475668c1Dc9b6850f235373c3` (deploy `0x156a77dd47ce853f566b680eb9a62e7cf73a330916013c738d20cc2e6c2302bd`) with `assay` = `0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d` and `usdg` = Paxos `0x7E955252E15c84f5768B83c41a71F9eba181802F`; verifier, receipt verifier and PoolManager as before.
+
+| Step | Transaction | Result |
+|---|---|---|
+| `createAccount(owner)` | `0x3e84210cd9afd753028a35e8d84aa2330c12e7e8b3e5808e07dd5ca99071d82d` | account `0x06AAadCc83873775D8A72F42B912f57ab3dc2506`; `assay()` `0xcF4a...3f9d`, `usdg()` `0x7E95...802F` |
+| `setLimits(USDG)`, `setLimits(TSLA)`, `setPool(USDG/TSLA 0.3%)` | `0x3a3afc9c...`, `0x141e4dd7...`, `0x2f712b9d...` | per trade 10 USDG, daily 5, approval above 2; TSLA as account 1 |
+| `setModel(qwen, [qwen], gateway)` | `0xdfd4c7e3e3f4fb9f2e60fb7587fb6e3a66c41ed0b5636f4a0cf4de626f389440` | pin `0x7725844c...77b2` |
+| `setMeasurement(0x993b...8e9a, true)`, `registerAgent` | `0x98559ec5...`, `0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d` | agent `0x71f1...3461`, expiry 1791043621 |
+| Owner sends 4 USDG | `0x31f90cd2d83ff5112a80a785bc2e68d7821f7dc64e8a16d54a2db39dbcd3c720` | |
+| `openInferenceChannel(provider, 1 USDG)` | `0xed6e42b7840a47e76e548980b8e62026b3e75c6622443069bdf055a3829a1d32` | Assay channel 1: agent = the account, 1000000, pin qwen; account USDG 3000000 after |

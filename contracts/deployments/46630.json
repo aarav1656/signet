@@ -10,7 +10,8 @@
     "ReceiptVerifier": "0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380",
     "TSLA": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
     "TestUSDG": "0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC",
-    "Verifier": "0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c"
+    "Verifier": "0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c",
+    "AgentAccountFactoryUSDG": "0xB9F7eB234C2F562475668c1Dc9b6850f235373c3"
   },
   "deployer": "0x2aD12a72362704367e99a344cFf5affDDF7f5DEF",
   "inferenceChannelId": 0,
@@ -425,7 +426,31 @@
         "reapprove": "0x47eb49a788edcd1ec319fb5dd0457809c7dae3ac492262669527205ac9acc17e",
         "readmit": "0x8737f5cb2d091b154af0a722ebd1dc2bea1c891cbdeb9730ae1afffbd9487806",
         "keeperRenewal": "0xb6e4dc44288956d22d443ff137326932b1093e484a7e6bc8bc57f59dbc90aa4e"
+      },
+      {
+        "account": "0x06AAadCc83873775D8A72F42B912f57ab3dc2506",
+        "registerAgent": "0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d"
       }
     ]
+  },
+  "usdgAccount": {
+    "factory": "0xB9F7eB234C2F562475668c1Dc9b6850f235373c3",
+    "factoryDeployTx": "0x156a77dd47ce853f566b680eb9a62e7cf73a330916013c738d20cc2e6c2302bd",
+    "account": "0x06AAadCc83873775D8A72F42B912f57ab3dc2506",
+    "createAccount": "0x3e84210cd9afd753028a35e8d84aa2330c12e7e8b3e5808e07dd5ca99071d82d",
+    "setModelQwen": "0xdfd4c7e3e3f4fb9f2e60fb7587fb6e3a66c41ed0b5636f4a0cf4de626f389440",
+    "setLimitsUSDG": "0x3a3afc9c20c94677f2f065044ffa6c0eb321accaf01e1adaa824504cd4aaccb4",
+    "setLimitsTSLA": "0x141e4dd7d2ab81b4d5ee179987e150a75ee6ea3c256fd5a31cc47b8ca4600ee8",
+    "setPool": "0x2f712b9d3b777257526f9ed31b0f151a3fed1ec50851cbc9546d3cfc8de10add",
+    "setMeasurement": "0x98559ec52bdb87e9e65689c2ffadbe5306e6edef1c1aeeef93acff2ae5840624",
+    "registerAgent": "0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d",
+    "depositUSDG": "0x31f90cd2d83ff5112a80a785bc2e68d7821f7dc64e8a16d54a2db39dbcd3c720",
+    "openInferenceChannel": "0xed6e42b7840a47e76e548980b8e62026b3e75c6622443069bdf055a3829a1d32",
+    "inferenceChannel": {
+      "assay": "0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d",
+      "id": 1,
+      "deposit": "1000000",
+      "pin": "phala/qwen3.8-27b-uncensored"
+    }
   }
 }
