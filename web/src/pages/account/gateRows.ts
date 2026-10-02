@@ -12,7 +12,7 @@ import { usePublicClient } from 'wagmi';
 import { rhcChain } from '../../chain';
 import { accountAbi } from '../../abi/AgentAccount.generated';
 import { fmtToken, fmtWhen, short } from '../../lib/format';
-import { DEMO_ACCOUNT, MODEL_ID, RHC_DEPLOY_BLOCK, RHC_EXPLORER_URL, RHC_REFUSAL_TXS } from '../../lib/rhc.generated';
+import { LEGACY_ACCOUNT, MODEL_ID, RHC_DEPLOY_BLOCK, RHC_EXPLORER_URL, RHC_REFUSAL_TXS } from '../../lib/rhc.generated';
 
 export type GateRow = {
   key: string;
@@ -254,7 +254,7 @@ export function useGateLog(account: Address) {
       const c = client as PublicClient;
       const head = await c.getBlockNumber();
       const logs = (await c.getContractEvents({ address: account, abi: accountAbi, fromBlock: RHC_DEPLOY_BLOCK, toBlock: head })) as unknown as AccountLog[];
-      const seeds = account.toLowerCase() === DEMO_ACCOUNT.toLowerCase() ? RHC_REFUSAL_TXS : [];
+      const seeds = account.toLowerCase() === LEGACY_ACCOUNT.toLowerCase() ? RHC_REFUSAL_TXS : [];
       const refusalsP = readRefusals(account, seeds).then(
         (refusals) => ({ refusals, refusalsError: undefined as string | undefined }),
         (e: unknown) => ({ refusals: [] as Refusal[], refusalsError: e instanceof Error ? e.message : String(e) }),

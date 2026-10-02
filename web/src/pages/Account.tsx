@@ -12,7 +12,7 @@ import { Wallet } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useTx } from '../hooks/useTx';
 import { fmtToken, short } from '../lib/format';
-import { DEMO_ACCOUNT, FACTORIES, FACTORY, GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK } from '../lib/rhc.generated';
+import { DEMO_ACCOUNT, LEGACY_ACCOUNT, FACTORIES, FACTORY, GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK } from '../lib/rhc.generated';
 import { Compare } from './account/Compare';
 import { OwnerActions } from './account/OwnerActions';
 import { Refusals, useRefusals } from './account/Refusals';
@@ -88,7 +88,7 @@ function TokenSpec({ t, now }: { t: TokenRow; now: bigint }) {
 function Mandate({ snap, block, now, mine, onPick }: { snap: Snapshot; block: bigint; now: bigint; mine: Address[]; onPick: (a: Address) => void }) {
   const conn = useConnection();
   const you = !!conn.address && conn.address.toLowerCase() === snap.owner.toLowerCase();
-  const choices = [DEMO_ACCOUNT, ...mine.filter((a) => a.toLowerCase() !== DEMO_ACCOUNT.toLowerCase())];
+  const choices = [DEMO_ACCOUNT, LEGACY_ACCOUNT, ...mine.filter((a) => a.toLowerCase() !== DEMO_ACCOUNT.toLowerCase() && a.toLowerCase() !== LEGACY_ACCOUNT.toLowerCase())];
 
   return (
     <div className="doc sheet-doc">
@@ -98,7 +98,7 @@ function Mandate({ snap, block, now, mine, onPick }: { snap: Snapshot; block: bi
           <span className="switch" role="group" aria-label="Choose an account">
             {choices.map((a) => (
               <button key={a} type="button" aria-pressed={a.toLowerCase() === snap.account.toLowerCase()} onClick={() => onPick(a)}>
-                {a === DEMO_ACCOUNT ? 'deployed account' : `yours ${short(a)}`}
+                {a === DEMO_ACCOUNT ? 'Paxos USDG account' : a === LEGACY_ACCOUNT ? 'first venue account' : `yours ${short(a)}`}
               </button>
             ))}
           </span>
@@ -197,6 +197,12 @@ export function Account() {
         <h1 className="hd">Give an AI agent a <em>mandate</em>, not your keys.</h1>
         <GateLog account={account} snap={snap} snapBlock={snapQ.data?.block} probe={account === DEMO_ACCOUNT ? probe : undefined} />
         <p className="lede">Caps per token. Big trades wait for you. Every trade records the model that made it, and every refusal is on the record too.</p>
+        {account === DEMO_ACCOUNT && (
+          <p className="small stage-acct">
+            Reading <HexValue value={DEMO_ACCOUNT} head={6} tail={4} href={rhcExplorer.address(DEMO_ACCOUNT)} />: Paxos USDG on both legs, ERC-8056 corporate-action guard,
+            one attested operator agent. The first venue account, with the live trade cycle on TestUSDG, is one click away under Account.
+          </p>
+        )}
         <div className="cta-row"><a className="btn" href="#account">Open the account <span aria-hidden="true">&rarr;</span></a></div>
         <div className="glosses">
           <p><b>Mandate.</b> The caps, approval line and approved measurements the owner sets. The account enforces them whatever the agent does.</p>

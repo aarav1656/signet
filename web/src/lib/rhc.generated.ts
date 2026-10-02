@@ -5,7 +5,10 @@ import type { Address } from 'viem';
 export const RHC_CHAIN_ID = 46630 as const;
 export const RHC_EXPLORER_URL = "https://explorer.testnet.chain.robinhood.com" as const;
 export const RHC_DEPLOY_BLOCK = 127033401n;
-export const DEMO_ACCOUNT = "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D" as Address;
+/** The account the app opens on: Paxos USDG on both legs, ERC-8056 guarded, operator agent admitted. */
+export const DEMO_ACCOUNT = "0xFaaAa4d1ee944d317b10233505D8c57425C53b55" as Address;
+/** The first account, TestUSDG venue, where the live cycle and the mined refusals ran. */
+export const LEGACY_ACCOUNT = "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D" as Address;
 export const FACTORY = "0x14103f1928AB34b45Cc376fF56fb59d798Deed03" as Address;
 export const FACTORIES = ["0x14103f1928AB34b45Cc376fF56fb59d798Deed03","0xB9F7eB234C2F562475668c1Dc9b6850f235373c3","0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e"] as readonly Address[];
 export const RHC_ASSAY = "0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D" as Address;

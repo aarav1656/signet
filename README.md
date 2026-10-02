@@ -1,14 +1,24 @@
 # Chiron
 
-Hosted app: [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) . Repo: [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron).
-
-The hosted app opens on the agent account: the deployed `AgentAccount` read live from Robinhood Chain testnet as a gate log (every executed trade with its amount, token and recorded model hash, every proposal and approval, and every refused call with its decoded custom error, each linked to its transaction) beside an agent panel (agent, attested measurement, live key-expiry countdown, model pin), then the owner's mandate (balances, caps, daily window, approval threshold, approved measurements), the two refusals the account issues, and the owner's actions from a connected wallet (create an account, deposit, withdraw, set caps, approve a measurement, approve or reject a pending trade). An account holds and trades Robinhood Stock Tokens, whose terms exclude US persons and restrict Canada, the UK, Switzerland and the UAE ([robinhood.com/rhj/stocktokens](https://robinhood.com/rhj/stocktokens/)), so creating, funding and configuring an account in the app waits on an explicit two-way answer; a "US person" answer is stored and keeps those actions closed, while every chain read stays open. The Assay pages at `/channel`, `/refusal` and `/verify` read the Paxos USDG Assay on Robinhood Chain testnet by default and switch to the Arbitrum Sepolia Assay from the network bar under the header (`?net=arb`); every view names the chain it reads. On Robinhood Chain, `/refusal` replays a refusal that was mined: the first trade's real Phala receipt, offered to a channel pinned to another model ([`0x9f2bd922...8bdb`](https://explorer.testnet.chain.robinhood.com/tx/0x9f2bd92252dce7827bebac226e269f46956e4d5cc368eb3f6dc7e8253eca8bdb), `ModelMismatch()`).
+| | |
+|---|---|
+| Network | Robinhood Chain testnet (46630); Assay billing also on Arbitrum Sepolia (421614) |
+| App | [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app) |
+| Account the app opens on | [`0xFaaAa4d1ee944d317b10233505D8c57425C53b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55): Paxos USDG, ERC-8056 corporate-action guard, operator agent admitted |
+| Attested trade | [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03): the TDX-attested agent buys TSLA with 1 Paxos USDG, receipt-checked model hash in `TradeExecuted` |
+| Refusal | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8): a real TDX quote from a different workload, `registerAgent` reverts `MeasurementNotApproved` |
+| Agents | `claude mcp add --transport http chiron https://chiron-receipts.vercel.app/mcp` |
+| Repo | [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron) |
 
 Named for the one trustworthy centaur: the attested agent among substitutes.
 
 Chiron is attested trading accounts for AI agents on Robinhood Chain. An `AgentAccount` holds USDG and Stock Tokens and swaps only through the canonical Uniswap v4 PoolManager. It accepts a trade from exactly one caller: an agent key that Intel TDX attestation put there, checked onchain by a Stylus contract against a workload measurement the owner approved. Every trade stays inside per-token caps the owner set, trades above the owner's approval threshold wait for the owner, and each trade's event records the agent's workload measurement and the verified inference receipt that preceded it. The agent's inference is billed from the same account through Assay, a pay-per-call USDG channel.
 
 The contracts are `AgentAccount` and `AgentAccountFactory` (`contracts/src/`), the Stylus `Verifier` and `ReceiptVerifier` (`verifier/`, `receipt-verifier/`), and `Assay` (`contracts/src/Assay.sol`).
+
+## The hosted app
+
+The hosted app opens on the Paxos USDG account above, read live from Robinhood Chain testnet as a gate log (every executed trade with its amount, token and recorded model hash, every proposal and approval, and every refused call with its decoded custom error, each linked to its transaction) beside an agent panel (agent, attested measurement, live key-expiry countdown, model pin), then the owner's mandate (balances, caps, daily window, approval threshold, approved measurements), the two refusals the account issues, and the owner's actions from a connected wallet (create an account, deposit, withdraw, set caps, approve a measurement, approve or reject a pending trade). An account holds and trades Robinhood Stock Tokens, whose terms exclude US persons and restrict Canada, the UK, Switzerland and the UAE ([robinhood.com/rhj/stocktokens](https://robinhood.com/rhj/stocktokens/)), so creating, funding and configuring an account in the app waits on an explicit two-way answer; a "US person" answer is stored and keeps those actions closed, while every chain read stays open. The Assay pages at `/channel`, `/refusal` and `/verify` read the Paxos USDG Assay on Robinhood Chain testnet by default and switch to the Arbitrum Sepolia Assay from the network bar under the header (`?net=arb`); every view names the chain it reads. On Robinhood Chain, `/refusal` replays a refusal that was mined: the first trade's real Phala receipt, offered to a channel pinned to another model ([`0x9f2bd922...8bdb`](https://explorer.testnet.chain.robinhood.com/tx/0x9f2bd92252dce7827bebac226e269f46956e4d5cc368eb3f6dc7e8253eca8bdb), `ModelMismatch()`).
 
 ## Why the account checks the software
 
@@ -72,7 +82,8 @@ Deployed 2026-10-01 from `0x2aD12a72362704367e99a344cFf5affDDF7f5DEF`, which own
 
 | Contract | Address | What it is |
 |---|---|---|
-| AgentAccount | [`0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D`](https://explorer.testnet.chain.robinhood.com/address/0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D) | The owner's account. Source verified on Blockscout. |
+| AgentAccount | [`0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D`](https://explorer.testnet.chain.robinhood.com/address/0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D) | The first account, on the TestUSDG venue, where the live cycle and the mined refusals ran. Source verified on Blockscout. |
+| AgentAccount (app default) | [`0xFaaAa4d1ee944d317b10233505D8c57425C53b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55) | Paxos USDG account from factory `0x14103f19...ed03`, with the ERC-8056 corporate-action guard and the operator agent. |
 | AgentAccountFactory | [`0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e`](https://explorer.testnet.chain.robinhood.com/address/0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e) | Creates one account per owner. Source verified on Blockscout. |
 | Verifier | [`0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c`](https://explorer.testnet.chain.robinhood.com/address/0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c) | Stylus (Rust). Verifies an Intel TDX DCAP quote chain, returns the signer and the nine-field measurement. |
 | ReceiptVerifier | [`0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380`](https://explorer.testnet.chain.robinhood.com/address/0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380) | Stylus (Rust). Verifies one Ed25519-signed Phala inference receipt. |

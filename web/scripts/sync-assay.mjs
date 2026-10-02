@@ -84,7 +84,10 @@ import type { Address } from 'viem';
 export const RHC_CHAIN_ID = ${rhc.chainId} as const;
 export const RHC_EXPLORER_URL = ${JSON.stringify(rhc.explorer)} as const;
 export const RHC_DEPLOY_BLOCK = ${rhc.block}n;
-export const DEMO_ACCOUNT = ${JSON.stringify(c.AgentAccount)} as Address;
+/** The account the app opens on: Paxos USDG on both legs, ERC-8056 guarded, operator agent admitted. */
+export const DEMO_ACCOUNT = ${JSON.stringify(rhc.guardedAccount?.account ?? c.AgentAccount)} as Address;
+/** The first account, TestUSDG venue, where the live cycle and the mined refusals ran. */
+export const LEGACY_ACCOUNT = ${JSON.stringify(c.AgentAccount)} as Address;
 export const FACTORY = ${JSON.stringify(c.AgentAccountFactoryGuarded ?? c.AgentAccountFactoryUSDG ?? c.AgentAccountFactory)} as Address;
 export const FACTORIES = ${JSON.stringify([c.AgentAccountFactoryGuarded, c.AgentAccountFactoryUSDG, c.AgentAccountFactory].filter(Boolean))} as readonly Address[];
 export const RHC_ASSAY = ${JSON.stringify(c.Assay)} as Address;
