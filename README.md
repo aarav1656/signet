@@ -43,7 +43,9 @@ Chain 46630. Trades route through the canonical Uniswap v4 PoolManager `0x8366a3
 
 ## Business model
 
-The payer is the account owner: an agent operator running an attested agent for clients, or a trader running their own. The contracts meter two things the owner pays for.
+The buyer is a team that runs trading agents with other people's money: a hosted-agent operator (39 agents hosted by Agents Hood on Robinhood Chain, Bankr routing $178.66M of Robinhood Chain volume in 30 days, both in `docs/research/chiron-pivot-verdict.md`). Today their clients hand a key to the operator's backend. With Chiron the operator runs one attested CVM, each client owns an account and sets its own caps, and the operator proves to every client which code holds the key and which model made each trade. The client pays the operator for the agent; the operator pays for one CVM and for keeping each client's admission fresh, which on Robinhood Chain testnet measured 2,429,944 and 2,444,609 gas per `registerAgent` (`0x8737f5cb`, `0xd345d42f`), about 0.0000244 ETH each at the testnet's 0.01 gwei.
+
+The contracts meter two things the account owner pays for.
 
 - **Each trade pays the pool's fee tier.** The owner allows each pool through `setPool`, and the pool key's `fee` is part of what the owner approves (`PoolSet` records it). The pools on this deployment are the 0.3% tier, `fee` 3000 in v4's hundredths of a basis point, which is 30 bps of `amountIn` settled inside the swap.
 - **Each inference call is billed per call through Assay.** The account opens a channel as its own agent, the agent key signs a cumulative voucher per call, and the provider is paid the voucher's increase in USDG by `redeemWithReceipt` only against a receipt that names the pinned model. On Arbitrum Sepolia one call was 0.30 USDG.
