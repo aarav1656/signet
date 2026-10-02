@@ -96,6 +96,7 @@ export const MODEL_ID = ${JSON.stringify(rhc.modelId)} as const;
 export const GATEWAY_REGISTER_TX = ${JSON.stringify(registerStep.hash)} as const;
 export const RHC_REFUSAL_TXS = ${JSON.stringify(refusalTxs)} as readonly \`0x\${string}\`[];
 export const USDG_ASSAY = ${JSON.stringify(u.address)} as Address;
+export const OPERATOR_CVM_URL = ${JSON.stringify(rhc.operatorCvm?.url ?? '')} as const;
 export const PAXOS_USDG = ${JSON.stringify(u.usdg)} as Address;
 export const USDG_ASSAY_DEPLOY_TX = ${JSON.stringify(u.deployTx)} as \`0x\${string}\`;
 export const USDG_ASSAY_REGISTER_TX = ${JSON.stringify(u.register)} as \`0x\${string}\`;

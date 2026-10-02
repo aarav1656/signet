@@ -112,3 +112,17 @@ The CVM was restarted at 14:03:15 UTC: agent `0x00e052627F691ca075BCd0dbc7220B57
 | Owner sends the agent key 0.0005 ETH for gas | [`0x3abc88a8...8bfe`](https://explorer.testnet.chain.robinhood.com/tx/0x3abc88a8feacc42e0daeb108c16301648830f2a8a2d2adeacf830503419a8bfe) | | success |
 
 `agent-cvm/register-keys.sh` re-registers the gateway signer and receipt key on all three Assays (Arbitrum Sepolia, Robinhood Chain testUSDG `0x2176...5b5D`, Robinhood Chain Paxos USDG `0xcF4a...3f9d`); each pass runs whether or not an earlier one failed.
+
+## Operator agent serving two client accounts (2026-10-02)
+
+`agent/src/cvm.ts` takes `?account=` on `/quote` and `account` on `/tx`, and answers `/info` and `/quote` cross-origin. Image `ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f18671...1463` (built by `agent-cvm/build-image.sh` with crane 0.22.1, release checksum verified), deployed to the same CVM with `phala deploy --cvm-id`. Agent `0x71f15e33d967F9b0d573Cb03CfE3e7fdBDFd3461`, measurement `0x993bd67c8e9de5d37d9af6ef41c5c5fdb53b113b8a2b666827e0e619f4978e9a`.
+
+| Step | Transaction | Block | Result |
+|---|---|---|---|
+| Account 1 owner `setMeasurement(0x993b...8e9a, true)` | `0x04ec2e370aa393624ed55c0b0b6679f5a4b8c69063af5af62676536ea242396a` | 127666588 | success |
+| Account 1 `registerAgent` | `0x2889f10bf20edff1fa512f52b99d3eb76ac903becdc9410c70a13e11abded196` | 127666613 | agent `0x71f1...3461`, expiry 1791041598 |
+| `AgentAccountFactory.createAccount(owner)` | `0xbb77ffc9a2e5f5cda88e9176a0417758da30c9b8dd8e918dee15cb3d5824dae5` | | account 2 `0xE1d7939105cF8B3670d6b4a0E15546C036e6c34c` |
+| Account 2 `setMeasurement`, `registerAgent` | `0x12b819825766c94efb8f78c7637f56e535c5d68244df1b6c5a9294f51071003f`, `0xdb52757ab39240be57a4aebd3980a57d4bb8c4d8601722e2774f32ab8f87f04e` | 127666678, 127666698 | same agent, expiry 1791041611 |
+| Account 2 `setMeasurement(0x993b...8e9a, false)` | `0x1d34d37a52a7e099a9741ffa2ff04fbd0e09e9dabefb5731a0f93cee635b8008` | 127666780 | at 127666780: account 2 `agent()` zero; account 1 `agent()` `0x71f1...3461`, measurement still approved there |
+| Account 2 re-approve, re-admit | `0x47eb49a788edcd1ec319fb5dd0457809c7dae3ac492262669527205ac9acc17e`, `0x8737f5cb2d091b154af0a722ebd1dc2bea1c891cbdeb9730ae1afffbd9487806` | 127666840, 127666867 | admitted again |
+| Keeper (launchd, window forced) renews both | `0x20209f03a0232b7db7406b69ab68c265340e0d316688ad71aea29089768f5555`, `0xb6e4dc44288956d22d443ff137326932b1093e484a7e6bc8bc57f59dbc90aa4e` | 127667386, 127667473 | both `agentExpiry()` moved forward |

@@ -145,6 +145,18 @@ The agent runs inside a Phala Cloud dstack CVM (`agent/src/cvm.ts`, packaged by 
 | The revoked agent's in-cap `execute` | [`0xc0b2e5bc...1e08`](https://explorer.testnet.chain.robinhood.com/tx/0xc0b2e5bc95048ad424a246277a819dfad0238b394ba4bf08cf9dc0231c7e1e08) | reverted, `NotAgent()` by `eth_call`, balances unchanged |
 | Owner re-approves, then `registerAgent` with a fresh quote | [`0xc5e5bb9b...7822`](https://explorer.testnet.chain.robinhood.com/tx/0xc5e5bb9bc3e4ca17ace0b52c4352d5ae7cfed1a9a7a8a43b5f7d229fd6447822), [`0x4694b617...9a66`](https://explorer.testnet.chain.robinhood.com/tx/0x4694b617f4bafbd0e3a3f2a09dbe11b5afd0f96fc4023393aaf516ce68f69a66) | re-approval alone leaves `agent()` zero; the fresh quote admits the key again |
 
+**One operator agent, many client accounts.** A hosted-agent operator runs one CVM and serves every client from it. `POST /quote?account=<client>` returns a TDX quote over that client account's own `attestNonce`, so the same attested key is admitted account by account, each owner approving the measurement and setting their own caps. The operator agent `0x71f15e33...3461` (measurement `0x993bd67c...8e9a`, image pinned in `agent-cvm/docker-compose.yml`) is admitted on two accounts from the factory:
+
+| Step | Transaction | Result |
+|---|---|---|
+| Client account 2 created by `AgentAccountFactory.createAccount` | [`0xbb77ffc9...dae5`](https://explorer.testnet.chain.robinhood.com/tx/0xbb77ffc9a2e5f5cda88e9176a0417758da30c9b8dd8e918dee15cb3d5824dae5) | `0xE1d79391...c34c` |
+| Account 1 admits the operator agent | [`0x2889f10b...d196`](https://explorer.testnet.chain.robinhood.com/tx/0x2889f10bf20edff1fa512f52b99d3eb76ac903becdc9410c70a13e11abded196) | `agent()` = `0x71f15e33...3461` |
+| Account 2 admits the same agent, with a quote over its own nonce | [`0xdb52757a...f04e`](https://explorer.testnet.chain.robinhood.com/tx/0xdb52757ab39240be57a4aebd3980a57d4bb8c4d8601722e2774f32ab8f87f04e) | `agent()` = `0x71f15e33...3461` |
+| Account 2's owner withdraws the measurement | [`0x1d34d37a...8008`](https://explorer.testnet.chain.robinhood.com/tx/0x1d34d37a52a7e099a9741ffa2ff04fbd0e09e9dabefb5731a0f93cee635b8008) | at that block account 2's `agent()` is zero and account 1's is still `0x71f15e33...3461` |
+| The keeper renews both accounts from one CVM | [`0x20209f03...5555`](https://explorer.testnet.chain.robinhood.com/tx/0x20209f03a0232b7db7406b69ab68c265340e0d316688ad71aea29089768f5555), [`0xb6e4dc44...aa4e`](https://explorer.testnet.chain.robinhood.com/tx/0xb6e4dc44288956d22d443ff137326932b1093e484a7e6bc8bc57f59dbc90aa4e) | both `agentExpiry()` moved forward |
+
+A client admits the operator from the hosted app: open the account, step 4 "Admit an operator's agent" reads the CVM's quote for that account, asks the account's Stylus Verifier which key and measurement it proves, and offers "Approve this measurement" to the owner and "Admit the agent" to any wallet.
+
 **Refusals anyone can replay.** Two attacks were sent as real transactions, mined, and refused by the contracts:
 
 | Attack | Transaction | Result |

@@ -142,12 +142,11 @@ async function agentSigner(
   const cvm = (process.env.CVM_URL ?? '').trim().replace(/\/$/, '');
   if (cvm) {
     const info = fromWire<{ agent: Address; account: Address; chainId: number }>(await (await fetch(`${cvm}/info`)).text());
-    if (info.account.toLowerCase() !== account.toLowerCase()) throw new Error(`CVM serves account ${info.account}, not ${account}.`);
     if (info.chainId !== RHC_TESTNET_ID) throw new Error(`CVM is on chain ${info.chainId}, expected ${RHC_TESTNET_ID}.`);
     return {
       address: info.agent,
       write: async (c) => {
-        const res = await fetch(`${cvm}/tx`, { method: 'POST', headers: { authorization: `Bearer ${env('CVM_CONTROL_TOKEN')}` }, body: toWire(c) });
+        const res = await fetch(`${cvm}/tx`, { method: 'POST', headers: { authorization: `Bearer ${env('CVM_CONTROL_TOKEN')}` }, body: toWire({ ...c, account }) });
         const out = fromWire<{ hash?: Hex; error?: string }>(await res.text());
         if (!res.ok || !out.hash) throw new Error(`CVM /tx ${c.functionName}: ${out.error ?? res.status}`);
         return out.hash;
@@ -515,9 +514,9 @@ const verifierAbi = [
 
 type CvmQuote = { agent: Address; refBlock: bigint; nonce: Hex; quote: Hex };
 
-async function cvmQuote(): Promise<CvmQuote> {
+async function cvmQuote(account: Address): Promise<CvmQuote> {
   const cvm = env('CVM_URL').replace(/\/$/, '');
-  const res = await fetch(`${cvm}/quote`, { method: 'POST' });
+  const res = await fetch(`${cvm}/quote?account=${account}`, { method: 'POST' });
   const out = fromWire<CvmQuote & { error?: string }>(await res.text());
   if (!res.ok || !out.quote) throw new Error(`CVM /quote: ${out.error ?? res.status}`);
   return out;
@@ -526,7 +525,7 @@ async function cvmQuote(): Promise<CvmQuote> {
 /// registerAgent with a fresh CVM quote (its ArbSys window is the last 256 blocks). Post-condition:
 /// agent() is the CVM's key, admitted under `measurement`.
 async function registerFresh(ctx: Ctx, measurement: Hex): Promise<{ hash: Hex; block: bigint }> {
-  const fresh = await cvmQuote();
+  const fresh = await cvmQuote(ctx.account);
   if (fresh.agent.toLowerCase() !== ctx.agent.address.toLowerCase()) throw new Error('the CVM agent key changed between quotes');
   const hash = await ctx.ownerWallet.writeContract({
     address: ctx.account,
@@ -557,7 +556,7 @@ async function registerFresh(ctx: Ctx, measurement: Hex): Promise<{ hash: Hex; b
 export async function runAcctRegister(): Promise<void> {
   const ctx = await setup();
   const verifier = await read<Address>(ctx, 'verifier');
-  const first = await cvmQuote();
+  const first = await cvmQuote(ctx.account);
   const { result } = await ctx.publicClient.simulateContract({
     address: verifier,
     abi: verifierAbi,

@@ -403,5 +403,29 @@
     "measurement": "0xe1a2b8938825d678136ad8a4841e6f0f97a3e2c91c330cb85364de26c40ab6d0",
     "setMeasurement": "0x3ef0c65562fb503b68b72fc226fb89fa49c1ebfc207d69368a174fd630807450",
     "registerAgent": "0xa45b46c61c579c083eea5a5b044f343ad847b64ddfdae356758b6e9ac1b89798"
+  },
+  "operatorCvm": {
+    "url": "https://e39de5552f988e69e573236137089c81cfbe21d9-8080.dstack-pha-prod5.phala.network",
+    "image": "ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f1867126d58ee3e99cf1fef4fc8d253c68dbe5bed41db6eb3f33aa5a201463",
+    "agent": "0x71f15e33d967F9b0d573Cb03CfE3e7fdBDFd3461",
+    "measurement": "0x993bd67c8e9de5d37d9af6ef41c5c5fdb53b113b8a2b666827e0e619f4978e9a",
+    "accounts": [
+      {
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+        "setMeasurement": "0x04ec2e370aa393624ed55c0b0b6679f5a4b8c69063af5af62676536ea242396a",
+        "registerAgent": "0x2889f10bf20edff1fa512f52b99d3eb76ac903becdc9410c70a13e11abded196",
+        "keeperRenewal": "0x20209f03a0232b7db7406b69ab68c265340e0d316688ad71aea29089768f5555"
+      },
+      {
+        "account": "0xE1d7939105cF8B3670d6b4a0E15546C036e6c34c",
+        "createAccount": "0xbb77ffc9a2e5f5cda88e9176a0417758da30c9b8dd8e918dee15cb3d5824dae5",
+        "setMeasurement": "0x12b819825766c94efb8f78c7637f56e535c5d68244df1b6c5a9294f51071003f",
+        "registerAgent": "0xdb52757ab39240be57a4aebd3980a57d4bb8c4d8601722e2774f32ab8f87f04e",
+        "revokeOnThisAccountOnly": "0x1d34d37a52a7e099a9741ffa2ff04fbd0e09e9dabefb5731a0f93cee635b8008",
+        "reapprove": "0x47eb49a788edcd1ec319fb5dd0457809c7dae3ac492262669527205ac9acc17e",
+        "readmit": "0x8737f5cb2d091b154af0a722ebd1dc2bea1c891cbdeb9730ae1afffbd9487806",
+        "keeperRenewal": "0xb6e4dc44288956d22d443ff137326932b1093e484a7e6bc8bc57f59dbc90aa4e"
+      }
+    ]
   }
 }

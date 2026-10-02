@@ -17,6 +17,7 @@ export const MODEL_ID = "phala/qwen3.8-27b-uncensored" as const;
 export const GATEWAY_REGISTER_TX = "0x58c5a715f26b95c2dd9fff6a845f48cd3761e7f942a6131bbcd54ece65f11c05" as const;
 export const RHC_REFUSAL_TXS = ["0xb1adb7231fbd38b77489769d7db754b30f36fa9b1ba97bf14f51980f3b12528c","0xc0b2e5bc95048ad424a246277a819dfad0238b394ba4bf08cf9dc0231c7e1e08","0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8"] as readonly `0x${string}`[];
 export const USDG_ASSAY = "0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d" as Address;
+export const OPERATOR_CVM_URL = "https://e39de5552f988e69e573236137089c81cfbe21d9-8080.dstack-pha-prod5.phala.network" as const;
 export const PAXOS_USDG = "0x7E955252E15c84f5768B83c41a71F9eba181802F" as Address;
 export const USDG_ASSAY_DEPLOY_TX = "0xb26c84951b40601c9392a2e0e6ad3c451b7a4443ba1a307df5461b065a8aadcd" as `0x${string}`;
 export const USDG_ASSAY_REGISTER_TX = "0xf82fbe2ff2ca2307ab5e37c9aacabc592a2c0e0a96568b2386b49323170bfec9" as `0x${string}`;
