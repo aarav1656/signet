@@ -98,12 +98,19 @@ Read from the chain on this deployment:
 
 ## Agents can check Chiron themselves
 
-`mcp/` is a Model Context Protocol server, built on `@modelcontextprotocol/sdk` 1.31.0, that lets Claude, Cursor or Codex verify a Chiron trade without trusting this page. Add it to Claude Code:
+`mcp/` is a Model Context Protocol server, built on `@modelcontextprotocol/sdk` 1.31.0, that lets any agent verify a Chiron trade without trusting this page. It is hosted over Streamable HTTP at `https://chiron-receipts.vercel.app/mcp`, so connecting an agent is one line, with nothing to clone or install:
 
 ```
-cd mcp && npm install
-claude mcp add chiron npx tsx $(pwd)/src/server.ts
+claude mcp add --transport http chiron https://chiron-receipts.vercel.app/mcp
 ```
+
+OpenCode takes the same URL as a remote server in `opencode.json`:
+
+```
+{ "mcp": { "chiron": { "type": "remote", "url": "https://chiron-receipts.vercel.app/mcp" } } }
+```
+
+Two agent frameworks were driven against the hosted endpoint, each asked to verify the first live trade: Claude Code (Haiku) and OpenCode (`muse-spark-1.3`) both called `verify_receipt` and answered `verified: true` with 7 checks; given a different expected model hash, both answered `verified: false` with `served_model_equals_expected` failing. To run it locally over stdio instead: `cd mcp && npm install && claude mcp add chiron npx tsx $(pwd)/src/server.ts`.
 
 Three tools read Robinhood Chain testnet (46630) directly with viem:
 
@@ -111,7 +118,7 @@ Three tools read Robinhood Chain testnet (46630) directly with viem:
 - `account_state(account)` returns the agent, measurement, expiry, caps and recent trades.
 - `explain_refusal(tx_hash)` decodes a reverted transaction's custom error (`NotAgent`, `ExceedsPerTradeCap`, `MeasurementNotApproved`) into plain words.
 
-`npm test` in `mcp/` checks the real first trade of the live account (`0xe5052266...ddfa2`) and returns `verified: true` with seven passing checks, and a different model hash turns the answer to `verified: false`. The gate log on the hosted app runs the same hashing in the browser and marks each trade green once its recomputed receipt hash matches the chain.
+`npm test` in `mcp/` checks the real first trade of the live account (`0xe5052266...ddfa2`) and returns `verified: true` with seven passing checks, and a different model hash turns the answer to `verified: false`; `test/http.test.ts` runs the same checks through an MCP client over HTTP, and `MCP_URL=https://chiron-receipts.vercel.app/mcp npm test` points it at the hosted endpoint. The gate log on the hosted app runs the same hashing in the browser and marks each trade green once its recomputed receipt hash matches the chain.
 
 ## The attested agent, live
 
@@ -217,6 +224,8 @@ The gate went through an independent review (one High found and fixed: the repla
 ## Keeping keys fresh
 
 `attestationValidity` is immutable at 86400 seconds (24 hours), so a registered signer expires on a fixed clock. A `launchd` job (`com.chiron.keeper.register`, outside `~/Desktop` because launchd cannot read files under `~/Desktop`) re-runs `npm run register` every 20 hours, so a judge opening the app days after submission still sees an unexpired gateway signer and receipt key. Kill it after judging with `launchctl unload ~/Library/LaunchAgents/com.chiron.keeper.register.plist`.
+
+The account's agent runs on the same 24-hour clock (`ATTESTATION_VALIDITY`). `agent-cvm/keeper.sh` checks `agentExpiry()` every 30 minutes (`com.kamal.arbitrium.chiron-keeper`); inside three hours of expiry it asks the CVM for a fresh quote and submits `registerAgent`, then requires receipt status 1 and an `agentExpiry()` later than before. The agent panel on the hosted app turns amber when re-admission is due within two hours and red once the key has lapsed.
 
 ## Arbitrum technology
 
