@@ -395,5 +395,13 @@
       "permitNonce": "0 -> 1",
       "pinnedModel": "phala/qwen3.8-27b-uncensored"
     }
+  },
+  "agentCvmBoot4": {
+    "updatedAt": "2026-10-02T14:30Z",
+    "change": "sealed CONTROL_TOKEN replaced via phala deploy --cvm-id, same compose and image",
+    "agent": "0xc662FFE967a845dCB96b75333b6C5853355f93E6",
+    "measurement": "0xe1a2b8938825d678136ad8a4841e6f0f97a3e2c91c330cb85364de26c40ab6d0",
+    "setMeasurement": "0x3ef0c65562fb503b68b72fc226fb89fa49c1ebfc207d69368a174fd630807450",
+    "registerAgent": "0xa45b46c61c579c083eea5a5b044f343ad847b64ddfdae356758b6e9ac1b89798"
   }
 }

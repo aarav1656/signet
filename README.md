@@ -233,7 +233,7 @@ The gate went through an independent review (one High found and fixed: the repla
 
 ## Keeping keys fresh
 
-`attestationValidity` is immutable at 86400 seconds (24 hours), so a registered signer expires on a fixed clock. A `launchd` job (`com.chiron.keeper.register`, outside `~/Desktop` because launchd cannot read files under `~/Desktop`) re-runs `npm run register` every 20 hours, so a judge opening the app days after submission still sees an unexpired gateway signer and receipt key. Kill it after judging with `launchctl unload ~/Library/LaunchAgents/com.chiron.keeper.register.plist`.
+`attestationValidity` is immutable at 86400 seconds (24 hours), so a registered signer expires on a fixed clock. A `launchd` job (`com.chiron.keeper.register`, outside `~/Desktop` because launchd cannot read files under `~/Desktop`) re-runs `agent-cvm/register-keys.sh` every 20 hours, which registers the gateway signer and receipt key on all three Assays (Arbitrum Sepolia, and the testUSDG and Paxos USDG Assays on Robinhood Chain testnet), so a judge opening the app days after submission still sees unexpired keys on every chain. Kill it after judging with `launchctl unload ~/Library/LaunchAgents/com.chiron.keeper.register.plist`.
 
 The account's agent runs on the same 24-hour clock (`ATTESTATION_VALIDITY`). `agent-cvm/keeper.sh` checks `agentExpiry()` every 30 minutes (`com.kamal.arbitrium.chiron-keeper`); inside three hours of expiry it asks the CVM for a fresh quote and submits `registerAgent`, then requires receipt status 1 and an `agentExpiry()` later than before. The agent panel on the hosted app turns amber when re-admission is due within two hours and red once the key has lapsed.
 

@@ -100,3 +100,15 @@ The CVM was restarted at 14:03:15 UTC: agent `0x00e052627F691ca075BCd0dbc7220B57
 | Assay (`0x2176E7f2...5b5D`) `openChannel` pinned to `phala/qwen3.8-27b-uncensored` | [`0x7770a689...a9f2`](https://explorer.testnet.chain.robinhood.com/tx/0x7770a689e6c7445d43b64cbcabb665e4924b62412562bf6b9274fed61818a9f2) | 127634074 | channel 1, 1 testUSDG |
 | `redeemWithReceipt` on channel 1 with the first trade's Phala receipt (key `0x110f3824...aa0a`, served `llama3-3-70b`) | [`0xfe0f13f0...8eab`](https://explorer.testnet.chain.robinhood.com/tx/0xfe0f13f09e8dc00f99ad8d94024352a127f21150a9340497d3288aec96818eab) | 127634120 | status 0, `ModelMismatch()` `0xa407e5f7`, channel 1 paid 0 |
 | Assay `register` / `registerReceiptKey` (gateway key renewal on this chain) | [`0x58bd59e2...56ea`](https://explorer.testnet.chain.robinhood.com/tx/0x58bd59e26b1919af33d4b55e9788914c32955c59394022c7d426ad22755356ea), [`0x59ce051f...041b`](https://explorer.testnet.chain.robinhood.com/tx/0x59ce051f7533270c77080cb878d08c780a5ecb16cb2f2de7ff85581942af041b) | 127634677, 127634712 | receipt key expiry 1791036744 |
+
+## Fourth boot: control token in the sealed env (2026-10-02)
+
+`phala deploy --cvm-id 7f2efb7f-bd87-4d25-9002-870df3018009 -c agent-cvm/docker-compose.yml -e <env file>` replaced the sealed `CONTROL_TOKEN` (same compose file and image digest; update took 63 s). `/tx` answers 401 to a wrong bearer and accepts the operator's. The boot minted agent `0xc662FFE967a845dCB96b75333b6C5853355f93E6` under measurement `0xe1a2b8938825d678136ad8a4841e6f0f97a3e2c91c330cb85364de26c40ab6d0`.
+
+| Step | Transaction | Block | Result |
+|---|---|---|---|
+| Owner `setMeasurement(0xe1a2...b6d0, true)` | [`0x3ef0c655...7450`](https://explorer.testnet.chain.robinhood.com/tx/0x3ef0c65562fb503b68b72fc226fb89fa49c1ebfc207d69368a174fd630807450) | 127642863 | success |
+| `registerAgent` with the CVM quote | [`0xa45b46c6...9798`](https://explorer.testnet.chain.robinhood.com/tx/0xa45b46c61c579c083eea5a5b044f343ad847b64ddfdae356758b6e9ac1b89798) | 127642898 | success, `agentExpiry()` 1791037950 |
+| Owner sends the agent key 0.0005 ETH for gas | [`0x3abc88a8...8bfe`](https://explorer.testnet.chain.robinhood.com/tx/0x3abc88a8feacc42e0daeb108c16301648830f2a8a2d2adeacf830503419a8bfe) | | success |
+
+`agent-cvm/register-keys.sh` re-registers the gateway signer and receipt key on all three Assays (Arbitrum Sepolia, Robinhood Chain testUSDG `0x2176...5b5D`, Robinhood Chain Paxos USDG `0xcF4a...3f9d`); each pass runs whether or not an earlier one failed.
