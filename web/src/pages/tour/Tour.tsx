@@ -54,7 +54,7 @@ export function ProofPanel() {
         },
         {
           title: 'Refused: a real TDX quote from different code',
-          body: <>Phala&apos;s inference gateway signed this account&apos;s nonce on genuine TDX hardware. The verifier checked the whole quote ({t.receipts.stolenSigner.gasUsed.toLocaleString('en-US')} gas), then the account refused it: the measurement is not one the owner approved. {blk(t, 'stolenSigner')}.</>,
+          body: <>Phala&apos;s inference gateway, on genuine TDX hardware, signed this account&apos;s nonce. The measurement is not one the owner approved. {blk(t, 'stolenSigner')}.</>,
           tag: 'MeasurementNotApproved()',
           refusal: true,
           ...rcpt(t, 'stolenSigner', 'reverted'),
@@ -191,7 +191,7 @@ export function Lifecycle() {
     <section className="section tour" aria-labelledby="tour-h" aria-busy={q.isPending}>
       <div className="section-head">
         <h2 id="tour-h" className="t-section">The lifecycle, read from the chain</h2>
-        {q.data && <span className="stamp">block {q.data.block.toLocaleString('en-US')}, every row links to its transaction</span>}
+        {q.data && <span className="stamp">each step shows its transaction or a live read at block {q.data.block.toLocaleString('en-US')}</span>}
       </div>
       <div className="log">
         {!t && !q.isError && <p className="log-wait">Reading eight steps from Robinhood Chain.</p>}
