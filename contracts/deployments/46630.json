@@ -354,5 +354,30 @@
         "block": 127188951
       }
     ]
+  },
+  "refusalDemo": [
+    {
+      "step": "stolen signer: registerAgent with a real Phala gateway TDX quote over this account attestNonce, reverted MeasurementNotApproved(0xfd34caab...0149)",
+      "hash": "0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8",
+      "block": 127632496
+    },
+    {
+      "step": "Assay channel 1 openChannel pinned to phala/qwen3.8-27b-uncensored",
+      "hash": "0x7770a689e6c7445d43b64cbcabb665e4924b62412562bf6b9274fed61818a9f2",
+      "block": 127634074
+    },
+    {
+      "step": "Assay redeemWithReceipt on channel 1 with the first trade real Phala receipt (served llama3-3-70b), reverted ModelMismatch, paid 0",
+      "hash": "0xfe0f13f09e8dc00f99ad8d94024352a127f21150a9340497d3288aec96818eab",
+      "block": 127634120
+    }
+  ],
+  "agentCvmBoot3": {
+    "startedAt": "2026-10-02T14:03:15Z",
+    "agent": "0x00e052627F691ca075BCd0dbc7220B5708551579",
+    "measurement": "0x0793ff52158fe39bc866db8fbf1f828906fd5f7ab628007586b5fea5ef9431b0",
+    "setMeasurement": "0x2186a1c6fe7e3b2257a991e4e6ad6c59a24ecc4b03786b26d7309b79942f93f7",
+    "registerAgent": "0x470b7b86b5b55b1fc29c0369acdbc2cdc0bb0bf21d34b5a982e3ffd03867029e",
+    "keeperRenewal": "0xbb5b3f0236640f4fca532fe793e1dd205281def2ee19c39b4c6bef842e74f119"
   }
 }

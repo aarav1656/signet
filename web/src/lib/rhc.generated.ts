@@ -15,4 +15,4 @@ export const RHC_RECEIPT_VERIFIER = "0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380"
 export const GATEWAY_MEASUREMENT = "0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149" as `0x${string}`;
 export const MODEL_ID = "phala/qwen3.8-27b-uncensored" as const;
 export const GATEWAY_REGISTER_TX = "0x58c5a715f26b95c2dd9fff6a845f48cd3761e7f942a6131bbcd54ece65f11c05" as const;
-export const RHC_REFUSAL_TXS = ["0xb1adb7231fbd38b77489769d7db754b30f36fa9b1ba97bf14f51980f3b12528c","0xc0b2e5bc95048ad424a246277a819dfad0238b394ba4bf08cf9dc0231c7e1e08"] as readonly `0x${string}`[];
+export const RHC_REFUSAL_TXS = ["0xb1adb7231fbd38b77489769d7db754b30f36fa9b1ba97bf14f51980f3b12528c","0xc0b2e5bc95048ad424a246277a819dfad0238b394ba4bf08cf9dc0231c7e1e08","0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8"] as readonly `0x${string}`[];

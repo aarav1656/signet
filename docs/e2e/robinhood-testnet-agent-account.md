@@ -86,3 +86,17 @@ Paxos's testnet USDG on Robinhood Chain, `0x7E955252E15c84f5768B83c41a71F9eba181
 | The attested agent buys TSLA with 1 USDG (`QUOTE_TOKEN=0x7E95...802F npm run acct-trade`) | [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03) | 127188951 | success; `TradeExecuted` tradeId 3, `tokenIn` the real USDG, `amountIn` 1000000, `amountOut` 3910026278631909 TSLA (minOut 3870926015845589), `agentMeasurement` `0xeb2d...6829`, served model hash `0xc8536dbf...78df59`; account USDG 5000000 to 4000000 and TSLA 812028318830261712 to 815938345108893621 across that block |
 
 At most 55 USDG is in play: about 49.995 USDG in the pool position and 5 USDG in the account. The Assay deployment on this chain takes its token at construction, as does the account's inference-channel token, so the inference channel on this account bills in TestUSDG; Assay on Arbitrum Sepolia bills in Paxos USDG (README, "Inference billing").
+
+## Third boot and two replayable refusals (2026-10-02)
+
+The CVM was restarted at 14:03:15 UTC: agent `0x00e052627F691ca075BCd0dbc7220B5708551579`, measurement `0x0793ff52158fe39bc866db8fbf1f828906fd5f7ab628007586b5fea5ef9431b0`. Every hash below was re-read with `cast receipt <hash> status`; revert reasons were decoded by replaying the mined calldata as `eth_call` at the parent block.
+
+| Step | Transaction | Block | Result |
+|---|---|---|---|
+| Owner `setMeasurement(0x0793...31b0, true)` | [`0x2186a1c6...93f7`](https://explorer.testnet.chain.robinhood.com/tx/0x2186a1c6fe7e3b2257a991e4e6ad6c59a24ecc4b03786b26d7309b79942f93f7) | 127631365 | success |
+| `registerAgent` with the CVM quote | [`0x470b7b86...029e`](https://explorer.testnet.chain.robinhood.com/tx/0x470b7b86b5b55b1fc29c0369acdbc2cdc0bb0bf21d34b5a982e3ffd03867029e) | 127631393 | success, `AgentRegistered`, `agentExpiry()` 1791036260 |
+| Keeper `registerAgent` (`agent-cvm/keeper.sh` under launchd) | [`0xbb5b3f02...f119`](https://explorer.testnet.chain.robinhood.com/tx/0xbb5b3f0236640f4fca532fe793e1dd205281def2ee19c39b4c6bef842e74f119) | 127631689 | success, `agentExpiry()` 1791036260 to 1791036303 |
+| Stolen signer: Phala gateway TDX quote over this account's `attestNonce(127632376)` to `registerAgent` | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8) | 127632496 | status 0, 2,348,030 gas, `MeasurementNotApproved(0xfd34caab...0149)` (signer `0x79a5061e...6b79`), `agent()` unchanged |
+| Assay (`0x2176E7f2...5b5D`) `openChannel` pinned to `phala/qwen3.8-27b-uncensored` | [`0x7770a689...a9f2`](https://explorer.testnet.chain.robinhood.com/tx/0x7770a689e6c7445d43b64cbcabb665e4924b62412562bf6b9274fed61818a9f2) | 127634074 | channel 1, 1 testUSDG |
+| `redeemWithReceipt` on channel 1 with the first trade's Phala receipt (key `0x110f3824...aa0a`, served `llama3-3-70b`) | [`0xfe0f13f0...8eab`](https://explorer.testnet.chain.robinhood.com/tx/0xfe0f13f09e8dc00f99ad8d94024352a127f21150a9340497d3288aec96818eab) | 127634120 | status 0, `ModelMismatch()` `0xa407e5f7`, channel 1 paid 0 |
+| Assay `register` / `registerReceiptKey` (gateway key renewal on this chain) | [`0x58bd59e2...56ea`](https://explorer.testnet.chain.robinhood.com/tx/0x58bd59e26b1919af33d4b55e9788914c32955c59394022c7d426ad22755356ea), [`0x59ce051f...041b`](https://explorer.testnet.chain.robinhood.com/tx/0x59ce051f7533270c77080cb878d08c780a5ecb16cb2f2de7ff85581942af041b) | 127634677, 127634712 | receipt key expiry 1791036744 |

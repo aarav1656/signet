@@ -72,7 +72,7 @@ Deployed 2026-10-01 from `0x2aD12a72362704367e99a344cFf5affDDF7f5DEF`, which own
 | Verifier | [`0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c`](https://explorer.testnet.chain.robinhood.com/address/0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c) | Stylus (Rust). Verifies an Intel TDX DCAP quote chain, returns the signer and the nine-field measurement. |
 | ReceiptVerifier | [`0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380`](https://explorer.testnet.chain.robinhood.com/address/0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380) | Stylus (Rust). Verifies one Ed25519-signed Phala inference receipt. |
 | Assay | [`0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D`](https://explorer.testnet.chain.robinhood.com/address/0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D) | The inference payment channel the account bills through. Source verified on Blockscout. |
-| TestUSDG | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://explorer.testnet.chain.robinhood.com/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | 6-decimal quote asset for the venue, minted by the deploy script. Source verified on Blockscout. |
+| TestUSDG | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://explorer.testnet.chain.robinhood.com/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | 6-decimal quote asset for the venue, minted by the deploy script, on Robinhood Chain testnet (46630). Source verified on Blockscout. The Arbitrum Sepolia Assay has the same address because the same deployer created both at nonce 6; they are different contracts on different chains. |
 | TSLA Stock Token | [`0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E`](https://explorer.testnet.chain.robinhood.com/address/0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E) | Robinhood's official testnet Stock Token. |
 | Uniswap v4 PoolManager | [`0x8366a39CC670B4001A1121B8F6A443A643e40951`](https://explorer.testnet.chain.robinhood.com/address/0x8366a39CC670B4001A1121B8F6A443A643e40951) | Canonical deployment, code hash equal to mainnet. |
 
@@ -133,13 +133,22 @@ The agent runs inside a Phala Cloud dstack CVM (`agent/src/cvm.ts`, packaged by 
 | Above the threshold, `propose` | [`0x4eb49253...895253`](https://explorer.testnet.chain.robinhood.com/tx/0x4eb4925389368436722b89721dd5db7e28b128923118dfa797e9a7cf42895253) | proposal 1 |
 | Owner `approveTrade(1)` | [`0x7f2a63f4...c4d81ead`](https://explorer.testnet.chain.robinhood.com/tx/0x7f2a63f44c439d6099133bad32da8f346414f66f2f8541a3fedca496c4d81ead) | `TradeExecuted`, proposalId 1, 7944291302953708 TSLA out |
 
-**Revoke by measurement.** A CVM boot has its own key and measurement; the current boot is agent `0xdd241EC7...A5c7` under `0xeb2d9462...6829`. The owner withdraws approval of that measurement (`npm run acct-revoke`), and in the same transaction the account de-admits the agent:
+**Revoke by measurement.** A CVM boot has its own key and measurement; the demo below ran on the boot whose agent is `0xdd241EC7...A5c7` under `0xeb2d9462...6829`. The account's agent today is `0x00e05262...1579` under `0x0793ff52...31b0`, admitted by [`registerAgent`](https://explorer.testnet.chain.robinhood.com/tx/0x470b7b86b5b55b1fc29c0369acdbc2cdc0bb0bf21d34b5a982e3ffd03867029e) after the owner approved that boot's measurement. The owner withdraws approval of that measurement (`npm run acct-revoke`), and in the same transaction the account de-admits the agent:
 
 | Step | Transaction | Result |
 |---|---|---|
 | Owner `setMeasurement(0xeb2d...6829, false)` | [`0x0b34701e...8382`](https://explorer.testnet.chain.robinhood.com/tx/0x0b34701eaee5f698b39988a13810e835abee437363093ebc8949ae89bc258382) | `AgentRevoked`, `agent()` is zero |
 | The revoked agent's in-cap `execute` | [`0xc0b2e5bc...1e08`](https://explorer.testnet.chain.robinhood.com/tx/0xc0b2e5bc95048ad424a246277a819dfad0238b394ba4bf08cf9dc0231c7e1e08) | reverted, `NotAgent()` by `eth_call`, balances unchanged |
 | Owner re-approves, then `registerAgent` with a fresh quote | [`0xc5e5bb9b...7822`](https://explorer.testnet.chain.robinhood.com/tx/0xc5e5bb9bc3e4ca17ace0b52c4352d5ae7cfed1a9a7a8a43b5f7d229fd6447822), [`0x4694b617...9a66`](https://explorer.testnet.chain.robinhood.com/tx/0x4694b617f4bafbd0e3a3f2a09dbe11b5afd0f96fc4023393aaf516ce68f69a66) | re-approval alone leaves `agent()` zero; the fresh quote admits the key again |
+
+**Refusals anyone can replay.** Two attacks were sent as real transactions, mined, and refused by the contracts:
+
+| Attack | Transaction | Result |
+|---|---|---|
+| Stolen signer: a genuine Intel TDX quote from a different workload (Phala's inference gateway, asked to sign this account's `attestNonce`) submitted to `registerAgent` | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8) | reverted `MeasurementNotApproved(0xfd34caab...0149)` after the Stylus `Verifier` checked the full quote (2,348,030 gas); `agent()` unchanged. The hardware is real, the code is not the approved image, so the key is refused |
+| Wrong model: the real Phala-signed receipt from the first trade (served `llama3-3-70b`) presented to `Assay.redeemWithReceipt` on a channel pinned to `phala/qwen3.8-27b-uncensored` ([open](https://explorer.testnet.chain.robinhood.com/tx/0x7770a689e6c7445d43b64cbcabb665e4924b62412562bf6b9274fed61818a9f2)) | [`0xfe0f13f0...8eab`](https://explorer.testnet.chain.robinhood.com/tx/0xfe0f13f09e8dc00f99ad8d94024352a127f21150a9340497d3288aec96818eab) | reverted `ModelMismatch()` (`0xa407e5f7`), channel paid 0. The signature is valid and the key is registered; the model is wrong, so nothing is paid |
+
+`npm run assay-model-swap` in `agent/` replays the second one end to end. The gate log on the hosted app lists the first among the account's refusals.
 
 **Real USDG.** The same account trades Paxos's testnet USDG against TSLA. The attested agent bought TSLA with 1 USDG in the second pool: [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03), `TradeExecuted` tradeId 3, 3910026278631909 TSLA out, account USDG 5.000000 to 4.000000. About 55 USDG is in play: the pool position and the account's deposit.
 
@@ -183,7 +192,7 @@ Chain 421614, deployed 2026-09-28 from `0x2aD12a72362704367e99a344cFf5affDDF7f5D
 
 | Contract | Address | What it is |
 |---|---|---|
-| Assay | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://sepolia.arbiscan.io/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | The payment channel. Source verified on Sourcify (exact match, creation and runtime). |
+| Assay | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://sepolia.arbiscan.io/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | The payment channel, on Arbitrum Sepolia (421614). Source verified on Sourcify (exact match, creation and runtime). The same address on Robinhood Chain testnet is TestUSDG (same deployer, nonce 6). |
 | Verifier | [`0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c`](https://sepolia.arbiscan.io/address/0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c) | Stylus (Rust). Verifies an Intel TDX DCAP quote chain and returns the gateway's signer and image measurement. |
 | ReceiptVerifier | [`0x9af7d9c3b27c4a8a11fb879041b931c38b712380`](https://sepolia.arbiscan.io/address/0x9af7d9c3b27c4a8a11fb879041b931c38b712380) | Stylus (Rust). Verifies one Ed25519-signed Phala inference receipt and returns the requested model, served model, request hash and response hash. |
 | USDG | [`0xFFC95faa3d63Cde504a05B567C600B78C0b41892`](https://sepolia.arbiscan.io/address/0xFFC95faa3d63Cde504a05B567C600B78C0b41892) | Paxos Global Dollar on Arbitrum Sepolia, Assay's settlement token. |

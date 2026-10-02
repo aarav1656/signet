@@ -57,7 +57,9 @@ if (!registerStep || !rhc.gatewayMeasurement || !rhc.modelId || !rhc.block) {
   throw new Error('deployments/46630.json is missing the gateway register step, gatewayMeasurement, modelId or block');
 }
 // Calls the account refused (reverted): a revert emits no log, so the web reads these hashes from the explorer.
-const refusalTxs = [...(rhc.liveCycle ?? []), ...(rhc.revokeDemo ?? [])].filter((x) => /execute/.test(x.step) && /revert/i.test(x.step)).map((x) => x.hash);
+const refusalTxs = [...(rhc.liveCycle ?? []), ...(rhc.revokeDemo ?? []), ...(rhc.refusalDemo ?? [])]
+  .filter((x) => /execute|registerAgent/.test(x.step) && /revert/i.test(x.step))
+  .map((x) => x.hash);
 if (refusalTxs.length === 0) throw new Error('deployments/46630.json names no reverted execute transaction');
 const abiOf = (name) => {
   const j = JSON.parse(readFileSync(join(contractsRoot, 'out', `${name}.sol`, `${name}.json`), 'utf8'));

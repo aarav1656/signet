@@ -141,14 +141,13 @@ async function agentSigner(
 ): Promise<{ address: Address; write: (c: AgentCall) => Promise<Hex> }> {
   const cvm = (process.env.CVM_URL ?? '').trim().replace(/\/$/, '');
   if (cvm) {
-    const token = env('CVM_CONTROL_TOKEN');
     const info = fromWire<{ agent: Address; account: Address; chainId: number }>(await (await fetch(`${cvm}/info`)).text());
     if (info.account.toLowerCase() !== account.toLowerCase()) throw new Error(`CVM serves account ${info.account}, not ${account}.`);
     if (info.chainId !== RHC_TESTNET_ID) throw new Error(`CVM is on chain ${info.chainId}, expected ${RHC_TESTNET_ID}.`);
     return {
       address: info.agent,
       write: async (c) => {
-        const res = await fetch(`${cvm}/tx`, { method: 'POST', headers: { authorization: `Bearer ${token}` }, body: toWire(c) });
+        const res = await fetch(`${cvm}/tx`, { method: 'POST', headers: { authorization: `Bearer ${env('CVM_CONTROL_TOKEN')}` }, body: toWire(c) });
         const out = fromWire<{ hash?: Hex; error?: string }>(await res.text());
         if (!res.ok || !out.hash) throw new Error(`CVM /tx ${c.functionName}: ${out.error ?? res.status}`);
         return out.hash;
