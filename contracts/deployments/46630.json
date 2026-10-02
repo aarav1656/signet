@@ -435,6 +435,13 @@
       {
         "account": "0xFaaAa4d1ee944d317b10233505D8c57425C53b55",
         "registerAgent": "0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a"
+      },
+      {
+        "account": "0x5492A8e671D37e5785020c02b83cA5603be8D5D7",
+        "origin": "created by the wallet click-through 2026-10-02 from factory v3",
+        "setModelQwen": "0xc8ec39310084aaff6771091f102a4adfedd77360afebbcca019b35231aa0fc05",
+        "setMeasurement": "0x09df1cc341102366a61c3442f7357a8376b7215e0b4f0eb36e21ad6cb5670386",
+        "registerAgent": "0x4afb0cf96fc6270d838b451987a6a646b3a4d72f6d2945f3db525bc4894115f6"
       }
     ]
   },
