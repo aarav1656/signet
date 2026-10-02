@@ -6,6 +6,7 @@ import { accountAbi } from '../../abi/AgentAccount.generated';
 import { Code, HexValue, Num, Spec, Fact } from '../../components/Stamp';
 import { useOnChain } from '../../components/Wallet';
 import { useTx } from '../../hooks/useTx';
+import { EligibilityGate } from '../../components/Eligibility';
 import { fmtCountdown, fmtToken, short } from '../../lib/format';
 import { GATEWAY_MEASUREMENT, OPERATOR_CVM_URL } from '../../lib/rhc.generated';
 import { readOperatorQuote, type OperatorQuote } from './operator';
@@ -352,6 +353,7 @@ export function OwnerActions({ snap, refetch, now }: Ctx & { now: bigint }) {
         Each action is a transaction from the connected wallet to <HexValue value={snap.account} head={6} tail={4} href={rhcExplorer.address(snap.account)} />.
         It reads as done only once the receipt says <Code>success</Code>, and the sheet above re-reads the chain afterwards.
       </p>
+      <EligibilityGate>
       <ol className="steps">
         <FundsStep snap={snap} refetch={refetch} />
         <CapsStep snap={snap} refetch={refetch} />
@@ -359,6 +361,7 @@ export function OwnerActions({ snap, refetch, now }: Ctx & { now: bigint }) {
         <OperatorStep snap={snap} refetch={refetch} />
         <PendingStep snap={snap} refetch={refetch} now={now} />
       </ol>
+      </EligibilityGate>
     </section>
   );
 }

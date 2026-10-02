@@ -6,6 +6,7 @@ import { useConnection, usePublicClient, useSwitchChain, useWriteContract } from
 import { rhcChain, rhcExplorer } from '../chain';
 import { factoryAbi } from '../abi/AgentAccount.generated';
 import { Fact, HexValue, Num, Spec } from '../components/Stamp';
+import { EligibilityGate } from '../components/Eligibility';
 import { Wallet } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useTx } from '../hooks/useTx';
@@ -40,7 +41,7 @@ function CreateAction({ onCreated }: { onCreated: (a: Address) => void }) {
   }
 
   return (
-    <>
+    <EligibilityGate>
       <div className="actions">
         {conn.isConnected ? (
           <button className="btn line" type="button" disabled={tx.busy} onClick={click}>
@@ -56,7 +57,7 @@ function CreateAction({ onCreated }: { onCreated: (a: Address) => void }) {
           Created <HexValue value={made} head={6} tail={4} href={rhcExplorer.address(made)} />. It is selected above.
         </p>
       )}
-    </>
+    </EligibilityGate>
   );
 }
 

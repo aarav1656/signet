@@ -562,3 +562,7 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+.gate-ask { border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 4px; }
+.gate-q { margin: 0 0 12px; font-size: 13px; line-height: 1.55; color: var(--soft); max-width: 68ch; }
+.gate-ask .actions .btn { white-space: normal; text-align: left; }
+.gate-note { max-width: 68ch; }
