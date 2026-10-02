@@ -1,0 +1,3 @@
+# Public registerReceiptKey transaction hash on Robinhood Chain testnet (0x24c1c46d..., contracts/deployments/46630.json:389),
+# re-read with cast receipt on 2026-10-02: status true. A tx hash, not a secret. Exact fingerprint only; add nothing broader.
+6861d43706cb6184ffdc77ee2986bab631d9b8a4:contracts/deployments/46630.json:generic-api-key:389
