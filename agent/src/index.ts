@@ -47,6 +47,7 @@ import {
 } from './config.ts';
 import { checkGatewaySigner, explainRefusal } from './gateway-check.ts';
 import { runAcctApprove, runAcctOvercap, runAcctRegister, runAcctRevoke, runAcctTrade } from './account.ts';
+import { runAcctFollow } from './follow.ts';
 import {
   enclaveDigest,
   modelHash,
@@ -815,9 +816,11 @@ if (mode === 'refuse') {
   await runAcctApprove();
 } else if (mode === 'acct-revoke') {
   await runAcctRevoke();
+} else if (mode === 'acct-follow') {
+  await runAcctFollow();
 } else {
   console.error(
-    'Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt|gate-open|gate-pay|gate-refuse|acct-register|acct-trade|acct-overcap|acct-approve|acct-revoke>',
+    'Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt|gate-open|gate-pay|gate-refuse|acct-register|acct-trade|acct-overcap|acct-approve|acct-revoke|acct-follow>',
   );
   process.exit(1);
 }
