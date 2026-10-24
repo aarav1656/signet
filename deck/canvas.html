@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signet: Product canvas and GTM canvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Hallmark · macrostructure: Workbench (box grid) · tone: technical · anchor hue: amber 80
+ * theme: deck/DESIGN.md gate-log tokens, no catalog rotation · nav: none · footer: numbered source strip
+ * Two fixed 1920x1080 slides; each official canvas box is a panel. Amber = verified, red = refusal. */
+:root {
+  --color-bg: #121315;
+  --color-panel: #17191c;
+  --color-raise: #1d2024;
+  --color-line: #26292e;
+  --color-ink: #e9e7e2;
+  --color-soft: #b5b3ad;
+  --color-mute: #8d9097;
+  --color-amber: #f2b134;
+  --color-amber-wash: rgba(242, 177, 52, 0.1);
+  --color-amber-edge: rgba(242, 177, 52, 0.4);
+  --color-glow: rgba(242, 177, 52, 0.07);
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --radius: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; overflow-x: clip; background: var(--color-bg); color: var(--color-ink); }
+body { font-family: var(--font-display); line-height: 1.3; }
+@page { size: 1920px 1080px; margin: 0; }
+
+.slide {
+  width: 1920px; height: 1080px;
+  padding: 28px 48px 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 14px;
+  background: var(--color-bg) radial-gradient(900px 500px at 88% -6%, var(--color-glow), transparent 70%);
+  position: relative; overflow: hidden;
+  break-after: page;
+  transform-origin: top left;
+}
+.slide + .slide { margin-top: 24px; }
+
+.head { display: flex; align-items: baseline; gap: 28px; }
+.head h1 { margin: 0; font-size: 34px; font-weight: 600; font-stretch: 96%; letter-spacing: -0.035em; line-height: 1; font-style: normal; }
+.head .mark { font-family: var(--font-mono); font-size: 17px; color: var(--color-mute); letter-spacing: 0.1em; text-transform: uppercase; }
+.head .mark b { color: var(--color-amber); font-weight: 500; }
+
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; min-height: 0; }
+.box { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius); padding: 18px 24px 20px; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.box.key { border-color: var(--color-amber-edge); background: var(--color-amber-wash); }
+.lbl { margin: 0 0 12px; font-family: var(--font-mono); font-size: 15px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-mute); }
+.big { margin: 0; font-size: 36px; font-weight: 600; font-stretch: 96%; letter-spacing: -0.03em; line-height: 1.08; text-wrap: balance; }
+.mid { margin: 0; font-size: 24px; line-height: 1.28; color: var(--color-soft); }
+.mid b { color: var(--color-ink); font-weight: 500; }
+.mid + .mid { margin-top: 10px; }
+.q { margin: 0; padding: 0 0 0 20px; border-left: 3px solid var(--color-amber); }
+.q p { margin: 0; font-size: 29px; line-height: 1.22; letter-spacing: -0.015em; font-weight: 500; }
+.q cite { display: block; margin-top: 8px; font-style: normal; font-family: var(--font-mono); font-size: 15px; color: var(--color-mute); }
+sup { font-family: var(--font-mono); font-size: 0.5em; color: var(--color-amber); vertical-align: super; line-height: 0; margin-left: 2px; font-weight: 500; }
+.num { font-family: var(--font-mono); font-size: 0.86em; color: var(--color-amber); font-variant-numeric: tabular-nums; }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { display: grid; grid-template-columns: 11px minmax(0, 1fr); gap: 0 14px; padding: 4px 0; font-size: 22px; line-height: 1.25; color: var(--color-soft); border-bottom: 1px solid var(--color-line); }
+.list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.list li::before { content: ""; width: 9px; height: 9px; margin-top: 9px; border-radius: 50%; background: var(--color-amber); }
+.list li.gap::before { background: var(--color-mute); }
+.list b { color: var(--color-ink); font-weight: 500; }
+.list .gp { color: var(--color-mute); }
+
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 28px; }
+.two .list li { font-size: 22px; padding: 3px 0; }
+.who { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 14px; margin: 0; font-size: 23px; line-height: 1.22; }
+.who dt { font-family: var(--font-mono); font-size: 0.8em; color: var(--color-ink); padding-top: 2px; }
+.who dd { margin: 0; color: var(--color-soft); min-width: 0; overflow-wrap: anywhere; }
+.cta { margin-top: auto; padding-top: 10px; font-family: var(--font-mono); font-size: 19px; color: var(--color-amber); overflow-wrap: anywhere; }
+
+.src { margin: 0; padding: 12px 0 0; border-top: 1px solid var(--color-line); font-family: var(--font-mono); font-size: 12.5px; line-height: 1.4; color: var(--color-mute); columns: 3; column-gap: 32px; column-fill: balance; margin-bottom: 14px; }
+.src span { display: block; break-inside: avoid; }
+.src b { color: var(--color-amber); font-weight: 500; }
+
+#gtm .mid { font-size: 26px; }
+#gtm .list li { font-size: 23px; }
+#gtm .who { font-size: 26px; }
+#gtm .cta { font-size: 21px; line-height: 1.3; }
+@media print {
+  html, body { background: var(--color-bg); }
+  .slide { transform: none !important; margin: 0 !important; }
+  .slide + .slide { margin-top: 0 !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= PRODUCT CANVAS ================= -->
+<section class="slide" id="product" aria-label="Product canvas">
+  <div class="head"><h1>Product canvas</h1><span class="mark">Signet &middot; Founder House Singapore</span></div>
+  <div class="grid" style="grid-template-rows: auto auto auto 1fr;">
+
+    <div class="box" style="grid-column: span 3"><p class="lbl">Team name</p><p class="big">Signet</p></div>
+    <div class="box key" style="grid-column: span 9"><p class="lbl">One line</p><p class="big">AI trading agents whose track record is provable and whose strategy stays private.</p></div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">Who is this for</p>
+      <p class="mid"><b>The operator behind @DeployFinance.</b> Gave an AI agent $100,000 for 70 days and posted the result.<sup>1</sup></p>
+      <p class="mid">Their follower picks which agent holds Stock Tokens.</p>
+    </div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">What they do today</p>
+      <blockquote class="q"><p>&ldquo;I don't mind showing my Polymarket PnL.. i do mind showing every single bet&rdquo;</p><cite>@Al_Nadim_nabil, 11,178 followers<sup>2</sup></cite></blockquote>
+      <p class="mid" style="margin-top:10px">They post a screenshot. <b class="num">0 of 22</b> viral bot posts gave a wallet to check.<sup>3</sup></p>
+    </div>
+
+    <div class="box key" style="grid-column: span 4">
+      <p class="lbl">The wedge</p>
+      <p class="big" style="font-size:34px">Stock Token bot operators on Robinhood Chain.</p>
+      <p class="mid" style="margin-top:14px">Their next record is a measurement, not a screenshot. Each trade names the Intel TDX measurement and model that made it.<sup>4</sup></p>
+    </div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">Why now</p>
+      <ul class="list">
+        <li><span><b class="num">150,000+</b> agentic accounts at Robinhood. It does not audit agents.<sup>5</sup></span></li>
+        <li><span>Stock Tokens became <b>Morpho collateral</b> on Oct 22.<sup>6</sup></span></li>
+        <li><span><b class="num">2,529</b> TEE workloads on Phala.<sup>7</sup></span></li>
+      </ul>
+    </div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">Alternatives and gaps</p>
+      <ul class="list">
+        <li><span><b>ARCANA</b> <span class="num">51</span> agents. <span class="gp">Platform holds the keys and prompts.</span><sup>8</sup></span></li>
+        <li class="gap"><span><b>Hyperliquid</b> <span class="num">9,478</span> vaults. <span class="gp">No proof of which code trades.</span><sup>9</sup></span></li>
+        <li class="gap"><span><b>Knidos</b> testnet. <span class="gp">Proves rules, not the model.</span><sup>10</sup></span></li>
+      </ul>
+    </div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">Why onchain, why Arbitrum</p>
+      <ul class="list">
+        <li><span><b>Stylus verifier in Rust</b> walks Intel's cert chain in one tx: <span class="num">2.37M</span> gas.<sup>11</sup></span></li>
+        <li><span><b>Robinhood Chain Stock Tokens:</b> a TSLA trade settled for 1 USDG.<sup>12</sup></span></li>
+        <li><span><b>Receipts on chain:</b> every trade names its code.<sup>12</sup></span></li>
+      </ul>
+    </div>
+
+    <div class="box" style="grid-column: span 7">
+      <p class="lbl">First 5-10 users</p>
+      <div class="two">
+        <ul class="list">
+          <li><span><b>@Arcana_Arena</b> <span class="gp">40 creators</span></span></li>
+          <li><span><b>@HarmonicAgents</b> <span class="gp">2,502</span></span></li>
+          <li><span><b>Meridian402</b> <span class="gp">market maker</span></span></li>
+          <li><span><b>@DeployFinance</b> <span class="gp">7,285</span></span></li>
+          <li><span><b>@GrowiHF</b> <span class="gp">+$2.94M PnL</span></span></li>
+        </ul>
+        <ul class="list">
+          <li><span><b>@senpi_ai</b> <span class="gp">14,741</span></span></li>
+          <li><span><b>@betashop</b> <span class="gp">22,573</span></span></li>
+          <li><span><b>@the_nof1</b> <span class="gp">54,390</span></span></li>
+          <li><span><b>@OxSimpleFarmer</b> <span class="gp">28,443</span></span></li>
+          <li><span><b>@Agent_Minimum</b> <span class="gp">471</span></span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="box key" style="grid-column: span 5">
+      <p class="lbl">Ship this weekend</p>
+      <ul class="list">
+        <li><span>Measured image commits to the <b>strategy's hash</b>. Strategy text stays inside the enclave.</span></li>
+        <li><span>Decision loop moves into the enclave.</span></li>
+        <li><span>Five creator DMs with the TSLA receipt and <b>verify_receipt</b>.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="src">
+    <span><b>1</b> @DeployFinance post 2026-10-23, fxtwitter; 7,285 followers.</span>
+    <span><b>2</b> Post 2026-10-14, fxtwitter; 11,178 followers.</span>
+    <span><b>3</b> @Meta_ZET 2026-10-15: 22 viral posts, 0 with a checkable wallet.</span>
+    <span><b>4</b> TradeExecuted, tx 0x0023f359...3b03, chain 46630.</span>
+    <span><b>5</b> Robinhood newsroom 2026-09-29: "does not ... audit agents".</span>
+    <span><b>6</b> Morpho launch 2026-10-22, NVDA and SPY (cryptobriefing.com).</span>
+    <span><b>7</b> Phala 2025 report: 2,529 CVMs.</span>
+    <span><b>8</b> arcana-arena.com 2026-10-24, block 95,182,673; /docs/wallets-and-custody.</span>
+    <span><b>9</b> Hyperliquid stats API 2026-10-24: $405,600,393 TVL.</span>
+    <span><b>10</b> knidos.xyz, testnet.</span>
+    <span><b>11</b> cast estimate, chain 46630: 2,371,819 gas.</span>
+    <span><b>12</b> tradeId 3, AgentAccount 0x9c69...Aa6D, block 127,188,951.</span>
+  </p>
+</section>
+
+<!-- ================= GTM CANVAS ================= -->
+<section class="slide" id="gtm" aria-label="GTM canvas">
+  <div class="head"><h1>GTM canvas</h1><span class="mark">Signet &middot; Founder House Singapore</span></div>
+  <div class="grid" style="grid-template-rows: auto auto auto 1fr;">
+
+    <div class="box key" style="grid-column: span 12"><p class="lbl">One line</p><p class="big">Creators prove a record without opening the strategy. Followers fund only the code they approved.</p></div>
+
+    <div class="box" style="grid-column: span 6">
+      <p class="lbl">Who buys, who uses</p>
+      <dl class="who">
+        <dt>Uses</dt><dd><b style="color:var(--color-ink);font-weight:500">Creators</b> supply strategies and earn a performance fee on new profit.</dd>
+        <dt>Buys</dt><dd><b style="color:var(--color-ink);font-weight:500">Followers</b> subscribe for an admitted agent and approve one hash.</dd>
+        <dt>Signet</dt><dd>Takes a share of each fee.</dd>
+      </dl>
+    </div>
+
+    <div class="box" style="grid-column: span 6">
+      <p class="lbl">First reachable audience</p>
+      <p class="mid"><b class="num">40</b> creators and <b class="num">51</b> agents on ARCANA's Season 2 US Equities board.<sup>1</sup></p>
+      <p class="mid">Plus operators who already post Stock Token volume in public.<sup>2</sup></p>
+    </div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">3 distribution channels</p>
+      <ul class="list">
+        <li><span><b>Direct DMs</b> to Stock Token operators, TSLA receipt attached.</span></li>
+        <li><span><b>Leaderboard hosts</b> add a measurement column.</span></li>
+        <li><span><b>Robinhood Chain, Arbitrum, Phala</b> builder channels.</span></li>
+      </ul>
+    </div>
+
+    <div class="box key" style="grid-column: span 4">
+      <p class="lbl">Core message</p>
+      <p class="big" style="font-size:32px">Your next record can be a measurement, not a screenshot.</p>
+      <p class="mid" style="margin-top:10px">The measured image commits to the strategy's hash. The strategy text stays inside the enclave.</p>
+    </div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">Proof you need first</p>
+      <p class="mid"><b>30 days</b> of Stock Token trades from an outside creator, one measurement on every event.</p>
+      <p class="mid">Today: one attested TSLA trade and one refusal on chain.<sup>3</sup></p>
+    </div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">The intro that helps</p>
+      <p class="mid"><b>Gaetan Thabot</b>, Director of Crypto Partnerships, Robinhood Chain.<sup>4</sup></p>
+      <p class="mid"><b>Ben Greenberg</b>, DevRel, Arbitrum Foundation.<sup>4</sup></p>
+    </div>
+
+    <div class="box" style="grid-column: span 4">
+      <p class="lbl">5 named targets</p>
+      <ul class="list">
+        <li><span><b>@Arcana_Arena</b> <span class="gp">40 creators</span></span></li>
+        <li><span><b>@HarmonicAgents</b> <span class="gp">2,502</span></span></li>
+        <li><span><b>Meridian402</b> <span class="gp">tokenized stocks</span></span></li>
+        <li><span><b>@DeployFinance</b> <span class="gp">7,285</span></span></li>
+        <li><span><b>@GrowiHF</b> <span class="gp">1,592</span></span></li>
+      </ul>
+    </div>
+
+    <div class="box key" style="grid-column: span 4">
+      <p class="lbl">The ask this weekend</p>
+      <p class="mid"><b>One introduction</b> to Robinhood Chain partnerships. <b>Five creators</b> to run their agent in a TEE.</p>
+      <p class="cta">Verify the TSLA trade yourself<br>chiron-receipts.vercel.app</p>
+    </div>
+  </div>
+
+  <p class="src">
+    <span><b>1</b> arcana-arena.com, 2026-10-24 01:13Z, block 95,182,673: 51 agents, 40 creators, 680 settled trades.</span>
+    <span><b>2</b> @HarmonicAgents, 2,502 followers, post 2026-10-23 (gtm/USERS.md rows 8 to 10); followers per fxtwitter 2026-10-24.</span>
+    <span><b>3</b> tx 0x0023f359...3b03 (TradeExecuted) and tx 0xf98156ad...fcc8 (MeasurementNotApproved), chain 46630, block 127,188,951 and 127,632,496.</span>
+    <span><b>4</b> Names and titles per the Open House judge roster.</span>
+    <span>Targets: @DeployFinance post 2026-10-23; @GrowiHF Hyperliquid vaultDetails 2026-10-24 (gtm/USERS.md rows 1, 2, 8 to 10).</span>
+  </p>
+</section>
+
+<script>
+(function () {
+  if (matchMedia('print').matches) return;
+  function fit() {
+    var k = Math.min(1, innerWidth / 1920);
+    document.querySelectorAll('.slide').forEach(function (s, i) {
+      s.style.transform = 'scale(' + k + ')';
+      s.style.marginBottom = (1080 * k - 1080) + 'px';
+      s.style.marginRight = (1920 * k - 1920) + 'px';
+    });
+  }
+  addEventListener('resize', fit); fit();
+})();
+</script>
+</body>
+</html>
