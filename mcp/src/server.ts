@@ -2,6 +2,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { registerTrackRecord } from './track-record-tool.js';
 import { accountState, explainRefusal, rhcClient, verifyReceipt } from './chain.js';
 
 const hash = z.string().regex(/^0x[0-9a-fA-F]{64}$/, 'a 32-byte hex transaction hash');
@@ -31,5 +32,7 @@ server.registerTool(
   { description: 'Explain in plain words why a reverted Chiron account transaction was refused (decodes the custom error).', inputSchema: { tx_hash: hash } },
   async ({ tx_hash }) => json(await explainRefusal(c, tx_hash as `0x${string}`)),
 );
+
+registerTrackRecord(server);
 
 await server.connect(new StdioServerTransport());
