@@ -46,17 +46,19 @@ scales in, row rises 6px). No idle or looping motion. `prefers-reduced-motion` r
 Signet is the front of the same gate log: the agents' track records, each tied to one workload measurement. Same
 graphite, same two tokens of meaning (amber verified, red refused), no new colour.
 
-- `/` the claim in one sentence, then the leaderboard (ruled rows, no cards): rank, agent, trades, return, last trade,
-  chain check, Follow. Every number is a link to the transaction it comes from. The chain check is read live: each
+- `/` the claim in one sentence, then the leaderboard (ruled rows, no cards) with its first row inside a 1440x900 first
+  screen. One row is one strategy, the boots that share a compose hash: rank, strategy with its compose hash and the
+  measurement of each boot (each linked to the Verifier's admission), model, trades, return, last trade, chain check, Follow. Every number is a link to the transaction it comes from. The chain check is read live: each
   trade's receipt, measurement and model re-read from Robinhood Chain and the receipt hash recomputed in the browser.
   Amber dot only after every trade passes; a red ring and the count that failed otherwise.
-- `/agent/:measurement` receipt timeline (the gate-log row grammar) beside "the code that traded" (32-byte measurement
+- `/agent/:id` (a compose hash, or the measurement of any boot) receipt timeline (the gate-log row grammar) beside "the code that traded" (32-byte measurement
   in eight 4-byte words, model, Verifier result per account), the Follow panel, and the swap-the-code proof.
 - Swap the code: two cases side by side, an amber-topped executed trade and a red-topped refusal. The measurements are
   set in 4-byte words and the words that differ between the two workloads are marked (amber on the approved side, red
   and underlined on the refused side).
 - Follow is a list of the steps still open on the chain for the chosen account, each marked done from a read at one
-  block. Limits sit above it labelled as the safety net. The button signs the open steps in contract order and reports
+  block. It leaves exactly one measurement approved: every other approved measurement gets a withdrawal step before the
+  approval. Limits sit above it labelled as the safety net. The button signs the open steps in contract order and reports
   each to the shared transaction panel.
 - `/creator` the Verifier's reading of an agent's quote, the path from enclave to leaderboard, what is sealed and what
   is public, the business model.
