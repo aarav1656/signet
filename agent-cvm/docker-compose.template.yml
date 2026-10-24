@@ -8,6 +8,22 @@
 # its bytes hash to STRATEGY_SHA256 (agent/src/strategy.ts), so replacing the sealed payload
 # cannot change what trades. PHALA_API_KEY is the only other sealed variable. The owner key is
 # never in this file or in the CVM, and the CVM serves no route that submits a trade.
+#
+# Which bytes are measured, from the dstack docs (Dstack-TEE/dstack, docs/):
+#   attestation-tdx.md   RTMR3 records the compose hash, instance id, app id and key provider.
+#   guest-api-v0.md      compose_hash is sha256 over the exact app-compose.json bytes, and that
+#                        document embeds this file's text, so every literal here is an input.
+#   verifier/src/lib.rs  the on-chain measurement is keccak256(mr_seam || td_attributes || xfam ||
+#                        mr_td || mr_config_id || rtmr0 || rtmr1 || rtmr2 || rtmr3), so a changed
+#                        image digest, model id or STRATEGY_SHA256 is a different measurement that
+#                        the account refuses until its owner approves it.
+#   encrypted-env-spec.md, security/security-best-practices.md
+#                        sealed variables are encrypted to a public key, so their payload is not
+#                        authenticated: the digest in this file is what authenticates STRATEGY_B64.
+# The instance id is also an RTMR3 input, so each boot has its own measurement while the compose
+# hash, and STRATEGY_SHA256 with it, is the same across boots of one rendered file. A verifier
+# replays the eventLog returned by POST /quote into RTMR3, reads compose-hash, checks it against
+# sha256(app-compose.json) and reads STRATEGY_SHA256 from that document.
 services:
   agent:
     image: __IMAGE__

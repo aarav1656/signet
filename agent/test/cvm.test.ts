@@ -54,7 +54,7 @@ const fake = httpServer((req, res) => {
     assert.equal(req.url, '/GetQuote');
     seen.push((JSON.parse(body) as { report_data: string }).report_data);
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ quote: 'deadbeef', event_log: '[]' }));
+    res.end(JSON.stringify({ quote: 'deadbeef', event_log: '[{"imr":3,"event":"compose-hash"}]' }));
   });
 });
 await new Promise<void>((r) => fake.listen(sock, r));
@@ -79,7 +79,8 @@ after(() => {
 const base = `http://127.0.0.1:${PORT}`;
 
 test('/quote binds the generated agent key and the account attestNonce', async () => {
-  const q = fromWire<{ agent: Hex; refBlock: bigint; nonce: Hex; quote: Hex }>(await (await fetch(`${base}/quote`, { method: 'POST' })).text());
+  const q = fromWire<{ agent: Hex; refBlock: bigint; nonce: Hex; quote: Hex; eventLog: string }>(await (await fetch(`${base}/quote`, { method: 'POST' })).text());
+  assert.equal(q.eventLog, '[{"imr":3,"event":"compose-hash"}]', 'the RTMR event log travels with the quote');
   const chain = defineChain({ id: 46630, name: 'rhc', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [RPC] } } });
   const nonce = await createPublicClient({ chain, transport: http(RPC) }).readContract({ address: ACCOUNT, abi: agentAccountAbi, functionName: 'attestNonce', args: [q.refBlock] });
   assert.equal(q.nonce, nonce);
