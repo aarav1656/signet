@@ -39,7 +39,7 @@ body { font-family: var(--font-display); line-height: 1.3; }
 .box.top { grid-column: span 12; }
 .box.key { border-color: var(--color-amber-edge); background: var(--color-amber-wash); }
 .lbl { margin: 0 0 12px; font-family: var(--font-mono); font-size: 17px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-mute); }
-.txt { margin: 0; font-size: 24px; line-height: 1.3; color: var(--color-soft); overflow-wrap: anywhere; }
+.txt { margin: 0; font-size: 22px; line-height: 1.28; color: var(--color-soft); overflow-wrap: anywhere; }
 .wide .txt { font-size: 24px; }
 .top .txt { font-size: 32px; color: var(--color-ink); font-weight: 600; letter-spacing: -0.02em; }
 .src { margin: 0; padding: 12px 0 0; border-top: 1px solid var(--color-line); font-family: var(--font-mono); font-size: 12.5px; line-height: 1.4; color: var(--color-mute); columns: 3; column-gap: 32px; margin-bottom: 14px; list-style: none; }
@@ -56,24 +56,25 @@ body { font-family: var(--font-display); line-height: 1.3; }
     <div class="box"><p class="lbl">Who is This For</p><p class="txt">the operator behind @DeployFinance (7,295 followers), who gave an AI agent $100,000 for 70 days and posted the result, and the follower deciding which agent should hold their Stock Tokens</p></div>
     <div class="box"><p class="lbl">What They Do Today</p><p class="txt">post a screenshot. “I don&#x27;t mind showing my Polymarket PnL.. i do mind showing every single bet” (@Al_Nadim_nabil, 11,178 followers). 0 of 22 viral bot posts gave a wallet to check (@Meta_ZET)</p></div>
     <div class="box"><p class="lbl">Alternatives and Gaps</p><p class="txt">ARCANA: 51 agents, but the platform holds the keys and prompts. Hyperliquid: 9,478 vaults, no proof of which code trades. Robinhood Agents: 150,000+ accounts, no audit. Knidos: testnet, proves rules, not the model</p></div>
-    <div class="box key"><p class="lbl">The Wedge</p><p class="txt">stock token bot operators on Robinhood Chain. every trade names the Intel TDX measurement and model hash that made it, the follower&#x27;s account refuses any other workload, and the strategy stays inside the enclave</p></div>
-    <div class="box"><p class="lbl">Why Now</p><p class="txt">150,000+ agentic accounts at Robinhood, which does not audit agents. Stock Tokens became Morpho collateral on Oct 22 (x.com/RobinhoodCrypto/status/2113270580472381515). 2,529 TEE workloads already run on Phala</p></div>
+    <div class="box key"><p class="lbl">The Wedge</p><p class="txt">stock token bot operators on Robinhood Chain. every trade names the Intel TDX measurement and model hash that made it, the follower&#x27;s account refuses any other workload, and the strategy text is sealed config whose hash the measured compose pins</p></div>
+    <div class="box"><p class="lbl">Why Now</p><p class="txt">150,000+ agentic accounts at Robinhood, which does not audit agents. Stock Tokens became Morpho collateral on Oct 22 (https://x.com/RobinhoodCrypto/status/2113270580472381515). 2,529 TEE workloads already run on Phala</p></div>
     <div class="box"><p class="lbl">Why Onchain, Why Arbitrum</p><p class="txt">a Stylus Rust verifier walks Intel&#x27;s cert chain in one tx (2.37M gas), so anyone can re-check it. Stock Tokens live on Robinhood Chain: a TSLA trade settled for 1 USDG and its receipt names the code on chain</p></div>
     <div class="box wide"><p class="lbl">First 5-10 Users</p><p class="txt">@Arcana_Arena (40 creators, 51 agents), @HarmonicAgents (2,502), Meridian402 (stock token market maker), @DeployFinance (7,295), @GrowiHF (1,592), @senpi_ai (14,741), @betashop (22,573), @the_nof1 (54,390), @OxSimpleFarmer (28,443), @Agent_Minimum (471). the first five get a dm this weekend with the TSLA receipt</p></div>
-    <div class="box wide key"><p class="lbl">Ship This Weekend</p><p class="txt">the measured image pins the strategy&#x27;s hash and the decision loop runs inside the enclave, so the strategy text never leaves it. a follower approves one measurement. demo: the attested TSLA trade and a different workload refused, both read from Robinhood Chain testnet</p></div>
+    <div class="box wide key"><p class="lbl">Ship This Weekend</p><p class="txt">the measured compose pins the strategy&#x27;s hash and the decision loop runs inside the enclave; that CVM is admitted on Robinhood Chain testnet (tx 0x5fdc4acb...965c). following leaves exactly one measurement approved. demo: the attested TSLA trade and a different workload refused, both read from the chain</p></div>
   </div>
   <ol class="src">
     <li><b>1</b> @DeployFinance post 2026-10-23 and 7,295 followers, fxtwitter 2026-10-24.</li>
     <li><b>2</b> @Al_Nadim_nabil post 2026-10-14, 11,178 followers, fxtwitter (gtm/signals.md row 12).</li>
     <li><b>3</b> @Meta_ZET post 2026-10-15: 22 viral bot posts, 0 with a checkable wallet (gtm/signals.md row 1).</li>
     <li><b>4</b> Robinhood newsroom 2026-09-29: 150,000+ agentic accounts, &quot;does not control, supervise, monitor, recommend, or audit agents&quot;.</li>
-    <li><b>5</b> @RobinhoodCrypto post 2026-10-22: Stock Tokens as Morpho collateral.</li>
+    <li><b>5</b> @RobinhoodCrypto post 2026-10-22, Stock Tokens as Morpho collateral: https://x.com/RobinhoodCrypto/status/2113270580472381515.</li>
     <li><b>6</b> Phala 2025 report: 2,529 CVMs.</li>
     <li><b>7</b> arcana-arena.com 2026-10-24, block 95,182,673: 51 agents, 40 creators (gtm/COMPETITORS.md).</li>
     <li><b>8</b> Hyperliquid stats API 2026-10-24: 9,478 vaults (gtm/COMPETITORS.md). knidos.xyz, testnet.</li>
     <li><b>9</b> cast estimate, chain 46630: 2,371,819 gas for the Stylus TDX Verifier.</li>
     <li><b>10</b> TradeExecuted tx 0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03, block 127,188,951, status 1, read with cast receipt on rpc.testnet.chain.robinhood.com.</li>
     <li><b>11</b> Follower counts: fxtwitter 2026-10-24 (gtm/USERS.md rows 1 to 13).</li>
+    <li><b>12</b> Strategy commitment: agent-cvm/deployments/2026-10-24.json, registerAgent tx 0x5fdc4acb64d8f1dddc9042c9101c652f87f7483cc1163d0c878b431c44ce965c, block 141688284, status 1, read with cast receipt.</li>
   </ol>
 </section>
 
@@ -85,7 +86,7 @@ body { font-family: var(--font-display); line-height: 1.3; }
     <div class="box"><p class="lbl">First Reachable Audience</p><p class="txt">40 creators and 51 agents on ARCANA&#x27;s Season 2 US Equities board (block 95,182,673), plus operators who post Stock Token volume in public: @HarmonicAgents (2,502), @OxSimpleFarmer (28,443)</p></div>
     <div class="box"><p class="lbl">Proof You Need First</p><p class="txt">30 days of Stock Token trades from an outside creator, one measurement on every receipt. today on chain: one attested TSLA trade (block 127,188,951) and one refused workload (block 127,632,496)</p></div>
     <div class="box key"><p class="lbl">3 Distribution Channels</p><p class="txt">direct dms to stock token operators with the TSLA receipt attached; leaderboard hosts like ARCANA and Senpi adding a measurement column; builder channels at Robinhood Chain, Arbitrum and Phala</p></div>
-    <div class="box"><p class="lbl">Core Message, One Sentence</p><p class="txt">your next track record can be a measurement, not a screenshot: every trade names the code that made it, and the strategy stays private</p></div>
+    <div class="box"><p class="lbl">Core Message, One Sentence</p><p class="txt">your next track record can be a measurement, not a screenshot: every trade names the code that made it, and the strategy text stays sealed behind a hash the measurement pins</p></div>
     <div class="box"><p class="lbl">The Intro That Helps</p><p class="txt">Gaetan Thabot (@GThabot), Robinhood Chain partnerships, for stock token creators. Ben Greenberg (@hummusonrails), Arbitrum DevRel, for the Stylus verifier. Phala as the TEE partner for creator CVMs</p></div>
     <div class="box wide"><p class="lbl">5 Named Targets</p><p class="txt">@Arcana_Arena (40 creators, 51 agents); @HarmonicAgents (2,502, trades Stock Tokens); Meridian402 (stock token market maker); @DeployFinance (7,295, $100,000 agent for 70 days); @GrowiHF (1,592, $2.94M all-time vault PnL)</p></div>
     <div class="box wide key"><p class="lbl">The Ask This Weekend</p><p class="txt">one intro to Robinhood Chain partnerships and one to Arbitrum DevRel, plus five creators willing to run an agent in a TEE. CTA: open tx 0x0023f359...3b03 on the Robinhood Chain explorer and read the measurement and model hash</p></div>

@@ -188,7 +188,7 @@ notes(s3, "0:26 to 0:41. Robinhood has over 150,000 agentic accounts and about 3
 # ---------------------------------------------------------------- 4 solution
 s4 = new_slide("Three steps turn a track record into something you can check")
 steps = [
-    ("1", "The creator's agent runs in a TEE", "An Intel TDX confidential VM. The agent makes its trading key inside it. The strategy and prompts never leave."),
+    ("1", "The creator's agent runs in a TEE", "An Intel TDX confidential VM. The agent makes its trading key inside it. The strategy text is sealed config, pinned by hash in the measured compose."),
     ("2", "Every receipt names the code and the model", "TradeExecuted records the TDX measurement and the model hash. Stylus verifiers in Rust check both on chain."),
     ("3", "Followers admit only that code", "The follower's account stores the agent key only for a measurement they approved. A different workload is refused."),
 ]
@@ -216,27 +216,27 @@ box(s5, 5.1, 1.35, 4.6, 2.5, [
     PR([R("tx 0xf98156ad…fcc8, block 127,632,496", 14, LIME, HEAD, link=EXPLORER + TX_REFUSAL)]),
 ], margins=0.16)
 box(s5, 0.3, 3.95, 9.4, 0.72, [
-    PR([R("What you see: ", 14, LIME, HEAD), R("open each link on the explorer. The trade's Logs tab shows the measurement and model hash. The refusal shows status failed. The app leaderboard lists each agent by measurement.", 14, WHITE, BODY)]),
+    PR([R("What you see: ", 14, LIME, HEAD), R("open each link on the explorer. The trade's Logs tab shows the measurement and model hash. The refusal shows status failed. The app leaderboard lists each strategy by compose hash, with every boot's measurement beside it.", 14, WHITE, BODY)]),
 ], anchor=MSO_ANCHOR.MIDDLE, margins=0.14)
 footnote(s5, "Sources: cast receipt on chain 46630 (rpc.testnet.chain.robinhood.com), 2026-10-24: trade status 1, gas 504,449; refusal status 0, gas 2,349,054. Explorer: explorer.testnet.chain.robinhood.com.")
-notes(s5, "1:03 to 1:33. Here is the proof, on Robinhood Chain testnet. The agent bought TSLA with one USDG. Open the transaction, Logs tab: the event records the measurement of the workload and the hash of the model. Now the refusal. A genuine Intel TDX quote from a different workload, Phala's inference gateway, was submitted. The hardware is real and the code is not the one the owner approved, so the chain reverts with MeasurementNotApproved after more than 2.3 million gas of verification. In the app, the leaderboard lists each agent by its measurement. A new measurement is a new agent with an empty record.")
+notes(s5, "1:03 to 1:33. Here is the proof, on Robinhood Chain testnet. The agent bought TSLA with one USDG. Open the transaction, Logs tab: the event records the measurement of the workload and the hash of the model. Now the refusal. A genuine Intel TDX quote from a different workload, Phala's inference gateway, was submitted. The hardware is real and the code is not the one the owner approved, so the chain reverts with MeasurementNotApproved after more than 2.3 million gas of verification. In the app, the leaderboard lists each strategy by its compose hash, with the measurement of every boot. New code is a new compose hash with an empty record.")
 
 # ---------------------------------------------------------------- 6 innovation
 s6 = new_slide("Private strategy, public proof")
 inn = [
-    ("Sealed", "Strategy hash in the measurement", "The measured compose commits to the strategy's hash. The strategy text stays in the enclave. Ships this weekend."),
+    ("Sealed", "Strategy hash in the measurement", "The measured compose commits to the strategy's hash and the CVM boots only on a match. The strategy text is sealed config. A CVM with the hash pinned is admitted on 46630."),
     ("2.37M gas", "Intel's cert chain in one transaction", "A Stylus verifier in Rust walks the Intel certificate chain on chain, in the transaction that admits the key."),
-    ("43 of 43", "TCB and QE identity checks", "The verifier checks Intel's signed TCB Info, QE Identity and revocation lists. Revoked never passes. 45 tests, 43 of 43 guard mutants killed."),
+    ("43 of 43", "TCB and QE identity checks", "The Stylus verifier crate checks Intel's signed TCB Info, QE Identity and revocation lists, and a revoked platform never passes. 45 tests, 43 of 43 guard mutants killed."),
 ]
 for i, (big, h, b) in enumerate(inn):
     x = 0.3 + i * 3.2
     box(s6, x, 1.4, 3.0, 3.25, [P(big, 36, LIME, HEAD, after=2), P(h, 17, WHITE, HEAD, after=6), P(b, 14, WHITE, BODY)], margins=0.18)
-footnote(s6, "Sources: 2,371,819 gas by cast estimate on chain 46630 (docs/ENGINEERING.md); verifier/MUTATIONS.md, branch signet-contracts commit 960f010; strategy commitment, branch signet-strategy-commit commit 00e8cdf.")
-notes(s6, "1:33 to 1:51. Three ideas. The measured image commits to the strategy's hash while the strategy text stays inside the enclave: private strategy, public proof. That ships this weekend. The Stylus verifier walks Intel's certificate chain in Rust for about 2.37 million gas, inside the same transaction that admits the key. And the verifier checks the platform's TCB status, the quoting enclave identity and revocation lists, with 45 tests and every guard mutation killed.")
+footnote(s6, "Sources: 2,371,819 gas by cast estimate on chain 46630 (docs/ENGINEERING.md); verifier/MUTATIONS.md; strategy commitment: agent/src/strategy.ts, agent-cvm/deployments/2026-10-24.json, registerAgent tx 0x5fdc4acb...965c.")
+notes(s6, "1:33 to 1:51. Three ideas. The measured compose commits to the strategy's hash, the CVM refuses to boot on any other strategy, and the text is sealed config: private strategy, public proof. A CVM built that way is admitted on the live account on Robinhood Chain testnet. The Stylus verifier walks Intel's certificate chain in Rust for about 2.37 million gas, inside the same transaction that admits the key. And the verifier checks the platform's TCB status, the quoting enclave identity and revocation lists, with 45 tests and every guard mutation killed.")
 
 # ---------------------------------------------------------------- 7 contracts
-s7 = new_slide("314 tests and 109 killed mutants guard the follower's account")
-sx = [("314", "forge tests, 21 suites"), ("109 / 110", "AgentAccount guard mutants killed"), ("31 / 31", "ChironGate guards killed"), ("40", "Rust tests across both verifiers")]
+s7 = new_slide("351 tests and 122 killed mutants guard the follower's account")
+sx = [("351", "forge tests, 25 suites"), ("122 / 123", "AgentAccount guard mutants killed"), ("31 / 31", "ChironGate guards killed"), ("85", "Rust tests across both verifiers")]
 for i, (b, l) in enumerate(sx):
     stat(s7, 0.3 + i * 2.38, 1.4, 2.28, 1.2, b, l, 30, 12)
 box(s7, 0.3, 2.75, 4.6, 1.9, [
@@ -251,8 +251,8 @@ box(s7, 5.1, 2.75, 4.6, 1.9, [
     P("Canonical Uniswap v4 pools only, settled by balance delta", 13, after=3),
     P("ERC-8056 corporate-action guard; unapprove revokes in the same transaction", 13),
 ], margins=0.14)
-footnote(s7, "forge test --list on this branch: 314 tests, 21 suites, 2 invariant and 3 fuzz tests; 0 failed in docs/test-logs. cargo test --list: verifier 22, receipt-verifier 18. docs/SECURITY.md, docs/security/agent-account-mutations.md.")
-notes(s7, "1:51 to 2:03. The follower's account is the part that holds money, so it carries the tests. 314 forge tests across 21 suites, including invariants and fuzz tests. A mutation run removes 110 guards from the account one at a time and 109 are caught, the last one is documented as equivalent behavior. The Chiron gate has 31 of 31. The owner holds the powers, the agent key can never become owner, and the account swaps only through the canonical Uniswap v4 pool manager.")
+footnote(s7, "forge test -j 1 on the integrated tree: 351 passed, 0 failed, 25 suites (docs/test-logs/forge-test-signet-2026-10-24.log). cargo test --release: verifier 67, receipt-verifier 18. docs/SECURITY.md, docs/security/agent-account-mutations.md.")
+notes(s7, "1:51 to 2:03. The follower's account is the part that holds money, so it carries the tests. 351 forge tests across 25 suites, including invariants and fuzz tests. A mutation run removes 123 guards from the account one at a time and 122 are caught, the last one is documented as equivalent behavior. The Chiron gate has 31 of 31. The owner holds the powers, the agent key can never become owner, and the account swaps only through the canonical Uniswap v4 pool manager.")
 
 # ---------------------------------------------------------------- 8 PMF
 s8 = new_slide("Five named creators already publish returns and keep the strategy sealed")
@@ -265,7 +265,7 @@ box(s8, 0.3, 3.05, 4.4, 1.6, [
     P("@CoderJunkie, 13,373 followers, 2026-10-22", 11, LIME, HEAD),
 ], anchor=MSO_ANCHOR.MIDDLE, margins=0.15)
 rows = [
-    ("@DeployFinance", "7,285", "$100,000 agent wallet, 70 days"),
+    ("@DeployFinance", "7,295", "$100,000 agent wallet, 70 days"),
     ("@GrowiHF", "1,592", "vault at +$2.94M all-time PnL, strategy undisclosed"),
     ("@Arcana_Arena", "236", "40 creators, 51 agents on Robinhood Chain"),
     ("@HarmonicAgents", "2,502", "posts Stock Token pool volume"),
@@ -365,7 +365,7 @@ box(s12, 0.3, 1.4, 4.0, 2.3, [
     P("Five creators running agents in a TEE", 16, WHITE, HEAD, after=5),
     P("Funding released 50% upfront, 50% on the milestones", 16, WHITE, HEAD),
 ], margins=0.16)
-ms = [("Week 1", "Strategy hash pinned in the measured image on the live CVM"),
+ms = [("Week 1", "First attested trades from the CVM whose compose pins the strategy hash"),
       ("Week 2", "TCB and QE identity checks on the verifier deployed to 46630"),
       ("Week 3", "Mainnet 4663 deployment from the runbook"),
       ("Week 4", "Five creators admitted, first trades naming one measurement each")]
@@ -375,10 +375,10 @@ for w, d in ms:
 box(s12, 4.5, 1.4, 5.2, 2.3, paras, margins=0.16)
 box(s12, 0.3, 3.85, 9.4, 0.8, [
     PR([R("Team: ", 15, LIME, HEAD), R("aarav1656 and pranjalcodesinw3, builders of every layer from the Stylus verifiers to the app.", 15)], after=3),
-    PR([R("Check the TSLA trade yourself: ", 15, WHITE, HEAD), R("chiron-receipts.vercel.app", 15, LIME, HEAD, link="https://chiron-receipts.vercel.app")]),
+    PR([R("Check the TSLA trade yourself: ", 15, WHITE, HEAD), R("tx 0x0023f359…3b03 on the explorer", 15, LIME, HEAD, link=EXPLORER + TX_TRADE)]),
 ], anchor=MSO_ANCHOR.MIDDLE, margins=0.16)
 footnote(s12, "Sources: github.com/pranjalcodesinw3/chiron commit history; docs/mainnet-runbook.md; milestones follow the Proof You Need First box of the GTM canvas.")
-notes(s12, "2:42 to 3:00. The ask is an introduction to Robinhood Chain partnerships and five creators willing to run their agent in an enclave. Funding releases half upfront and half on milestones: in week one the strategy hash is pinned in the measured image on the live enclave, week two the platform checks are on chain, week three the mainnet deployment, week four five creators trading with a measurement on every event. A record you can verify, a strategy you keep. Open the app and check the trade yourself.")
+notes(s12, "2:42 to 3:00. The ask is an introduction to Robinhood Chain partnerships and five creators willing to run their agent in an enclave. Funding releases half upfront and half on milestones: in week one the first attested trades come from the enclave whose compose pins the strategy hash, week two the platform checks are on chain, week three the mainnet deployment, week four five creators trading with a measurement on every event. A record you can verify, a strategy you keep. Open the transaction on the explorer and check the trade yourself.")
 
 # ---------------------------------------------------------------- canvases
 def clear_notes(sl, s):
@@ -416,7 +416,7 @@ def fill_canvas(sl, header, boxes, sources, sourcesize=6.5):
     run(p1, header[1], 12, WHITE, BODY)
     for off, (title, body) in boxes.items():
         big = off >= 7
-        set_box(base[str(first + off)], title, body, 14 if big else 13, 12 if big else 10)
+        set_box(base[str(first + off)], title, body, 13 if big else 12, 10.5 if big else 9)
     for sh in sl.shapes:
         if sh.is_placeholder and sh.has_text_frame and sh.text_frame.text.strip() in ("2025", "Arbitrum"):
             for r0 in sh.text_frame.paragraphs[0].runs:
@@ -434,34 +434,26 @@ for el in product.shapes._spTree:
     if el.tag in (qn("p:sp"), qn("p:pic"), qn("p:grpSp")):
         gtm.shapes._spTree.append(copy.deepcopy(el))
 
+import json as _json
+from pathlib import Path
+ROOT = Path(__file__).resolve().parent.parent
+CJ = _json.loads((ROOT / "deck/canvas/content.json").read_text())
+PRODUCT_TITLES = ["Who is This For", "What They Do Today", "The Wedge", "Why Now", "Alternatives and Gaps", "Why Onchain, Why Arbitrum", "First 5-10 Users", "Ship This Weekend"]
+GTM_TITLES = ["Who Buys, Who Uses", "First Reachable Audience", "3 Distribution Channels", "Core Message, One Sentence", "Proof You Need First", "The Intro That Helps", "5 Named Targets", "The Ask This Weekend"]
+def canvas_boxes(key, titles):
+    boxes = CJ[key]["boxes"]
+    return {off: (titles[off - 1], [boxes[str(529 + off)]]) for off in range(1, 9)}
+
 fill_canvas(
     product,
-    ("Signet", "One line: AI trading agents whose track record is provable and whose strategy stays private."),
-    {
-        1: ("Who is This For", ["The operator behind @DeployFinance, who gave an AI agent $100,000 for 70 days and posted the result. Their followers pick which agent holds Stock Tokens."]),
-        2: ("What They Do Today", ["“I don't mind showing my Polymarket PnL.. i do mind showing every single bet” (@Al_Nadim_nabil). They post a screenshot: 0 of 22 viral bot posts gave a wallet to check."]),
-        3: ("The Wedge", ["Stock Token bot operators on Robinhood Chain. Their next record is a measurement, not a screenshot: each trade names the Intel TDX measurement and model that made it."]),
-        4: ("Why Now", ["Robinhood has 150,000+ agentic accounts and does not audit agents. Stock Tokens became Morpho collateral on Oct 22. Phala runs 2,529 TEE workloads."]),
-        5: ("Alternatives and Gaps", ["ARCANA: 51 agents, the platform holds keys and prompts. Hyperliquid: 9,478 vaults, no proof of which code trades. Knidos: testnet, proves rules, not the model."]),
-        6: ("Why Onchain, Why Arbitrum", ["A Stylus verifier in Rust walks Intel's cert chain in one tx: 2.37M gas. Robinhood Chain Stock Tokens settle a TSLA trade for 1 USDG. Receipts on chain name the code."]),
-        7: ("First 5-10 Users", ["@Arcana_Arena (40 creators), @HarmonicAgents (2,502), Meridian402 (market maker), @DeployFinance (7,285), @GrowiHF (+$2.94M PnL), @senpi_ai (14,741), @betashop (22,573), @the_nof1 (54,390), @OxSimpleFarmer (28,443), @Agent_Minimum (471)."]),
-        8: ("Ship This Weekend", ["The measured image commits to the strategy's hash; the strategy text stays inside the enclave. The decision loop moves into the enclave. Five creator DMs with the TSLA receipt and verify_receipt."]),
-    },
-    "Sources: fxtwitter 2026-10-24 (posts, followers); tx 0x0023f359...3b03, chain 46630; Robinhood newsroom 2026-09-29; Morpho launch 2026-10-22; Phala 2025 report; arcana-arena.com block 95,182,673; Hyperliquid stats API 2026-10-24; cast estimate 2,371,819 gas.",
+    tuple(CJ["product"]["header"]),
+    canvas_boxes("product", PRODUCT_TITLES),
+    "Sources: fxtwitter 2026-10-24 (posts, followers); tx 0x0023f359...3b03, chain 46630; Robinhood newsroom 2026-09-29; Morpho collateral post 2026-10-22, https://x.com/RobinhoodCrypto/status/2113270580472381515; Phala 2025 report; arcana-arena.com block 95,182,673; Hyperliquid stats API 2026-10-24; cast estimate 2,371,819 gas.",
 )
 fill_canvas(
     gtm,
-    ("Signet", "One line: Creators prove a record without opening the strategy. Followers fund only the code they approved."),
-    {
-        1: ("Who Buys, Who Uses", ["Uses: creators supply strategies and earn a performance fee on new profit. Buys: followers subscribe for an admitted agent and approve one hash. Signet takes a share of each fee."]),
-        2: ("First Reachable Audience", ["40 creators and 51 agents on ARCANA's Season 2 US Equities board, plus operators who already post Stock Token volume in public."]),
-        3: ("3 Distribution Channels", ["Direct DMs to Stock Token operators, TSLA receipt attached. Leaderboard hosts add a measurement column. Robinhood Chain, Arbitrum and Phala builder channels."]),
-        4: ("Core Message, One Sentence", ["Your next record can be a measurement, not a screenshot. The measured image commits to the strategy's hash; the text stays inside the enclave."]),
-        5: ("Proof You Need First", ["30 days of Stock Token trades from an outside creator, one measurement on every event. Today: one attested TSLA trade and one refusal on chain."]),
-        6: ("The Intro That Helps", ["Gaetan Thabot, Director of Crypto Partnerships, Robinhood Chain. Ben Greenberg, DevRel, Arbitrum Foundation."]),
-        7: ("5 Named Targets", ["@Arcana_Arena (40 creators), @HarmonicAgents (2,502), Meridian402 (tokenized stocks), @DeployFinance (7,285), @GrowiHF (1,592)."]),
-        8: ("The Ask This Weekend", ["One introduction to Robinhood Chain partnerships. Five creators to run their agent in a TEE. Verify the TSLA trade yourself: chiron-receipts.vercel.app"]),
-    },
+    tuple(CJ["gtm"]["header"]),
+    canvas_boxes("gtm", GTM_TITLES),
     "Sources: arcana-arena.com 2026-10-24 01:13Z, block 95,182,673; @HarmonicAgents post 2026-10-23, followers per fxtwitter 2026-10-24; tx 0x0023f359...3b03 and 0xf98156ad...fcc8, chain 46630; names and titles per the Open House judge roster; @DeployFinance post 2026-10-23; @GrowiHF Hyperliquid vaultDetails 2026-10-24.",
 )
 clear_notes(product, "Canvas 1 of 2, the official Product Canvas for Signet. Who it is for, what they do today, the wedge, why now, alternatives, why onchain, first users, and what ships this weekend. Every figure carries its source in the line under the boxes.")
@@ -474,14 +466,14 @@ SCRIPT = [
     (s2, "0:08 to 0:26. Someone vetted 22 viral posts claiming a 200x AI trading bot. Zero gave a wallet you could check. One reply says it plainly: until an agent can prove its track record without human intervention, it is a cool demo."),
     (s3, "0:26 to 0:41. Robinhood has over 150,000 agentic accounts and about 30 million tool uses a day, and says it does not audit agents. Limits answer how much an agent can lose. Nothing answers which code is trading. Copy trading today pays for screenshots."),
     (s4, "0:41 to 1:03. Three steps. The creator's agent runs in an Intel TDX enclave and makes its key inside. Every receipt names the exact code and the model that answered, checked on chain by Stylus verifiers in Rust. The follower's account stores the agent key only for a measurement the follower approved. Any other workload is refused."),
-    (s5, "1:03 to 1:33. Here is the proof on Robinhood Chain testnet. The agent bought TSLA with one USDG. Open the transaction, Logs tab: the event records the workload's measurement and the model hash. Now the refusal. A genuine Intel quote from a different workload was submitted. The hardware is real and the code is not the approved code, so the chain reverts with MeasurementNotApproved. In the app, the leaderboard lists each agent by measurement."),
-    (s6, "1:33 to 1:51. Three ideas. The measured image commits to the strategy's hash while the strategy text stays in the enclave. That is private strategy, public proof, and it ships this weekend. A Stylus verifier walks Intel's certificate chain for about 2.37 million gas. And it checks platform status, enclave identity and revocation lists."),
-    (s7, "1:51 to 2:03. The follower's account holds the money, so it carries the tests. 314 forge tests across 21 suites. A mutation run removes 110 guards one at a time and catches 109, the last is documented as equivalent. The agent key can never become owner."),
+    (s5, "1:03 to 1:33. Here is the proof on Robinhood Chain testnet. The agent bought TSLA with one USDG. Open the transaction, Logs tab: the event records the workload's measurement and the model hash. Now the refusal. A genuine Intel quote from a different workload was submitted. The hardware is real and the code is not the approved code, so the chain reverts with MeasurementNotApproved. In the app, the leaderboard lists each strategy by compose hash, with every boot's measurement."),
+    (s6, "1:33 to 1:51. Three ideas. The measured compose commits to the strategy's hash and the CVM boots only on a match, while the strategy text is sealed config. That is private strategy, public proof, and a CVM built that way is admitted on the live account. A Stylus verifier walks Intel's certificate chain for about 2.37 million gas. And it checks platform status, enclave identity and revocation lists."),
+    (s7, "1:51 to 2:03. The follower's account holds the money, so it carries the tests. 351 forge tests across 25 suites. A mutation run removes 123 guards one at a time and catches 122, the last is documented as equivalent. The agent key can never become owner."),
     (s8, "2:03 to 2:15. The first five users are named. DeployFinance gave an AI one hundred thousand dollars for 70 days. Growi runs a vault near three million dollars of profit with a strategy it will not open. Arcana hosts 40 creators on Robinhood Chain today."),
     (s9, "2:15 to 2:23. The model has two fees. Creators earn a performance fee on new profit above the follower's high-water mark. Followers pay a flat subscription for an admitted agent. Signet takes a share of each fee."),
     (s10, "2:23 to 2:33. Arcana proves a record was not edited, but the platform holds keys and prompts. Hyperliquid proves the PnL, not the code. Robinhood gives limits. Knidos proves trades fit parameters. Phala proves a workload ran in a TEE. Signet proves the code behind every trade."),
     (s11, "2:33 to 2:42. We start with people we can name. Arcana's board has 40 creators and 51 agents. We message them with the TSLA receipt attached. One sentence: your next record can be a measurement, not a screenshot."),
-    (s12, "2:42 to 3:00. The ask: an introduction to Robinhood Chain partnerships and five creators willing to run an agent in an enclave. Funding releases half upfront and half on milestones across thirty days. A record you can verify, a strategy you keep. Open the app and check the trade yourself."),
+    (s12, "2:42 to 3:00. The ask: an introduction to Robinhood Chain partnerships and five creators willing to run an agent in an enclave. Funding releases half upfront and half on milestones across thirty days. A record you can verify, a strategy you keep. Open the transaction on the explorer and check the trade yourself."),
 ]
 for sl, txt in SCRIPT:
     notes(sl, txt)

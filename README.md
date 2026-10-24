@@ -10,7 +10,7 @@
 | Refusal | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8), block 127,632,496: a genuine Intel TDX quote from a different workload reverts `MeasurementNotApproved` after 2,349,054 gas of onchain verification |
 | Follower account | [`0xFaaAa4d1...3b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55): holds USDG, trades only through the canonical Uniswap v4 PoolManager, admits one agent key |
 | Agents | `claude mcp add --transport http chiron https://chiron-receipts.vercel.app/mcp` |
-| Pitch, canvases, deck | [docs/PITCH.md](docs/PITCH.md), [Product canvas](deck/canvas/Signet-Product-Canvas.pdf), [GTM canvas](deck/canvas/Signet-GTM-Canvas.pdf), [deck/index.html](deck/index.html) |
+| Deck and canvases | [Signet-Deck.pdf](deck/Signet-Deck.pdf), [Product canvas](deck/canvas/Signet-Product-Canvas.pdf), [GTM canvas](deck/canvas/Signet-GTM-Canvas.pdf), [deck/index.html](deck/index.html) |
 | Repo | [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron) |
 
 ## Verify it in 60 seconds
@@ -24,20 +24,20 @@
 
 A trading agent is only as good as the claim that it made its own record. Today that claim is a screenshot. Signet replaces it with a chain read.
 
-- **Creators run the agent in an Intel TDX confidential VM.** The agent generates its trading key inside the enclave. Its strategy, prompts and model inputs stay inside.
-- **Every trade names its code.** A Stylus contract on Robinhood Chain parses the enclave's quote chain to Intel's root, and the account stores the agent key only if the quote's workload measurement is one the account owner approved. Each `TradeExecuted` records that measurement, the served model hash, and the hashes of the request and response behind the trade. A track record is the list of trades that name one measurement. New code is a new measurement and starts with an empty record.
-- **Followers let that code, and only that code, trade their Stock Tokens.** A follower owns an `AgentAccount`. Following is one `setMeasurement` call on their own account. Funds never leave it: the account swaps through the canonical Uniswap v4 PoolManager and settles by balance delta.
+- **Creators run the agent in an Intel TDX confidential VM.** The agent generates its trading key inside the enclave and the decision loop runs there; the CVM serves a quote and no signing endpoint. The strategy text arrives as sealed config, and the measured compose pins its SHA-256: the CVM refuses to boot on a byte that does not hash to the pin, so a changed strategy is a changed compose hash.
+- **Every trade names its code.** A Stylus contract on Robinhood Chain parses the enclave's quote chain to Intel's root, and the account stores the agent key only if the quote's workload measurement is one the account owner approved. Each `TradeExecuted` records that measurement, the served model hash, and the hashes of the request and response behind the trade. A track record is the list of trades that name one workload. Each boot has a measurement of its own (the instance id is in RTMR3), so the stable identity of a strategy is its compose hash: the leaderboard groups boots by compose hash, and new code is a new compose hash with an empty record.
+- **Followers let that code, and only that code, trade their Stock Tokens.** A follower owns an `AgentAccount`. Following approves the creator's measurement on their own account and unapproves every other one first, so exactly one workload is approved (`agent/src/follow.ts` and the Follow panel, tested on an anvil fork of the live account). Funds never leave the account: the account swaps through the canonical Uniswap v4 PoolManager and settles by balance delta.
 - **Limits are the safety net underneath.** A per-trade cap, a rolling 24-hour cap, an approval threshold above which a trade waits for the owner, a pool allowlist and an ERC-8056 corporate-action guard are enforced by the account in the same transaction as the swap. Unapproving a measurement revokes the agent in the same transaction.
 
-Public: the measurement, the model hashes, the trades and the hashes of each request and response. Inside the enclave: the prompt, the strategy logic and the model's reasoning.
+Public: the measurement, the compose hash, the model hashes, the trades and the SHA-256 of each request and response body. Sealed: the strategy text, which the chain only ever sees as its digest.
 
 ## What a signed code identity changes
 
 | Today | With Signet |
 |---|---|
 | A PnL screenshot or a wallet link proves a balance, not who made it | A trade proves the measurement and model that made it |
-| The creator can change the strategy and keep the name | A changed strategy is a changed measurement: a new agent with its own record |
-| Proving the record means publishing the strategy | The record is public and the strategy is sealed |
+| The creator can change the strategy and keep the name | A changed strategy is a changed compose hash: a new agent with its own record |
+| Proving the record means publishing the strategy | The record is public and the strategy text is committed by its digest |
 | A copier trusts a platform's displayed returns | A follower's own account refuses every workload they did not approve |
 | Limits cap the loss and say nothing about whose code is trading | Limits cap the loss and the measurement names who is trading |
 
@@ -51,6 +51,8 @@ Robinhood Agents gives a customer limits and approvals and states that Robinhood
 4. The agent calls `execute(trade, receipt)`. The account checks the caller, the caps, the pool and an inference receipt (an Ed25519-signed Phala gateway receipt verified by the Stylus `ReceiptVerifier`) whose served model is in the owner's accepted set, then swaps.
 5. `TradeExecuted` records `agentMeasurement`, `servedModelHash`, `requestHash`, `responseHash` and the trade amounts. The leaderboard and the MCP server read exactly these events.
 
+Strategy commitment, live: the CVM `signet-demo-tsla-prod` boots with `STRATEGY_SHA256 3723fda7...0db26` in its measured compose (compose hash `9f997c38...2606`), and its quote was admitted on the live account by the Stylus Verifier: owner approval [`0x749003ce...7b8b`](https://explorer.testnet.chain.robinhood.com/tx/0x749003ce338eed7782f37dad1ad6528f9cebf74ff80a0c15da8a47c7e6717b8b), registration [`0x5fdc4acb...965c`](https://explorer.testnet.chain.robinhood.com/tx/0x5fdc4acb64d8f1dddc9042c9101c652f87f7483cc1163d0c878b431c44ce965c). `agent-cvm/deployments/2026-10-24.json` holds the image digest and the reads. The digest recomputes from `agent/strategies/demo-tsla.json` with `openssl dgst -sha256`.
+
 The contract-level description, every live transaction with its read-back, gas figures and the security review are in [docs/ENGINEERING.md](docs/ENGINEERING.md).
 
 ## What exists
@@ -59,7 +61,7 @@ The contract-level description, every live transaction with its read-back, gas f
 |---|---|---|
 | `AgentAccount`, `AgentAccountFactory` | `contracts/src/` | The follower's account: attested agent admission, caps, approvals, swaps through Uniswap v4, receipt-checked trades |
 | `Verifier`, `ReceiptVerifier` | `verifier/`, `receipt-verifier/` | Stylus (Rust): the Intel TDX DCAP quote chain and the Ed25519 inference receipt, verified in the transaction that uses them |
-| Reference agent | `agent/`, `agent-cvm/` | A trading agent in a Phala Cloud TDX CVM that generates its key in memory, serves quotes per account and signs trades there |
+| Reference agent | `agent/`, `agent-cvm/` | A trading agent in a Phala Cloud TDX CVM: it generates its key in memory, serves quotes per account, runs the decision loop and signs its trades inside, and boots only on a strategy whose SHA-256 matches the measured compose |
 | Assay | `contracts/src/Assay.sol` | Pay-per-call USDG channel that settles inference only against a receipt naming the pinned model |
 | MCP server | `mcp/` | `verify_receipt`, `account_state`, `explain_refusal` over viem, and `get_track_record(measurement)`: every trade of one TDX workload with the Chainlink round that priced it, its PnL and return, attestations and refusals; hosted at `/mcp` |
 | Web app | `web/` | The Signet leaderboard, agent profile with receipt timeline, follow flow, creator page, and the account gate log |
@@ -83,7 +85,7 @@ Deployed on Robinhood Chain testnet (46630):
 - **Creator performance fee.** A creator earns a share of the profit a follower's account makes through their code, above the follower's high-water mark, so the creator is paid only for new profit. Signet takes a share of that fee.
 - **Follower subscription.** A follower pays a flat monthly fee for an admitted agent. Signet takes a share of that fee.
 
-The account contracts enforce the code, the model and the limits. A fee is a term between creator and follower and settles as a transfer the follower's owner signs.
+The account contracts enforce the code, the model and the limits. Fees are the business model between creator and follower, settled as a transfer the follower's owner signs.
 
 ## Run it
 
@@ -97,9 +99,10 @@ cd web && npm install && npm run dev
 
 | Check | Result | Source |
 |---|---|---|
-| `make test` from a fresh clone of `bac4c37` (21 suites) | 314 passed, 0 failed, 0 skipped | `docs/test-logs/` |
-| Mutation runner, one `AgentAccount` guard removed or weakened at a time | 109 of 110 killed, the remaining mutant is behavior-equivalent and documented | `docs/security/agent-account-mutations.md` |
-| `AgentAccount` fork tests against live Robinhood Chain testnet state | 4 passed | `make test` |
+| `forge test -j 1` on the integrated tree (25 suites, fork tests against live testnet state included) | 351 passed, 0 failed, 0 skipped | `docs/test-logs/forge-test-signet-2026-10-24.log` |
+| Mutation runner, one `AgentAccount` guard removed or weakened at a time | 122 of 123 killed, the remaining mutant is behavior-equivalent and documented | `docs/security/agent-account-mutations.md` |
+| Stylus crates, `cargo test --release` | verifier 67 passed, receipt-verifier 18 passed | `verifier/`, `receipt-verifier/` |
+| Agent, MCP and web suites | agent 51 passed, mcp 22 passed, web 85 passed | `npm test` in each |
 | Attested trade `0x0023f359...3b03` | status success, block 127,188,951, 504,449 gas | `cast receipt`, 2026-10-24 |
 | Refusal `0xf98156ad...fcc8` | status failed, block 127,632,496, 2,349,054 gas | `cast receipt`, 2026-10-24 |
 

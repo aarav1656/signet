@@ -74,7 +74,7 @@ body { font-family: var(--font-display); line-height: 1.3; }
 .box.top { grid-column: span 12; }
 .box.key { border-color: var(--color-amber-edge); background: var(--color-amber-wash); }
 .lbl { margin: 0 0 12px; font-family: var(--font-mono); font-size: 17px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-mute); }
-.txt { margin: 0; font-size: 24px; line-height: 1.3; color: var(--color-soft); overflow-wrap: anywhere; }
+.txt { margin: 0; font-size: 22px; line-height: 1.28; color: var(--color-soft); overflow-wrap: anywhere; }
 .wide .txt { font-size: 24px; }
 .top .txt { font-size: 32px; color: var(--color-ink); font-weight: 600; letter-spacing: -0.02em; }
 .src { margin: 0; padding: 12px 0 0; border-top: 1px solid var(--color-line); font-family: var(--font-mono); font-size: 12.5px; line-height: 1.4; color: var(--color-mute); columns: 3; column-gap: 32px; margin-bottom: 14px; list-style: none; }

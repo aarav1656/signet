@@ -67,12 +67,12 @@ The contracts meter two things the account owner pays for.
 
 | Check | Result |
 |---|---|
-| `make test` from a fresh clone of `bac4c37` (`forge test`, 21 suites, log in `docs/test-logs/`) | 314 passed, 0 failed, 0 skipped |
+| `forge test -j 1` on the integrated tree (25 suites, log in `docs/test-logs/forge-test-signet-2026-10-24.log`) | 351 passed, 0 failed, 0 skipped |
 | `AgentAccount` unit, window fuzz and invariant suites | 89 passed |
 | `AgentAccount` RHC fork tests against live testnet state (`make test` sets `RHC_FORK_URL=https://rpc.testnet.chain.robinhood.com`) | 4 passed |
-| Mutation runner, one guard removed or weakened at a time | 109 of 110 killed, 1 equivalent mutant documented, restored suite green: `docs/security/agent-account-mutations.md` |
-| `agent` `npm test` | 27 passed |
-| `receipt-verifier` `cargo test`, `verifier` `cargo test` | 18 passed, 22 passed |
+| Mutation runner, one guard removed or weakened at a time | 122 of 123 killed, 1 equivalent mutant documented, restored suite green: `docs/security/agent-account-mutations.md` |
+| `agent` `npm test` | 51 passed |
+| `receipt-verifier` `cargo test`, `verifier` `cargo test` | 18 passed, 67 passed |
 
 The mutation runner (`contracts/test/mutation/agent_account_mutations.py`) builds under its own `mutation` profile with a separate output and cache directory and restores the source on exit. Each mutant removes one guard (the quote replay check, the measurement allowlist, the per-trade cap on each path, the rolling-window arithmetic, the receipt model checks, the reentrancy guards, the ERC-1271 scope, and so on). The unit, window and invariant suites must go red for each, and the restored source must go green.
 

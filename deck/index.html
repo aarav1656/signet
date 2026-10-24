@@ -299,10 +299,10 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 <!-- SPEAKER NOTES, slide 4, 0:55 to 1:20. The agent generates its key inside an Intel TDX enclave. Its quote commits to a nonce from the last 256 blocks. A Stylus verifier in Rust walks Intel's certificate chain on chain and returns a measurement. The follower's account stores the key only if they approved that measurement. By design the measured image commits to the strategy's hash, and the strategy text stays inside the enclave. -->
   <div>
     <h2 id="s4">The chain records which code traded.</h2>
-    <p class="lead">The strategy stays in the enclave. What reaches the chain is the code's measurement, the model's hash and a hash of each request and response.</p>
+    <p class="lead">The strategy text is sealed config in the enclave and the measured compose pins its SHA-256. What reaches the chain is the code's measurement, the model's hash and a hash of each request and response.</p>
   </div>
   <ol class="flow">
-    <li><span class="tagline">enclave</span><h3>Intel TDX CVM</h3><p>The agent generates its trading key here. Prompts and strategy never leave.</p></li>
+    <li><span class="tagline">enclave</span><h3>Intel TDX CVM</h3><p>The agent generates its trading key here and runs its decision loop here. The strategy text is sealed config.</p></li>
     <li><span class="tagline">quote</span><h3>Attestation</h3><p>Commits to the key and to a nonce from the last 256 L2 blocks. It cannot be banked in advance.</p></li>
     <li><span class="tagline">Stylus Verifier</span><h3>Intel's root</h3><p>Walks the certificate chain, rejects debug mode, returns a measurement over nine TD fields.</p></li>
     <li><span class="tagline">AgentAccount</span><h3>Follower approves</h3><p>Stores the key only if the follower approved that exact measurement.</p></li>
@@ -340,10 +340,10 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s6">
-<!-- SPEAKER NOTES, slide 6, 1:45 to 2:05. Now the refusal. A genuine Intel TDX quote from a different workload, Phala's inference gateway, was submitted to registerAgent. The hardware is real and the code is not the one the owner approved, so the chain reverts with MeasurementNotApproved. A new measurement is a new agent with an empty record. -->
+<!-- SPEAKER NOTES, slide 6, 1:45 to 2:05. Now the refusal. A genuine Intel TDX quote from a different workload, Phala's inference gateway, was submitted to registerAgent. The hardware is real and the code is not the one the owner approved, so the chain reverts with MeasurementNotApproved. New code is a new compose hash, a new agent with an empty record. -->
   <div>
     <h2 id="s6">A different workload is refused on chain.</h2>
-    <p class="lead">A genuine Intel TDX quote from another workload, Phala's inference gateway, was submitted to <code>registerAgent</code>. The hardware is real and the code is not the one the owner approved. A new measurement is a new agent with an empty record.</p>
+    <p class="lead">A genuine Intel TDX quote from another workload, Phala's inference gateway, was submitted to <code>registerAgent</code>. The hardware is real and the code is not the one the owner approved. New code is a new compose hash, a new agent with an empty record.</p>
     <div class="actions">
       <a class="btn primary" href="https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8">Open the refusal</a>
     </div>
@@ -369,13 +369,13 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 <section class="slide" aria-labelledby="s7">
 <!-- SPEAKER NOTES, slide 7, 2:05 to 2:20. Following is a call on the follower's own account. Approve one measurement, set per-trade and 24 hour caps, and the swap reverts unless the balance delta matches. Unapprove, and the agent is out in the same transaction. -->
   <div>
-    <h2 id="s7">Followers approve one hash. Limits sit underneath.</h2>
+    <h2 id="s7">Followers approve one measurement. Limits sit underneath.</h2>
     <p class="lead">Following is a call on the follower's own account. Funds never leave it, and the account, not the agent, calls the Uniswap v4 PoolManager.</p>
   </div>
   <div class="panel">
     <div class="panel-head"><span>Follower's account</span><span>enforced in the swap transaction</span></div>
     <ol class="steps">
-      <li><span class="dot" aria-hidden="true"></span><div><h3>Approve a measurement</h3><p><code>setMeasurement(hash, true)</code>. The agent is admitted only against a fresh quote that carries it.</p></div></li>
+      <li><span class="dot" aria-hidden="true"></span><div><h3>Approve a measurement</h3><p><code>setMeasurement(hash, true)</code>, after unapproving every other measurement on the account. The agent is admitted only against a fresh quote that carries it.</p></div></li>
       <li><span class="dot" aria-hidden="true"></span><div><h3>Set the caps</h3><p><code>setLimits</code>: per-trade, rolling 24 hours, and an approval threshold. Bigger trades wait for the owner.</p></div></li>
       <li><span class="dot" aria-hidden="true"></span><div><h3>Settle by balance delta</h3><p>The swap reverts unless the account spent no more than <code>amountIn</code> and received at least <code>minOut</code>.</p></div></li>
       <li><span class="dot ring" aria-hidden="true"></span><div><h3>Unapprove and the agent is out</h3><p>Same transaction, <a href="https://explorer.testnet.chain.robinhood.com/tx/0x0b34701eaee5f698b39988a13810e835abee437363093ebc8949ae89bc258382"><code>AgentRevoked</code></a>. The next trade reverts <code>NotAgent</code>.</p></div></li>
@@ -396,8 +396,8 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
         <tr><td>Verifier on a fresh Phala TDX quote<span class="s">cast estimate, chain 46630, docs/ENGINEERING.md</span></td><td class="num">2,371,819 gas</td></tr>
         <tr><td>Uniswap v4 PoolManager<span class="s">runtime code hash equal on testnet and mainnet</span></td><td class="num">0x8366...0951</td></tr>
         <tr><td>Stock Token<span class="s">Robinhood official testnet TSLA</span></td><td class="num">0xC9f9...d4E</td></tr>
-        <tr><td>Forge suites on a clean clone<span class="s">docs/test-logs, commit bac4c37</span></td><td class="num">314 passed, 0 failed</td></tr>
-        <tr><td>Mutation run on AgentAccount<span class="s">docs/security/agent-account-mutations.md</span></td><td class="num">109 of 110 killed</td></tr>
+        <tr><td>Forge suites on the integrated tree<span class="s">docs/test-logs/forge-test-signet-2026-10-24.log</span></td><td class="num">351 passed, 0 failed</td></tr>
+        <tr><td>Mutation run on AgentAccount<span class="s">docs/security/agent-account-mutations.md</span></td><td class="num">122 of 123 killed</td></tr>
         <tr><td>Corporate-action guard<span class="s">ERC-8056, refuses trades around a split</span></td><td class="num">CorporateActionPending</td></tr>
       </tbody>
     </table>
