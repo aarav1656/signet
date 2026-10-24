@@ -78,7 +78,8 @@ async function main() {
   const account = need('ACCOUNT_ADDRESS') as Address;
   const model = need('PHALA_MODEL');
   need('PHALA_BASE_URL');
-  need('PHALA_API_KEY');
+  // Inference needs the sealed key. Without it every cycle fails at the model call and trades nothing, so the CVM still boots and answers /quote.
+  if (!(process.env.PHALA_API_KEY ?? '').trim()) console.log('PHALA_API_KEY is not set: cycles will hold at the inference call');
   const { strategy, sha256 } = loadStrategy(Buffer.from(need('STRATEGY_B64'), 'base64'), need('STRATEGY_SHA256'));
   console.log(`strategy sha256 ${sha256} matches the compose pin; model ${model}`);
   const chain = defineChain({
