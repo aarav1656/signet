@@ -6,7 +6,7 @@ Builds the canonical PoolManager (`v4` profile) once, then runs the AgentAccount
 and invariant suites once unmutated (must be green) and once per mutant under the `mutation`
 profile (no optimizer, own out/cache). A mutant is KILLED when at least one test fails.
 Restores the source on exit and writes the tally to ../docs/security/agent-account-mutations.md.
-Each forge run is capped at 230 s.
+Each forge run is capped at 230 s (MUTATION_TIMEOUT overrides it on a loaded machine).
 """
 import os
 import re
@@ -20,7 +20,8 @@ SRC = Path("src/AgentAccount.sol")
 RECORD = Path("../docs/security/agent-account-mutations.md")
 ENV = {**os.environ, "FOUNDRY_DISABLE_NIGHTLY_WARNING": "1", "FOUNDRY_PROFILE": "mutation"}
 SKIP = ["script/**", "*RHCFork*", "test/ChironGate*", "test/Assay*", "test/AttackReview*", "test/ReReview*"]
-CMD = ["timeout", "230", "forge", "test", "--match-path", "test/AgentAccount*.t.sol"]
+CAP = os.environ.get("MUTATION_TIMEOUT", "230")
+CMD = ["timeout", CAP, "forge", "test", "--match-path", "test/AgentAccount*.t.sol"]
 for s in SKIP:
     CMD += ["--skip", s]
 
@@ -210,7 +211,7 @@ def main():
     for name, old, _ in MUTANTS:
         if original.count(old) != 1:
             sys.exit(f"mutant '{name}': pattern found {original.count(old)} times")
-    subprocess.run(["timeout", "230", "forge", "build"], env={**ENV, "FOUNDRY_PROFILE": "v4"}, check=True,
+    subprocess.run(["timeout", CAP, "forge", "build"], env={**ENV, "FOUNDRY_PROFILE": "v4"}, check=True,
                    capture_output=True)
     lines = []
     for d in ("cache-mut", "out-mut"):  # a stale mutation cache can fail the baseline with solc 2449

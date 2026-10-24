@@ -74,13 +74,13 @@ SUITES = [
 def main():
     mutants = {n: (o, m) for n, o, m in base.MUTANTS}
     original = base.SRC.read_text()
-    subprocess.run(["timeout", "230", "forge", "build"], env={**base.ENV, "FOUNDRY_PROFILE": "v4"}, check=True, capture_output=True)
+    subprocess.run(["timeout", base.CAP, "forge", "build"], env={**base.ENV, "FOUNDRY_PROFILE": "v4"}, check=True, capture_output=True)
     for d in ("cache-mut", "out-mut"):
         shutil.rmtree(d, ignore_errors=True)
     lines, survivors = [], 0
     try:
         for label, names, match in SUITES:
-            base.CMD = ["timeout", "230", "forge", "test", *match]
+            base.CMD = ["timeout", base.CAP, "forge", "test", *match]
             n, failed = base.run()
             if n != 0:
                 sys.exit(f"{label}: baseline not green: {n} {failed}")
