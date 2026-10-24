@@ -1,5 +1,6 @@
 import { erc20Abi, type Address, type Hex, type PublicClient } from 'viem';
 import { accountAbi } from '../../abi/AgentAccount.generated';
+import { inWindows } from '../../lib/logs';
 import { GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK, TEST_USDG, TSLA } from '../../lib/rhc.generated';
 
 export const ZERO_ADDR = '0x0000000000000000000000000000000000000000' as Address;
@@ -120,11 +121,10 @@ export async function readAccount(c: PublicClient, account: Address, block: bigi
   // The first venue's test token shows only on accounts that hold it or allow it.
   const tokens = rows.filter((r) => r.address !== TEST_USDG || r.balance > 0n || r.limits.allowed);
 
-  const range = { fromBlock: RHC_DEPLOY_BLOCK, toBlock: block } as const;
   const [measurementLogs, executedLogs, proposedLogs] = await Promise.all([
-    c.getContractEvents({ ...base, eventName: 'MeasurementSet', ...range }),
-    c.getContractEvents({ ...base, eventName: 'TradeExecuted', ...range }),
-    c.getContractEvents({ ...base, eventName: 'TradeProposed', ...range }),
+    inWindows(RHC_DEPLOY_BLOCK, block, (fromBlock, toBlock) => c.getContractEvents({ ...base, eventName: 'MeasurementSet', fromBlock, toBlock })),
+    inWindows(RHC_DEPLOY_BLOCK, block, (fromBlock, toBlock) => c.getContractEvents({ ...base, eventName: 'TradeExecuted', fromBlock, toBlock })),
+    inWindows(RHC_DEPLOY_BLOCK, block, (fromBlock, toBlock) => c.getContractEvents({ ...base, eventName: 'TradeProposed', fromBlock, toBlock })),
   ]);
 
   const seen = [...new Set(measurementLogs.map((l) => l.args.measurement as Hex))];

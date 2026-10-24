@@ -13,6 +13,7 @@ import { Wallet } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useTx } from '../hooks/useTx';
 import { fmtToken, short } from '../lib/format';
+import { inWindows } from '../lib/logs';
 import { DEMO_ACCOUNT, LEGACY_ACCOUNT, FACTORIES, FACTORY, GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK } from '../lib/rhc.generated';
 import { Compare } from './account/Compare';
 import { OwnerActions } from './account/OwnerActions';
@@ -183,9 +184,10 @@ export function Account() {
     enabled: !!conn.address && !!client,
     refetchInterval: 15_000,
     queryFn: async () => {
-      const logs = await Promise.all(FACTORIES.map((address) => client!.getContractEvents({
-        address, abi: factoryAbi, eventName: 'AccountCreated', args: { owner: conn.address }, fromBlock: RHC_DEPLOY_BLOCK, toBlock: 'latest',
-      })));
+      const head = await client!.getBlockNumber();
+      const logs = await Promise.all(FACTORIES.map((address) => inWindows(RHC_DEPLOY_BLOCK, head, (fromBlock, toBlock) => client!.getContractEvents({
+        address, abi: factoryAbi, eventName: 'AccountCreated', args: { owner: conn.address }, fromBlock, toBlock,
+      }))));
       return logs.flat().map((l) => l.args.account as Address);
     },
   });

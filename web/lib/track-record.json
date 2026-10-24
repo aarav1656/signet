@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-10-24T01:10:55.429Z",
+  "chainId": 46630,
+  "block": 141615960,
+  "agents": [
+    {
+      "measurement": "0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829",
+      "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
+      "label": "Chiron operator agent 2",
+      "model": "meta-llama/llama-3.3-70b-instruct, served as llama3-3-70b",
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      ],
+      "trades": [
+        {
+          "tx": "0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03",
+          "block": 127188951,
+          "time": 1790867475,
+          "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+          "tokenIn": "USDG",
+          "tokenOut": "TSLA",
+          "amountIn": "1",
+          "amountOut": "0.003910026278631909",
+          "priceUsdAtTrade": 255.75275682031813,
+          "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59"
+        }
+      ],
+      "pnlUsd": 0,
+      "returnPct": 0,
+      "markPriceUsd": 255.75275682031813,
+      "tradeCount": 1,
+      "firstTrade": 1790867475,
+      "lastTrade": 1790867475
+    },
+    {
+      "measurement": "0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8",
+      "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
+      "label": "Chiron operator agent 1",
+      "model": "meta-llama/llama-3.3-70b-instruct, served as llama3-3-70b",
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      ],
+      "trades": [
+        {
+          "tx": "0xe50522661b55c797071b56e43aaf2bc91d37c9745a295ff6a5976883dd4ddfa2",
+          "block": 127176968,
+          "time": 1790865145,
+          "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+          "tokenIn": "testUSDG",
+          "tokenOut": "TSLA",
+          "amountIn": "1",
+          "amountOut": "0.003984027527308004",
+          "priceUsdAtTrade": 251.00228177281124,
+          "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59"
+        },
+        {
+          "tx": "0x7f2a63f44c439d6099133bad32da8f346414f66f2f8541a3fedca496c4d81ead",
+          "block": 127177130,
+          "time": 1790865177,
+          "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+          "tokenIn": "testUSDG",
+          "tokenOut": "TSLA",
+          "amountIn": "2.000001",
+          "amountOut": "0.007944291302953708",
+          "priceUsdAtTrade": 251.75323055643673,
+          "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59"
+        }
+      ],
+      "pnlUsd": 0.05069942507114522,
+      "returnPct": 1.6899802723780832,
+      "markPriceUsd": 255.75275682031813,
+      "tradeCount": 2,
+      "firstTrade": 1790865145,
+      "lastTrade": 1790865177
+    }
+  ],
+  "refusals": [
+    {
+      "tx": "0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8",
+      "block": 127632496,
+      "time": 1790950019,
+      "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+      "reason": "MeasurementNotApproved",
+      "measurement": "0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149"
+    }
+  ]
+}
