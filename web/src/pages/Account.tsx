@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { getAddress, isAddress, parseEventLogs, type Address } from 'viem';
-import { useConnection, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi';
+import { useConnection, useSwitchChain, useWriteContract } from 'wagmi';
 import { rhcChain, rhcExplorer } from '../chain';
 import { factoryAbi } from '../abi/AgentAccount.generated';
 import { Fact, HexValue, Num, Spec } from '../components/Stamp';
@@ -11,17 +10,17 @@ import { Lifecycle, ProofPanel, useTour } from './tour/Tour';
 import { corporateActionLabel } from './account/corp';
 import { Wallet } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
+import { useMyAccounts } from '../hooks/useMyAccounts';
 import { useTx } from '../hooks/useTx';
 import { fmtToken, short } from '../lib/format';
-import { inWindows } from '../lib/logs';
-import { DEMO_ACCOUNT, LEGACY_ACCOUNT, FACTORIES, FACTORY, GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK } from '../lib/rhc.generated';
+import { DEMO_ACCOUNT, LEGACY_ACCOUNT, FACTORY, GATEWAY_MEASUREMENT } from '../lib/rhc.generated';
 import { Compare } from './account/Compare';
 import { OwnerActions } from './account/OwnerActions';
 import { Refusals, useRefusals } from './account/Refusals';
 import { GateLog } from './account/GateLog';
 import { readAccount, type Snapshot, type TokenRow } from './account/read';
 
-function CreateAction({ onCreated }: { onCreated: (a: Address) => void }) {
+export function CreateAction({ onCreated }: { onCreated: (a: Address) => void }) {
   const conn = useConnection();
   const { mutate: switchChain } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();
@@ -166,9 +165,6 @@ export function Account() {
   const [params, setParams] = useSearchParams();
   const raw = params.get('account') ?? '';
   const account: Address = isAddress(raw) ? getAddress(raw) : DEMO_ACCOUNT;
-  const conn = useConnection();
-  const client = usePublicClient({ chainId: rhcChain.id });
-
   useEffect(() => {
     document.title = 'Chiron: give an AI agent a mandate, not your keys';
   }, []);
@@ -179,18 +175,7 @@ export function Account() {
   const ready = account !== DEMO_ACCOUNT || !!tour.data || tour.isError;
   const snapQ = useAtBlock(['account', account], (c, b) => readAccount(c, account, b), ready, rhcChain.id);
   const refusals = useRefusals(ready);
-  const mineQ = useQuery({
-    queryKey: ['mine', conn.address],
-    enabled: !!conn.address && !!client,
-    refetchInterval: 15_000,
-    queryFn: async () => {
-      const head = await client!.getBlockNumber();
-      const logs = await Promise.all(FACTORIES.map((address) => inWindows(RHC_DEPLOY_BLOCK, head, (fromBlock, toBlock) => client!.getContractEvents({
-        address, abi: factoryAbi, eventName: 'AccountCreated', args: { owner: conn.address }, fromBlock, toBlock,
-      }))));
-      return logs.flat().map((l) => l.args.account as Address);
-    },
-  });
+  const mineQ = useMyAccounts();
   const mine = mineQ.data ?? [];
   const pick = (a: Address) => setParams(a === DEMO_ACCOUNT ? {} : { account: a }, { replace: true });
 

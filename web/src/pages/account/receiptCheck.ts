@@ -19,7 +19,7 @@ export function latestPin(logs: AccountLog[]): { requested: Hex; accepted: Hex[]
 }
 
 /** Recompute one trade's receipt hash in the browser from its calldata and compare it with what the chain recorded. */
-export async function recheck(c: PublicClient, account: Address, row: GateRow, pin: { requested: Hex; accepted: Hex[] }): Promise<ReceiptState> {
+export async function recheck(c: PublicClient, account: Address, row: Pick<GateRow, 'receipt'>, pin: { requested: Hex; accepted: Hex[] }): Promise<ReceiptState> {
   const rc = row.receipt;
   if (!rc) return { state: 'not-verified', checks: [], reason: 'no receipt on this row' };
   const tx = await c.getTransaction({ hash: rc.carrierTx });

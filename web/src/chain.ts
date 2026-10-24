@@ -65,5 +65,6 @@ export const ASSAY_DEPLOY_TX = assayNet.deployTx;
 export const REGISTER_TX = assayNet.registerTx;
 export const explorer = assayNet.explorer;
 
-/** The agent account is the front page and always reads Robinhood Chain; the Assay routes read the selected network. */
-export const chainForPath = (pathname: string) => (pathname === '/' ? rhcChain : assayChain);
+/** The Signet pages and the agent account always read Robinhood Chain; the Assay routes read the selected network. */
+export const onRhcOnly = (pathname: string) => /^\/($|agent\/|creator|account)/.test(pathname);
+export const chainForPath = (pathname: string) => (onRhcOnly(pathname) ? rhcChain : assayChain);
