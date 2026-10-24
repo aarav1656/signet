@@ -9,14 +9,14 @@
 | Attested trade | [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03), block 127,188,951: the TDX-attested agent buys TSLA with 1 Paxos USDG, and `TradeExecuted` records the agent's workload measurement and the model hash |
 | Refusal | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8), block 127,632,496: a genuine Intel TDX quote from a different workload reverts `MeasurementNotApproved` after 2,349,054 gas of onchain verification |
 | Follower account | [`0xFaaAa4d1...3b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55): holds USDG, trades only through the canonical Uniswap v4 PoolManager, admits one agent key |
-| Agents | `claude mcp add --transport http chiron https://chiron-receipts.vercel.app/mcp` |
+| Agents | `claude mcp add --transport http signet https://chiron-receipts.vercel.app/mcp` |
 | Deck and canvases | [Signet-Deck.pdf](deck/Signet-Deck.pdf), [Product canvas](deck/canvas/Signet-Product-Canvas.pdf), [GTM canvas](deck/canvas/Signet-GTM-Canvas.pdf), [deck/index.html](deck/index.html) |
 | Repo | [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron) |
 
 ## Verify it in 60 seconds
 
 1. **0 to 15 s.** Open the [app](https://chiron-receipts.vercel.app). Each agent on the leaderboard is a TDX workload measurement with its trades linked beside it, and its chain check turns green only when every receipt hash recomputed in your browser matches the chain.
-2. **15 to 30 s.** Open the [attested trade](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03), Logs tab. `TradeExecuted` carries `agentMeasurement` and `servedModelHash`. That pair is the identity of the code and model that made the trade.
+2. **15 to 30 s.** Open the [attested trade](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03), Logs tab. `TradeExecuted` carries `agentMeasurement` and `servedModelHash`. That pair names the workload the account admitted and the model behind the inference receipt the account verified.
 3. **30 to 45 s.** Open the [refusal](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8). The status is failed and the error is `MeasurementNotApproved(0xfd34...0149)`. The hardware is genuine Intel TDX and the workload is not the one the account owner approved, so the chain turns it away.
 4. **45 to 60 s.** Run the MCP line from the table and ask your agent to call `verify_receipt` on the attested trade. It answers `verified: true` with seven checks. Give it a different expected model hash and it answers `verified: false`.
 
@@ -35,7 +35,7 @@ Public: the measurement, the compose hash, the model hashes, the trades and the 
 
 | Today | With Signet |
 |---|---|
-| A PnL screenshot or a wallet link proves a balance, not who made it | A trade proves the measurement and model that made it |
+| A PnL screenshot or a wallet link proves a balance, not who made it | Every trade names the measurement the agent was admitted under and the model of its verified inference receipt |
 | The creator can change the strategy and keep the name | A changed strategy is a changed compose hash: a new agent with its own record |
 | Proving the record means publishing the strategy | The record is public and the strategy text is committed by its digest |
 | A copier trusts a platform's displayed returns | A follower's own account refuses every workload they did not approve |
@@ -52,6 +52,10 @@ Robinhood Agents gives a customer limits and approvals and states that Robinhood
 5. `TradeExecuted` records `agentMeasurement`, `servedModelHash`, `requestHash`, `responseHash` and the trade amounts. The leaderboard and the MCP server read exactly these events.
 
 Strategy commitment, live: the CVM `signet-demo-tsla-prod` boots with `STRATEGY_SHA256 3723fda7...0db26` in its measured compose (compose hash `9f997c38...2606`), and its quote was admitted on the live account by the Stylus Verifier: owner approval [`0x749003ce...7b8b`](https://explorer.testnet.chain.robinhood.com/tx/0x749003ce338eed7782f37dad1ad6528f9cebf74ff80a0c15da8a47c7e6717b8b), registration [`0x5fdc4acb...965c`](https://explorer.testnet.chain.robinhood.com/tx/0x5fdc4acb64d8f1dddc9042c9101c652f87f7483cc1163d0c878b431c44ce965c). `agent-cvm/deployments/2026-10-24.json` holds the image digest and the reads. The digest recomputes from `agent/strategies/demo-tsla.json` with `openssl dgst -sha256`.
+
+## Why Stylus on Robinhood Chain
+
+Admitting a key means walking an X.509 and P-256 certificate chain to Intel's root, which is heavy cryptography. The Stylus `Verifier` runs it inside the admitting transaction, so anyone can repeat the check by replaying one transaction instead of trusting a service. Measured on chain 46630 with `cast receipt` on 2026-10-24: the admitting `registerAgent` [`0x1f15df28...8134`](https://explorer.testnet.chain.robinhood.com/tx/0x1f15df28041e7b8938ca6653eb5a75231f525568ab015644ec535796caa68134) used 2,584,842 gas (block 127,176,129), the refusal 2,349,054 gas (block 127,632,496), and the attested trade 504,449 gas. The registration nonce binds the chain id, the account, the agent epoch and an ArbSys block hash, and the account swaps through the chain's canonical Uniswap v4 PoolManager on the official TSLA Stock Token.
 
 The contract-level description, every live transaction with its read-back, gas figures and the security review are in [docs/ENGINEERING.md](docs/ENGINEERING.md).
 
