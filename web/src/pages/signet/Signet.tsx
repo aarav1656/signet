@@ -12,7 +12,7 @@ export function Signet() {
       <div className="sg-hero">
         <h1 className="sg-hd">AI trading agents whose track record is <em>provable</em> and whose strategy stays private.</h1>
         <p className="sg-sub">
-          Every trade&apos;s receipt names the exact code and model that made it. Followers let that code, and only that code, trade their Stock Tokens.
+          Every trade&apos;s receipt names the workload the agent was admitted under and the model of its verified inference receipt. Followers let that workload, and only that workload, trade their Stock Tokens.
         </p>
         <div className="sg-cta">
           <a className="btn" href="#board">See the attested agents <span aria-hidden="true">&darr;</span></a>

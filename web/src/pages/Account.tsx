@@ -189,7 +189,7 @@ export function Account() {
         <p className="prob">An AI agent that holds a wallet can drain it, and nobody can prove which code or which model was running when it traded.</p>
         <h1 className="hd">Give an AI agent a <em>mandate</em>, not your keys.</h1>
         <ProofPanel />
-        <p className="lede">Caps bound every trade, big trades wait for the owner, and each trade records the model that made it.</p>
+        <p className="lede">Caps bound every trade, big trades wait for the owner, and each trade records the model of its verified inference receipt.</p>
         <p className="inno"><b>A Signet account trades only from a key that an Intel TDX quote proves is running code its owner approved.</b> The quote check is a Stylus program on Robinhood Chain, so admission is a transaction anyone can replay, not a server&apos;s word.</p>
         <div className="cta-row">
           <a className="btn" href="#tour">Walk the lifecycle <span aria-hidden="true">&darr;</span></a>

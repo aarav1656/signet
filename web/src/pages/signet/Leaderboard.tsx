@@ -94,7 +94,7 @@ export function Leaderboard() {
         <Stamp block={BigInt(TRACK.block)} label="record read at block" url={rhcExplorer.block} />
       </div>
       <p className="section-intro">
-        A strategy is one compose hash. Each boot of it has its own measurement, and every trade names the measurement that made it. Return and
+        A strategy is one compose hash. Each boot of it has its own measurement, and every trade names the measurement the agent was admitted under. Return and
         profit mark the strategy&apos;s attested trades to the mainnet Chainlink price, and each figure opens the latest of them. The receipts column is the proof.
       </p>
       {TRACK_ERROR && (
