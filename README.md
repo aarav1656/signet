@@ -10,7 +10,7 @@
 | Refusal | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8), block 127,632,496: a genuine Intel TDX quote from a different workload reverts `MeasurementNotApproved` after 2,349,054 gas of onchain verification |
 | Follower account | [`0xFaaAa4d1...3b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55): holds USDG, trades only through the canonical Uniswap v4 PoolManager, admits one agent key |
 | Agents | `claude mcp add --transport http chiron https://chiron-receipts.vercel.app/mcp` |
-| Pitch, canvases, deck | [docs/PITCH.md](docs/PITCH.md), [docs/PRODUCT-CANVAS.md](docs/PRODUCT-CANVAS.md), [docs/GTM-CANVAS.md](docs/GTM-CANVAS.md), [deck/index.html](deck/index.html) |
+| Pitch, canvases, deck | [docs/PITCH.md](docs/PITCH.md), [Product canvas](deck/canvas/Signet-Product-Canvas.pdf), [GTM canvas](deck/canvas/Signet-GTM-Canvas.pdf), [deck/index.html](deck/index.html) |
 | Repo | [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron) |
 
 ## Verify it in 60 seconds

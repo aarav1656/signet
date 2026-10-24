@@ -10,277 +10,102 @@
 <style>
 /* Hallmark · macrostructure: Workbench (box grid) · tone: technical · anchor hue: amber 80
  * theme: deck/DESIGN.md gate-log tokens, no catalog rotation · nav: none · footer: numbered source strip
- * Two fixed 1920x1080 slides; each official canvas box is a panel. Amber = verified, red = refusal. */
+ * Two fixed 1920x1080 slides, text generated from deck/canvas/content.json so it equals the official pptx.
+ */
 :root {
-  --color-bg: #121315;
-  --color-panel: #17191c;
-  --color-raise: #1d2024;
-  --color-line: #26292e;
-  --color-ink: #e9e7e2;
-  --color-soft: #b5b3ad;
-  --color-mute: #8d9097;
-  --color-amber: #f2b134;
-  --color-amber-wash: rgba(242, 177, 52, 0.1);
-  --color-amber-edge: rgba(242, 177, 52, 0.4);
-  --color-glow: rgba(242, 177, 52, 0.07);
+  --color-bg: #121315; --color-panel: #17191c; --color-line: #26292e;
+  --color-ink: #e9e7e2; --color-soft: #b5b3ad; --color-mute: #8d9097;
+  --color-amber: #f2b134; --color-amber-wash: rgba(242, 177, 52, 0.1);
+  --color-amber-edge: rgba(242, 177, 52, 0.4); --color-glow: rgba(242, 177, 52, 0.07);
   --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
   --radius: 6px;
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; overflow-x: clip; background: var(--color-bg); color: var(--color-ink); }
 body { font-family: var(--font-display); line-height: 1.3; }
 @page { size: 1920px 1080px; margin: 0; }
-
-.slide {
-  width: 1920px; height: 1080px;
-  padding: 28px 48px 0;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 14px;
+.slide { width: 1920px; height: 1080px; padding: 28px 48px 0; display: grid; grid-template-rows: auto 1fr auto; gap: 14px;
   background: var(--color-bg) radial-gradient(900px 500px at 88% -6%, var(--color-glow), transparent 70%);
-  position: relative; overflow: hidden;
-  break-after: page;
-  transform-origin: top left;
-}
+  position: relative; overflow: hidden; break-after: page; transform-origin: top left; }
 .slide + .slide { margin-top: 24px; }
-
 .head { display: flex; align-items: baseline; gap: 28px; }
 .head h1 { margin: 0; font-size: 34px; font-weight: 600; font-stretch: 96%; letter-spacing: -0.035em; line-height: 1; font-style: normal; }
-.head .mark { font-family: var(--font-mono); font-size: 17px; color: var(--color-mute); letter-spacing: 0.1em; text-transform: uppercase; }
-.head .mark b { color: var(--color-amber); font-weight: 500; }
-
-.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; min-height: 0; }
-.box { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius); padding: 18px 24px 20px; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.head .files { margin-left: auto; font-family: var(--font-mono); font-size: 16px; color: var(--color-mute); }
+.head .files a { color: var(--color-amber); margin-left: 18px; text-decoration: underline; text-underline-offset: 4px; }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto repeat(3, 1fr); gap: 14px; min-height: 0; }
+.box { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius); padding: 16px 24px 12px; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; grid-column: span 4; }
+.box.wide { grid-column: span 6; }
+.box.top { grid-column: span 12; }
 .box.key { border-color: var(--color-amber-edge); background: var(--color-amber-wash); }
-.lbl { margin: 0 0 12px; font-family: var(--font-mono); font-size: 15px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-mute); }
-.big { margin: 0; font-size: 36px; font-weight: 600; font-stretch: 96%; letter-spacing: -0.03em; line-height: 1.08; text-wrap: balance; }
-.mid { margin: 0; font-size: 24px; line-height: 1.28; color: var(--color-soft); }
-.mid b { color: var(--color-ink); font-weight: 500; }
-.mid + .mid { margin-top: 10px; }
-.q { margin: 0; padding: 0 0 0 20px; border-left: 3px solid var(--color-amber); }
-.q p { margin: 0; font-size: 29px; line-height: 1.22; letter-spacing: -0.015em; font-weight: 500; }
-.q cite { display: block; margin-top: 8px; font-style: normal; font-family: var(--font-mono); font-size: 15px; color: var(--color-mute); }
-sup { font-family: var(--font-mono); font-size: 0.5em; color: var(--color-amber); vertical-align: super; line-height: 0; margin-left: 2px; font-weight: 500; }
-.num { font-family: var(--font-mono); font-size: 0.86em; color: var(--color-amber); font-variant-numeric: tabular-nums; }
-
-.list { list-style: none; margin: 0; padding: 0; }
-.list li { display: grid; grid-template-columns: 11px minmax(0, 1fr); gap: 0 14px; padding: 4px 0; font-size: 22px; line-height: 1.25; color: var(--color-soft); border-bottom: 1px solid var(--color-line); }
-.list li:last-child { border-bottom: 0; padding-bottom: 0; }
-.list li::before { content: ""; width: 9px; height: 9px; margin-top: 9px; border-radius: 50%; background: var(--color-amber); }
-.list li.gap::before { background: var(--color-mute); }
-.list b { color: var(--color-ink); font-weight: 500; }
-.list .gp { color: var(--color-mute); }
-
-.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 28px; }
-.two .list li { font-size: 22px; padding: 3px 0; }
-.who { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 14px; margin: 0; font-size: 23px; line-height: 1.22; }
-.who dt { font-family: var(--font-mono); font-size: 0.8em; color: var(--color-ink); padding-top: 2px; }
-.who dd { margin: 0; color: var(--color-soft); min-width: 0; overflow-wrap: anywhere; }
-.cta { margin-top: auto; padding-top: 10px; font-family: var(--font-mono); font-size: 19px; color: var(--color-amber); overflow-wrap: anywhere; }
-
-.src { margin: 0; padding: 12px 0 0; border-top: 1px solid var(--color-line); font-family: var(--font-mono); font-size: 12.5px; line-height: 1.4; color: var(--color-mute); columns: 3; column-gap: 32px; column-fill: balance; margin-bottom: 14px; }
-.src span { display: block; break-inside: avoid; }
+.lbl { margin: 0 0 12px; font-family: var(--font-mono); font-size: 17px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-mute); }
+.txt { margin: 0; font-size: 24px; line-height: 1.3; color: var(--color-soft); overflow-wrap: anywhere; }
+.wide .txt { font-size: 24px; }
+.top .txt { font-size: 32px; color: var(--color-ink); font-weight: 600; letter-spacing: -0.02em; }
+.src { margin: 0; padding: 12px 0 0; border-top: 1px solid var(--color-line); font-family: var(--font-mono); font-size: 12.5px; line-height: 1.4; color: var(--color-mute); columns: 3; column-gap: 32px; margin-bottom: 14px; list-style: none; }
+.src li { display: block; break-inside: avoid; }
 .src b { color: var(--color-amber); font-weight: 500; }
-
-#gtm .mid { font-size: 26px; }
-#gtm .list li { font-size: 23px; }
-#gtm .who { font-size: 26px; }
-#gtm .cta { font-size: 21px; line-height: 1.3; }
-@media print {
-  html, body { background: var(--color-bg); }
-  .slide { transform: none !important; margin: 0 !important; }
-  .slide + .slide { margin-top: 0 !important; }
-}
+@media print { html, body { background: var(--color-bg); } .slide { transform: none !important; margin: 0 !important; } .head .files { display: none; } }
 </style>
 </head>
 <body>
-
-<!-- ================= PRODUCT CANVAS ================= -->
 <section class="slide" id="product" aria-label="Product canvas">
-  <div class="head"><h1>Product canvas</h1><span class="mark">Signet &middot; Founder House Singapore</span></div>
-  <div class="grid" style="grid-template-rows: auto auto auto 1fr;">
-
-    <div class="box" style="grid-column: span 3"><p class="lbl">Team name</p><p class="big">Signet</p></div>
-    <div class="box key" style="grid-column: span 9"><p class="lbl">One line</p><p class="big">AI trading agents whose track record is provable and whose strategy stays private.</p></div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">Who is this for</p>
-      <p class="mid"><b>The operator behind @DeployFinance.</b> Gave an AI agent $100,000 for 70 days and posted the result.<sup>1</sup></p>
-      <p class="mid">Their follower picks which agent holds Stock Tokens.</p>
-    </div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">What they do today</p>
-      <blockquote class="q"><p>&ldquo;I don't mind showing my Polymarket PnL.. i do mind showing every single bet&rdquo;</p><cite>@Al_Nadim_nabil, 11,178 followers<sup>2</sup></cite></blockquote>
-      <p class="mid" style="margin-top:10px">They post a screenshot. <b class="num">0 of 22</b> viral bot posts gave a wallet to check.<sup>3</sup></p>
-    </div>
-
-    <div class="box key" style="grid-column: span 4">
-      <p class="lbl">The wedge</p>
-      <p class="big" style="font-size:34px">Stock Token bot operators on Robinhood Chain.</p>
-      <p class="mid" style="margin-top:14px">Their next record is a measurement, not a screenshot. Each trade names the Intel TDX measurement and model that made it.<sup>4</sup></p>
-    </div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">Why now</p>
-      <ul class="list">
-        <li><span><b class="num">150,000+</b> agentic accounts at Robinhood. It does not audit agents.<sup>5</sup></span></li>
-        <li><span>Stock Tokens became <b>Morpho collateral</b> on Oct 22.<sup>6</sup></span></li>
-        <li><span><b class="num">2,529</b> TEE workloads on Phala.<sup>7</sup></span></li>
-      </ul>
-    </div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">Alternatives and gaps</p>
-      <ul class="list">
-        <li><span><b>ARCANA</b> <span class="num">51</span> agents. <span class="gp">Platform holds the keys and prompts.</span><sup>8</sup></span></li>
-        <li class="gap"><span><b>Hyperliquid</b> <span class="num">9,478</span> vaults. <span class="gp">No proof of which code trades.</span><sup>9</sup></span></li>
-        <li class="gap"><span><b>Knidos</b> testnet. <span class="gp">Proves rules, not the model.</span><sup>10</sup></span></li>
-      </ul>
-    </div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">Why onchain, why Arbitrum</p>
-      <ul class="list">
-        <li><span><b>Stylus verifier in Rust</b> walks Intel's cert chain in one tx: <span class="num">2.37M</span> gas.<sup>11</sup></span></li>
-        <li><span><b>Robinhood Chain Stock Tokens:</b> a TSLA trade settled for 1 USDG.<sup>12</sup></span></li>
-        <li><span><b>Receipts on chain:</b> every trade names its code.<sup>12</sup></span></li>
-      </ul>
-    </div>
-
-    <div class="box" style="grid-column: span 7">
-      <p class="lbl">First 5-10 users</p>
-      <div class="two">
-        <ul class="list">
-          <li><span><b>@Arcana_Arena</b> <span class="gp">40 creators</span></span></li>
-          <li><span><b>@HarmonicAgents</b> <span class="gp">2,502</span></span></li>
-          <li><span><b>Meridian402</b> <span class="gp">market maker</span></span></li>
-          <li><span><b>@DeployFinance</b> <span class="gp">7,285</span></span></li>
-          <li><span><b>@GrowiHF</b> <span class="gp">+$2.94M PnL</span></span></li>
-        </ul>
-        <ul class="list">
-          <li><span><b>@senpi_ai</b> <span class="gp">14,741</span></span></li>
-          <li><span><b>@betashop</b> <span class="gp">22,573</span></span></li>
-          <li><span><b>@the_nof1</b> <span class="gp">54,390</span></span></li>
-          <li><span><b>@OxSimpleFarmer</b> <span class="gp">28,443</span></span></li>
-          <li><span><b>@Agent_Minimum</b> <span class="gp">471</span></span></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="box key" style="grid-column: span 5">
-      <p class="lbl">Ship this weekend</p>
-      <ul class="list">
-        <li><span>Measured image commits to the <b>strategy's hash</b>. Strategy text stays inside the enclave.</span></li>
-        <li><span>Decision loop moves into the enclave.</span></li>
-        <li><span>Five creator DMs with the TSLA receipt and <b>verify_receipt</b>.</span></li>
-      </ul>
-    </div>
+  <div class="head"><h1>Product canvas</h1><span class="files">Official file <a href="canvas/Signet-Product-Canvas.pptx">pptx</a><a href="canvas/Signet-Product-Canvas.pdf">pdf</a><a href="canvas/Signet-Product-Canvas.png">png</a></span></div>
+  <div class="grid">
+    <div class="box top key"><p class="lbl">Team Name: Signet</p><p class="txt">One line: What You’re Building: trading agents with a provable record and a private strategy</p></div>
+    <div class="box"><p class="lbl">Who is This For</p><p class="txt">the operator behind @DeployFinance (7,295 followers), who gave an AI agent $100,000 for 70 days and posted the result, and the follower deciding which agent should hold their Stock Tokens</p></div>
+    <div class="box"><p class="lbl">What They Do Today</p><p class="txt">post a screenshot. “I don&#x27;t mind showing my Polymarket PnL.. i do mind showing every single bet” (@Al_Nadim_nabil, 11,178 followers). 0 of 22 viral bot posts gave a wallet to check (@Meta_ZET)</p></div>
+    <div class="box"><p class="lbl">Alternatives and Gaps</p><p class="txt">ARCANA: 51 agents, but the platform holds the keys and prompts. Hyperliquid: 9,478 vaults, no proof of which code trades. Robinhood Agents: 150,000+ accounts, no audit. Knidos: testnet, proves rules, not the model</p></div>
+    <div class="box key"><p class="lbl">The Wedge</p><p class="txt">stock token bot operators on Robinhood Chain. every trade names the Intel TDX measurement and model hash that made it, the follower&#x27;s account refuses any other workload, and the strategy stays inside the enclave</p></div>
+    <div class="box"><p class="lbl">Why Now</p><p class="txt">150,000+ agentic accounts at Robinhood, which does not audit agents. Stock Tokens became Morpho collateral on Oct 22 (x.com/RobinhoodCrypto/status/2113270580472381515). 2,529 TEE workloads already run on Phala</p></div>
+    <div class="box"><p class="lbl">Why Onchain, Why Arbitrum</p><p class="txt">a Stylus Rust verifier walks Intel&#x27;s cert chain in one tx (2.37M gas), so anyone can re-check it. Stock Tokens live on Robinhood Chain: a TSLA trade settled for 1 USDG and its receipt names the code on chain</p></div>
+    <div class="box wide"><p class="lbl">First 5-10 Users</p><p class="txt">@Arcana_Arena (40 creators, 51 agents), @HarmonicAgents (2,502), Meridian402 (stock token market maker), @DeployFinance (7,295), @GrowiHF (1,592), @senpi_ai (14,741), @betashop (22,573), @the_nof1 (54,390), @OxSimpleFarmer (28,443), @Agent_Minimum (471). the first five get a dm this weekend with the TSLA receipt</p></div>
+    <div class="box wide key"><p class="lbl">Ship This Weekend</p><p class="txt">the measured image pins the strategy&#x27;s hash and the decision loop runs inside the enclave, so the strategy text never leaves it. a follower approves one measurement. demo: the attested TSLA trade and a different workload refused, both read from Robinhood Chain testnet</p></div>
   </div>
-
-  <p class="src">
-    <span><b>1</b> @DeployFinance post 2026-10-23, fxtwitter; 7,285 followers.</span>
-    <span><b>2</b> Post 2026-10-14, fxtwitter; 11,178 followers.</span>
-    <span><b>3</b> @Meta_ZET 2026-10-15: 22 viral posts, 0 with a checkable wallet.</span>
-    <span><b>4</b> TradeExecuted, tx 0x0023f359...3b03, chain 46630.</span>
-    <span><b>5</b> Robinhood newsroom 2026-09-29: "does not ... audit agents".</span>
-    <span><b>6</b> Morpho launch 2026-10-22, NVDA and SPY (cryptobriefing.com).</span>
-    <span><b>7</b> Phala 2025 report: 2,529 CVMs.</span>
-    <span><b>8</b> arcana-arena.com 2026-10-24, block 95,182,673; /docs/wallets-and-custody.</span>
-    <span><b>9</b> Hyperliquid stats API 2026-10-24: $405,600,393 TVL.</span>
-    <span><b>10</b> knidos.xyz, testnet.</span>
-    <span><b>11</b> cast estimate, chain 46630: 2,371,819 gas.</span>
-    <span><b>12</b> tradeId 3, AgentAccount 0x9c69...Aa6D, block 127,188,951.</span>
-  </p>
+  <ol class="src">
+    <li><b>1</b> @DeployFinance post 2026-10-23 and 7,295 followers, fxtwitter 2026-10-24.</li>
+    <li><b>2</b> @Al_Nadim_nabil post 2026-10-14, 11,178 followers, fxtwitter (gtm/signals.md row 12).</li>
+    <li><b>3</b> @Meta_ZET post 2026-10-15: 22 viral bot posts, 0 with a checkable wallet (gtm/signals.md row 1).</li>
+    <li><b>4</b> Robinhood newsroom 2026-09-29: 150,000+ agentic accounts, &quot;does not control, supervise, monitor, recommend, or audit agents&quot;.</li>
+    <li><b>5</b> @RobinhoodCrypto post 2026-10-22: Stock Tokens as Morpho collateral.</li>
+    <li><b>6</b> Phala 2025 report: 2,529 CVMs.</li>
+    <li><b>7</b> arcana-arena.com 2026-10-24, block 95,182,673: 51 agents, 40 creators (gtm/COMPETITORS.md).</li>
+    <li><b>8</b> Hyperliquid stats API 2026-10-24: 9,478 vaults (gtm/COMPETITORS.md). knidos.xyz, testnet.</li>
+    <li><b>9</b> cast estimate, chain 46630: 2,371,819 gas for the Stylus TDX Verifier.</li>
+    <li><b>10</b> TradeExecuted tx 0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03, block 127,188,951, status 1, read with cast receipt on rpc.testnet.chain.robinhood.com.</li>
+    <li><b>11</b> Follower counts: fxtwitter 2026-10-24 (gtm/USERS.md rows 1 to 13).</li>
+  </ol>
 </section>
 
-<!-- ================= GTM CANVAS ================= -->
 <section class="slide" id="gtm" aria-label="GTM canvas">
-  <div class="head"><h1>GTM canvas</h1><span class="mark">Signet &middot; Founder House Singapore</span></div>
-  <div class="grid" style="grid-template-rows: auto auto auto 1fr;">
-
-    <div class="box key" style="grid-column: span 12"><p class="lbl">One line</p><p class="big">Creators prove a record without opening the strategy. Followers fund only the code they approved.</p></div>
-
-    <div class="box" style="grid-column: span 6">
-      <p class="lbl">Who buys, who uses</p>
-      <dl class="who">
-        <dt>Uses</dt><dd><b style="color:var(--color-ink);font-weight:500">Creators</b> supply strategies and earn a performance fee on new profit.</dd>
-        <dt>Buys</dt><dd><b style="color:var(--color-ink);font-weight:500">Followers</b> subscribe for an admitted agent and approve one hash.</dd>
-        <dt>Signet</dt><dd>Takes a share of each fee.</dd>
-      </dl>
-    </div>
-
-    <div class="box" style="grid-column: span 6">
-      <p class="lbl">First reachable audience</p>
-      <p class="mid"><b class="num">40</b> creators and <b class="num">51</b> agents on ARCANA's Season 2 US Equities board.<sup>1</sup></p>
-      <p class="mid">Plus operators who already post Stock Token volume in public.<sup>2</sup></p>
-    </div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">3 distribution channels</p>
-      <ul class="list">
-        <li><span><b>Direct DMs</b> to Stock Token operators, TSLA receipt attached.</span></li>
-        <li><span><b>Leaderboard hosts</b> add a measurement column.</span></li>
-        <li><span><b>Robinhood Chain, Arbitrum, Phala</b> builder channels.</span></li>
-      </ul>
-    </div>
-
-    <div class="box key" style="grid-column: span 4">
-      <p class="lbl">Core message</p>
-      <p class="big" style="font-size:32px">Your next record can be a measurement, not a screenshot.</p>
-      <p class="mid" style="margin-top:10px">The measured image commits to the strategy's hash. The strategy text stays inside the enclave.</p>
-    </div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">Proof you need first</p>
-      <p class="mid"><b>30 days</b> of Stock Token trades from an outside creator, one measurement on every event.</p>
-      <p class="mid">Today: one attested TSLA trade and one refusal on chain.<sup>3</sup></p>
-    </div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">The intro that helps</p>
-      <p class="mid"><b>Gaetan Thabot</b>, Director of Crypto Partnerships, Robinhood Chain.<sup>4</sup></p>
-      <p class="mid"><b>Ben Greenberg</b>, DevRel, Arbitrum Foundation.<sup>4</sup></p>
-    </div>
-
-    <div class="box" style="grid-column: span 4">
-      <p class="lbl">5 named targets</p>
-      <ul class="list">
-        <li><span><b>@Arcana_Arena</b> <span class="gp">40 creators</span></span></li>
-        <li><span><b>@HarmonicAgents</b> <span class="gp">2,502</span></span></li>
-        <li><span><b>Meridian402</b> <span class="gp">tokenized stocks</span></span></li>
-        <li><span><b>@DeployFinance</b> <span class="gp">7,285</span></span></li>
-        <li><span><b>@GrowiHF</b> <span class="gp">1,592</span></span></li>
-      </ul>
-    </div>
-
-    <div class="box key" style="grid-column: span 4">
-      <p class="lbl">The ask this weekend</p>
-      <p class="mid"><b>One introduction</b> to Robinhood Chain partnerships. <b>Five creators</b> to run their agent in a TEE.</p>
-      <p class="cta">Verify the TSLA trade yourself<br>chiron-receipts.vercel.app</p>
-    </div>
+  <div class="head"><h1>GTM canvas</h1><span class="files">Official file <a href="canvas/Signet-GTM-Canvas.pptx">pptx</a><a href="canvas/Signet-GTM-Canvas.pdf">pdf</a><a href="canvas/Signet-GTM-Canvas.png">png</a></span></div>
+  <div class="grid">
+    <div class="box top key"><p class="lbl">Team Name: Signet</p><p class="txt">One line what You’re Building: trading agents with a provable record and a private strategy</p></div>
+    <div class="box"><p class="lbl">Who Buys, Who Uses</p><p class="txt">creators use it: they supply an agent and earn a performance fee on new profit, the business model. followers buy it: they subscribe, fund their own account and approve one measurement</p></div>
+    <div class="box"><p class="lbl">First Reachable Audience</p><p class="txt">40 creators and 51 agents on ARCANA&#x27;s Season 2 US Equities board (block 95,182,673), plus operators who post Stock Token volume in public: @HarmonicAgents (2,502), @OxSimpleFarmer (28,443)</p></div>
+    <div class="box"><p class="lbl">Proof You Need First</p><p class="txt">30 days of Stock Token trades from an outside creator, one measurement on every receipt. today on chain: one attested TSLA trade (block 127,188,951) and one refused workload (block 127,632,496)</p></div>
+    <div class="box key"><p class="lbl">3 Distribution Channels</p><p class="txt">direct dms to stock token operators with the TSLA receipt attached; leaderboard hosts like ARCANA and Senpi adding a measurement column; builder channels at Robinhood Chain, Arbitrum and Phala</p></div>
+    <div class="box"><p class="lbl">Core Message, One Sentence</p><p class="txt">your next track record can be a measurement, not a screenshot: every trade names the code that made it, and the strategy stays private</p></div>
+    <div class="box"><p class="lbl">The Intro That Helps</p><p class="txt">Gaetan Thabot (@GThabot), Robinhood Chain partnerships, for stock token creators. Ben Greenberg (@hummusonrails), Arbitrum DevRel, for the Stylus verifier. Phala as the TEE partner for creator CVMs</p></div>
+    <div class="box wide"><p class="lbl">5 Named Targets</p><p class="txt">@Arcana_Arena (40 creators, 51 agents); @HarmonicAgents (2,502, trades Stock Tokens); Meridian402 (stock token market maker); @DeployFinance (7,295, $100,000 agent for 70 days); @GrowiHF (1,592, $2.94M all-time vault PnL)</p></div>
+    <div class="box wide key"><p class="lbl">The Ask This Weekend</p><p class="txt">one intro to Robinhood Chain partnerships and one to Arbitrum DevRel, plus five creators willing to run an agent in a TEE. CTA: open tx 0x0023f359...3b03 on the Robinhood Chain explorer and read the measurement and model hash</p></div>
   </div>
-
-  <p class="src">
-    <span><b>1</b> arcana-arena.com, 2026-10-24 01:13Z, block 95,182,673: 51 agents, 40 creators, 680 settled trades.</span>
-    <span><b>2</b> @HarmonicAgents, 2,502 followers, post 2026-10-23 (gtm/USERS.md rows 8 to 10); followers per fxtwitter 2026-10-24.</span>
-    <span><b>3</b> tx 0x0023f359...3b03 (TradeExecuted) and tx 0xf98156ad...fcc8 (MeasurementNotApproved), chain 46630, block 127,188,951 and 127,632,496.</span>
-    <span><b>4</b> Names and titles per the Open House judge roster.</span>
-    <span>Targets: @DeployFinance post 2026-10-23; @GrowiHF Hyperliquid vaultDetails 2026-10-24 (gtm/USERS.md rows 1, 2, 8 to 10).</span>
-  </p>
+  <ol class="src">
+    <li><b>1</b> arcana-arena.com 2026-10-24 01:13Z, block 95,182,673: 51 agents, 40 creators, 680 settled trades.</li>
+    <li><b>2</b> @HarmonicAgents 2,502 and @OxSimpleFarmer 28,443 followers, fxtwitter 2026-10-24 (gtm/USERS.md rows 10, 13).</li>
+    <li><b>3</b> TradeExecuted tx 0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03, block 127,188,951, status 1.</li>
+    <li><b>4</b> Refusal tx 0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8, block 127,632,496, status 0 (reverted), same AgentAccount 0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D; both read with cast receipt.</li>
+    <li><b>5</b> @GThabot and @hummusonrails bios, fxtwitter 2026-10-24: Director Crypto/Onchain Partnerships at Robinhood; DevRel at Arbitrum.</li>
+    <li><b>6</b> @DeployFinance post 2026-10-23, 7,295 followers; @GrowiHF 1,592 followers and Hyperliquid vaultDetails 2026-10-24: +$2,939,277.13 all-time PnL (gtm/USERS.md rows 1, 2).</li>
+    <li><b>7</b> @PhalaNetwork 140,925 followers; Phala dstack hosts the CVM the agent runs in.</li>
+  </ol>
 </section>
-
 <script>
 (function () {
   if (matchMedia('print').matches) return;
   function fit() {
     var k = Math.min(1, innerWidth / 1920);
-    document.querySelectorAll('.slide').forEach(function (s, i) {
+    document.querySelectorAll('.slide').forEach(function (s) {
       s.style.transform = 'scale(' + k + ')';
       s.style.marginBottom = (1080 * k - 1080) + 'px';
       s.style.marginRight = (1920 * k - 1920) + 'px';
