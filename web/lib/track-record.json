@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-24T01:34:33.424Z",
+  "generatedAt": "2026-10-24T01:37:41.569Z",
   "chainId": 46630,
-  "block": 141627171,
+  "block": 141628662,
   "pricing": {
     "feed": "Chainlink RHTSLA / USD 0x4A1166a659A55625345e9515b32adECea5547C38 on Robinhood Chain mainnet 4663",
     "feedChainId": 4663,
@@ -212,12 +212,13 @@
       "label": "Workload B",
       "workload": "compose 0e3d4c8ce0d296763092988aa025da9579b598bf043cc424624730c660d2db6c",
       "agents": [
-        "0xd28c6ccfe73ded1aa39cbc8f33bccc1f96c3b7e5"
+        "0xd28c6ccfe73ded1aa39cbc8f33bccc1f96c3b7e5",
+        "0xfc3a78b860ba261c4e6af824695cf6a83d6c6b93"
       ],
       "accounts": [
         "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
       ],
-      "admissions": 1,
+      "admissions": 2,
       "firstAdmission": {
         "tx": "0x0b875142f93eb90ff56fef84c3026f4c7ef452c605103436dd1002998098d794",
         "block": 141625555,
