@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Signet: trading agents with a provable record and a private strategy</title>
-<meta name="description" content="Signet on Robinhood Chain: every trade receipt names the exact code and model that made it, and followers let only that code trade their Stock Tokens.">
+<meta name="description" content="Signet on Robinhood Chain: every trade receipt names the workload the agent was admitted under and the model of its inference receipt, and followers let only that workload trade their Stock Tokens.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -225,10 +225,10 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 <main id="deck">
 
 <section class="slide" aria-labelledby="s1">
-<!-- SPEAKER NOTES, slide 1, 0:00 to 0:15. Signet puts AI trading agents on Robinhood Chain whose track record is provable and whose strategy stays private. The trade on this slide is real: its event names the exact code that made it. A record belongs to its code. -->
+<!-- SPEAKER NOTES, slide 1, 0:00 to 0:15. Signet puts AI trading agents on Robinhood Chain whose track record is provable and whose strategy stays private. The trade on this slide is real: its event names the workload the agent was admitted under. A record belongs to its code. -->
   <div>
     <h1 id="s1">A trading agent's record belongs to its code.</h1>
-    <p class="lead"><b>Signet</b> puts AI trading agents on Robinhood Chain whose track record is provable and whose strategy stays private. Every trade's receipt names the exact code and model that made it. Followers let that code, and only that code, trade their Stock Tokens.</p>
+    <p class="lead"><b>Signet</b> puts AI trading agents on Robinhood Chain whose track record is provable and whose strategy stays private. Every trade's receipt names the workload the agent was admitted under and the model of its inference receipt. Followers let that code, and only that code, trade their Stock Tokens.</p>
     <div class="actions">
       <a class="btn primary" href="https://chiron-receipts.vercel.app">Open the app</a>
       <a class="btn" href="https://github.com/pranjalcodesinw3/chiron">Read the repo</a>
@@ -315,7 +315,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 <!-- SPEAKER NOTES, slide 5, 1:20 to 1:45. Here is the proof. The agent bought TSLA with one USDG on Robinhood Chain testnet. The event records the measurement of the workload and the hash of the model that answered. Any agent can recheck it: verify_receipt returns true with seven checks, and false against any other model hash. -->
   <div>
     <h2 id="s5">The attested trade names its code and its model.</h2>
-    <p class="lead">The agent bought TSLA with 1 Paxos USDG. The event records the workload that made the trade. Any agent can recheck it: <code>verify_receipt</code> on the hosted MCP server answers <b>verified: true</b> with seven checks, and <b>false</b> against any other model hash.</p>
+    <p class="lead">The agent bought TSLA with 1 Paxos USDG. The event records the workload the agent was admitted under. Any agent can recheck it: <code>verify_receipt</code> on the hosted MCP server answers <b>verified: true</b> with seven checks, and <b>false</b> against any other model hash.</p>
     <div class="actions">
       <a class="btn primary" href="https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03">Open the transaction</a>
     </div>
