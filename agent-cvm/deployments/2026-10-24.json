@@ -1,0 +1,42 @@
+{
+  "recordedAt": "2026-10-24T03:55Z",
+  "chainId": 46630,
+  "explorer": "https://explorer.testnet.chain.robinhood.com",
+  "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+  "owner": "0x2aD12a72362704367e99a344cFf5affDDF7f5DEF",
+  "strategy": {
+    "file": "agent/strategies/demo-tsla.json",
+    "STRATEGY_SHA256": "3723fda711fc57e5aa5f2399f74f37a3dba2629cd6a75d4917b8bb8c13e0db26",
+    "source": "openssl dgst -sha256 -r agent/strategies/demo-tsla.json, printed by agent-cvm/render-compose.sh"
+  },
+  "image": "ttl.sh/signet-agent-24d5f1ca3575@sha256:d453c4c02f7028b7664494e152cc0d3e70f63e005a292cec555effac3d223055",
+  "imageBuild": "agent-cvm/build-image.sh with crane v0.22.1 at commit 96ee293, pushed to ttl.sh",
+  "composeFile": "agent-cvm/docker-compose.demo-tsla.yml",
+  "cvm": {
+    "platform": "Phala Cloud dstack CVM, tdx.small, prod5 US-WEST-1",
+    "name": "signet-demo-tsla-prod",
+    "vmUuid": "549082ca-09f5-4e11-8146-f6683182216e",
+    "appId": "e45234c10954cbcf891ef414999e89a4b98dd090",
+    "instanceId": "279dd515a03b6f0db55c562f5afe73d859422c78",
+    "os": { "name": "dstack-0.5.12", "isDev": false, "osImageHash": "8db40cb23008d6213668b5816702d100b37b859a8a5bfd18d938ae3a1b3715bd" },
+    "composeHash": "9f997c38f9754576002490da0740372e9510adca80d1719082d3bb8e31572606",
+    "composeHashSource": "compose-hash event of the RTMR3 event log returned by POST /quote equals compose_hash of phala cvms get",
+    "dockerComposeHash": "5d08d131d60c38649ff1a9f2f356c05876b6bcdec8ebedd08468980f373e759f",
+    "endpoint": "https://e45234c10954cbcf891ef414999e89a4b98dd090-8080.dstack-pha-prod5.phala.network",
+    "bootLog": "strategy sha256 3723fda7...0db26 matches the compose pin; model meta-llama/llama-3.3-70b-instruct"
+  },
+  "agent": "0x0205ECff6816271FD8500e45065D6E284C7131e9",
+  "measurement": "0x69f33c1d9eb7b80eeac3869f52c56653dba6a7656148975e41aaaa2be133c97f",
+  "txs": [
+    { "step": "owner setMeasurement(measurement, true)", "hash": "0x749003ce338eed7782f37dad1ad6528f9cebf74ff80a0c15da8a47c7e6717b8b", "block": 141688249 },
+    { "step": "registerAgent(CVM quote), AgentRegistered, expiry 1792899890", "hash": "0x5fdc4acb64d8f1dddc9042c9101c652f87f7483cc1163d0c878b431c44ce965c", "block": 141688284 }
+  ],
+  "verifiedWithCast": {
+    "agent()": "0x0205ECff6816271FD8500e45065D6E284C7131e9",
+    "agentMeasurement()": "0x69f33c1d9eb7b80eeac3869f52c56653dba6a7656148975e41aaaa2be133c97f",
+    "approvedMeasurement(measurement)": true,
+    "approvedMeasurement(0x00..01)": false,
+    "agentExpiry()": 1792899890
+  },
+  "inference": "PHALA_API_KEY was not sealed into this CVM, so the decision loop holds at the model call and submits no trade"
+}

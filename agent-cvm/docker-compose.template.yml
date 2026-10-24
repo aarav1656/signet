@@ -1,0 +1,43 @@
+# Source of the measured compose file. agent-cvm/render-compose.sh fills the two fields below and
+# writes agent-cvm/docker-compose.yml; the render refuses an image that is not pinned by digest.
+#
+# Everything in this file is literal, so all of it is inside compose-hash, which dstack extends
+# into RTMR3: the image digest (the code), the account, the chain and RPC, the inference base URL,
+# the model id, and STRATEGY_SHA256, the SHA-256 of the strategy file. The strategy text itself is
+# not here. It travels as the sealed variable STRATEGY_B64, and the agent refuses to start unless
+# its bytes hash to STRATEGY_SHA256 (agent/src/strategy.ts), so replacing the sealed payload
+# cannot change what trades. PHALA_API_KEY is the only other sealed variable. The owner key is
+# never in this file or in the CVM, and the CVM serves no route that submits a trade.
+#
+# Which bytes are measured, from the dstack docs (Dstack-TEE/dstack, docs/):
+#   attestation-tdx.md   RTMR3 records the compose hash, instance id, app id and key provider.
+#   guest-api-v0.md      compose_hash is sha256 over the exact app-compose.json bytes, and that
+#                        document embeds this file's text, so every literal here is an input.
+#   verifier/src/lib.rs  the on-chain measurement is keccak256(mr_seam || td_attributes || xfam ||
+#                        mr_td || mr_config_id || rtmr0 || rtmr1 || rtmr2 || rtmr3), so a changed
+#                        image digest, model id or STRATEGY_SHA256 is a different measurement that
+#                        the account refuses until its owner approves it.
+#   encrypted-env-spec.md, security/security-best-practices.md
+#                        sealed variables are encrypted to a public key, so their payload is not
+#                        authenticated: the digest in this file is what authenticates STRATEGY_B64.
+# The instance id is also an RTMR3 input, so each boot has its own measurement while the compose
+# hash, and STRATEGY_SHA256 with it, is the same across boots of one rendered file. A verifier
+# replays the eventLog returned by POST /quote into RTMR3, reads compose-hash, checks it against
+# sha256(app-compose.json) and reads STRATEGY_SHA256 from that document.
+services:
+  agent:
+    image: __IMAGE__
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ACCOUNT_ADDRESS: "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      RHC_RPC_URL: "https://rpc.testnet.chain.robinhood.com"
+      RHC_CHAIN_ID: "46630"
+      PHALA_BASE_URL: "https://inference.phala.com"
+      PHALA_MODEL: "meta-llama/llama-3.3-70b-instruct"
+      STRATEGY_SHA256: "__STRATEGY_SHA256__"
+      STRATEGY_B64: "${STRATEGY_B64}"
+      PHALA_API_KEY: "${PHALA_API_KEY}"
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock

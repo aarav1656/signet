@@ -1,27 +1,32 @@
 // The attested agent, as it runs inside a Phala Cloud dstack CVM. The agent key is generated in
-// memory at boot and never leaves this process. The owner key is never present. Routes:
+// memory at boot and never leaves this process. The owner key is never present.
+//
+// Boot: the sealed strategy (STRATEGY_B64) is hashed and must equal STRATEGY_SHA256, a literal in
+// the compose file; otherwise the process exits before it generates a key or opens a port. Then
+// the decision loop (loop.ts) starts: this process reads the market, runs the strategy, gets the
+// model's receipt and submits the trade itself. There is no route that takes a trade from outside.
 //
 //   GET  /info              the agent address, the default account, the chain id.
 //   POST /quote?account=0x  a TDX quote whose report_data is agent(20) || 0(12) || attestNonce(32),
 //                           with the nonce read from that account at head-1: exactly what its
 //                           AgentAccount.registerAgent expects. registerAgent is permissionless, so
 //                           the client or the operator submits it. One key, many client accounts.
-//   POST /tx      sign and send one agent-side call (execute, propose, cancelProposal) on `account`
-//                 (default ACCOUNT_ADDRESS) with the in-memory key. Bearer CONTROL_TOKEN. Each
-//                 account's caps and receipt checks are the policy; this route only holds the key.
+//                           eventLog is the RTMR event log: replaying it reproduces the quote's RTMR3
+//                           and shows compose-hash, so the pinned strategy digest can be checked.
 //
 // /info and /quote answer cross-origin, so a client's browser can fetch a quote for its own account.
-// ACCOUNT_ADDRESS and RHC_RPC_URL come from the compose file, so they are measured into RTMR3.
+// ACCOUNT_ADDRESS, RHC_RPC_URL, PHALA_MODEL, PHALA_BASE_URL and STRATEGY_SHA256 come from the
+// compose file, so they are measured into RTMR3. STRATEGY_B64 and PHALA_API_KEY are sealed.
 import { createServer, request, type ServerResponse } from 'node:http';
-import { timingSafeEqual } from 'node:crypto';
 import { createPublicClient, createWalletClient, defineChain, getAddress, http, isAddress, type Address, type Hex } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { agentAccountAbi } from './account-abi.ts';
 import { agentReportData, RHC_CHAIN_ID } from './account.ts';
-import { fromWire, toWire } from './wire.ts';
+import { startLoop } from './loop.ts';
+import { loadStrategy } from './strategy.ts';
+import { toWire } from './wire.ts';
 
 const SOCKET = process.env.DSTACK_SOCKET ?? '/var/run/dstack.sock';
-const AGENT_FUNCTIONS = new Set(['execute', 'propose', 'cancelProposal']);
 
 function need(name: string): string {
   const v = (process.env[name] ?? '').trim();
@@ -29,8 +34,9 @@ function need(name: string): string {
   return v;
 }
 
-/// dstack guest agent: POST /GetQuote {report_data: hex} over its unix socket.
-export function getQuote(reportDataHex: Hex, socketPath = SOCKET): Promise<Hex> {
+/// dstack guest agent: POST /GetQuote {report_data: hex} over its unix socket. Returns the quote and
+/// the RTMR event log it was taken with, so a verifier can replay RTMR3 and read compose-hash.
+export function getQuote(reportDataHex: Hex, socketPath = SOCKET): Promise<{ quote: Hex; eventLog: string }> {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({ report_data: reportDataHex.slice(2).toLowerCase() });
     const req = request(
@@ -40,9 +46,9 @@ export function getQuote(reportDataHex: Hex, socketPath = SOCKET): Promise<Hex> 
         res.on('data', (c: Buffer) => chunks.push(c));
         res.on('end', () => {
           try {
-            const j = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { quote?: string; error?: string };
+            const j = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { quote?: string; event_log?: string; error?: string };
             if (res.statusCode !== 200 || !j.quote) throw new Error(`GetQuote HTTP ${res.statusCode}: ${j.error ?? 'no quote'}`);
-            resolve((j.quote.startsWith('0x') ? j.quote : `0x${j.quote}`) as Hex);
+            resolve({ quote: (j.quote.startsWith('0x') ? j.quote : `0x${j.quote}`) as Hex, eventLog: j.event_log ?? '' });
           } catch (e) {
             reject(e);
           }
@@ -52,12 +58,6 @@ export function getQuote(reportDataHex: Hex, socketPath = SOCKET): Promise<Hex> 
     req.on('error', reject);
     req.end(body);
   });
-}
-
-function authorised(header: string | undefined, token: string): boolean {
-  const got = Buffer.from(header ?? '');
-  const want = Buffer.from(`Bearer ${token}`);
-  return got.length === want.length && timingSafeEqual(got, want);
 }
 
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, POST', 'access-control-allow-headers': 'content-type' };
@@ -76,7 +76,12 @@ function pickAccount(raw: unknown, fallback: Address): Address | undefined {
 async function main() {
   const rpc = need('RHC_RPC_URL');
   const account = need('ACCOUNT_ADDRESS') as Address;
-  const token = need('CONTROL_TOKEN');
+  const model = need('PHALA_MODEL');
+  need('PHALA_BASE_URL');
+  // Inference needs the sealed key. Without it every cycle fails at the model call and trades nothing, so the CVM still boots and answers /quote.
+  if (!(process.env.PHALA_API_KEY ?? '').trim()) console.log('PHALA_API_KEY is not set: cycles will hold at the inference call');
+  const { strategy, sha256 } = loadStrategy(Buffer.from(need('STRATEGY_B64'), 'base64'), need('STRATEGY_SHA256'));
+  console.log(`strategy sha256 ${sha256} matches the compose pin; model ${model}`);
   const chain = defineChain({
     id: RHC_CHAIN_ID,
     name: 'Robinhood Chain Testnet',
@@ -102,25 +107,8 @@ async function main() {
         if (!target) return reply(res, 400, { error: 'account is not an address' }, true);
         const refBlock = (await publicClient.getBlockNumber()) - 1n;
         const nonce = (await publicClient.readContract({ address: target, abi: agentAccountAbi, functionName: 'attestNonce', args: [refBlock] })) as Hex;
-        const quote = await getQuote(agentReportData(agent.address, nonce));
-        return reply(res, 200, { agent: agent.address, account: target, refBlock, nonce, quote }, true);
-      }
-      if (req.method === 'POST' && url.pathname === '/tx') {
-        if (!authorised(req.headers.authorization, token)) return reply(res, 401, { error: 'unauthorised' });
-        const chunks: Buffer[] = [];
-        for await (const c of req) chunks.push(c as Buffer);
-        const { functionName, args, gas, account: raw } = fromWire<{ functionName: string; args: unknown[]; gas?: bigint; account?: string }>(Buffer.concat(chunks).toString('utf8'));
-        if (!AGENT_FUNCTIONS.has(functionName)) return reply(res, 400, { error: `${functionName} is not an agent function` });
-        const target = pickAccount(raw, account);
-        if (!target) return reply(res, 400, { error: 'account is not an address' });
-        const hash = await wallet.writeContract({
-          address: target,
-          abi: agentAccountAbi,
-          functionName: functionName as never,
-          args: args as never,
-          ...(gas ? { gas } : {}),
-        });
-        return reply(res, 200, { hash });
+        const { quote, eventLog } = await getQuote(agentReportData(agent.address, nonce));
+        return reply(res, 200, { agent: agent.address, account: target, refBlock, nonce, quote, eventLog }, true);
       }
       return reply(res, 404, { error: 'not found' });
     } catch (e) {
@@ -129,6 +117,17 @@ async function main() {
   });
   const port = Number(process.env.PORT ?? 8080);
   server.listen(port, () => console.log(`agent ${agent.address} serving account ${account} on :${port}`));
+  startLoop(
+    {
+      account,
+      publicClient,
+      agent: {
+        address: agent.address,
+        write: (c) => wallet.writeContract({ address: account, abi: agentAccountAbi, functionName: c.functionName, args: c.args as never, ...(c.gas ? { gas: c.gas } : {}) } as never),
+      },
+    },
+    strategy,
+  );
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) await main();

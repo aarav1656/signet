@@ -12,9 +12,10 @@
 //                 Verifier returns, approve it, submit registerAgent
 //
 // The agent is either remote (CVM_URL: the attested agent inside a Phala CVM, whose key is
-// generated in the CVM and never seen here) or local (AGENT_PRIVATE_KEY, development only). The
-// owner key never enters the CVM. Keys are read by variable name only and never printed:
-// OWNER_PRIVATE_KEY, CVM_CONTROL_TOKEN, AGENT_PRIVATE_KEY.
+// generated in the CVM and never seen here; it trades by itself, so these owner-side modes only
+// read its address and its quote) or local (AGENT_PRIVATE_KEY, development only). The owner key
+// never enters the CVM. Keys are read by variable name only and never printed:
+// OWNER_PRIVATE_KEY, AGENT_PRIVATE_KEY.
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   BaseError,
@@ -35,7 +36,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { agentAccountAbi } from './account-abi.ts';
-import { fromWire, toWire } from './wire.ts';
+import { fromWire } from './wire.ts';
 import { phalaModel } from './config.ts';
 import { modelHash } from './digest.ts';
 import {
@@ -148,10 +149,7 @@ async function agentSigner(
     return {
       address: info.agent,
       write: async (c) => {
-        const res = await fetch(`${cvm}/tx`, { method: 'POST', headers: { authorization: `Bearer ${env('CVM_CONTROL_TOKEN')}` }, body: toWire({ ...c, account }) });
-        const out = fromWire<{ hash?: Hex; error?: string }>(await res.text());
-        if (!res.ok || !out.hash) throw new Error(`CVM /tx ${c.functionName}: ${out.error ?? res.status}`);
-        return out.hash;
+        throw new Error(`The CVM agent trades by itself and exposes no route to drive ${c.functionName}; set AGENT_PRIVATE_KEY to run this mode with a local development agent.`);
       },
     };
   }
@@ -182,10 +180,13 @@ async function setup() {
 
 type Ctx = Awaited<ReturnType<typeof setup>>;
 
+/// What the decision loop inside the CVM needs: no owner key, no owner wallet.
+export type AgentCtx = Pick<Ctx, 'account' | 'agent' | 'publicClient'>;
+
 /// A read of the account. With `at`, the read is pinned to that block and retried while the RPC
 /// backend that answers has not caught up to it: a read at "latest" straight after a receipt can
 /// be served by a node one block behind and return the state from before the transaction.
-async function read<T>(ctx: Ctx, functionName: string, args: readonly unknown[] = [], at?: bigint): Promise<T> {
+export async function read<T>(ctx: AgentCtx, functionName: string, args: readonly unknown[] = [], at?: bigint): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
       return (await ctx.publicClient.readContract({
@@ -223,9 +224,9 @@ async function requireFreshAgent(ctx: Ctx) {
   console.log(`step 1 ok: agent ${agent} registered, ${(expiry - now) / 3600n} h left`);
 }
 
-type Pin = { requested: Hex; accepted: Hex[]; gateway: Hex; assay: Address };
+export type Pin = { requested: Hex; accepted: Hex[]; gateway: Hex; assay: Address };
 
-async function readPin(ctx: Ctx): Promise<Pin> {
+export async function readPin(ctx: AgentCtx): Promise<Pin> {
   const [requested, gateway, assay, ...accepted] = await Promise.all([
     read<Hex>(ctx, 'requestedModelHash'),
     read<Hex>(ctx, 'gatewayMeasurement'),
@@ -237,7 +238,12 @@ async function readPin(ctx: Ctx): Promise<Pin> {
 
 /// One real inference through Phala, verified locally the way ReceiptVerifier and the account
 /// will verify it onchain, and refused before any transaction if it would not pass.
-async function inferenceReceipt(ctx: Ctx, pin: Pin, prompt: string): Promise<{ receipt: TradeReceipt; served: Hex }> {
+export async function inferenceReceipt(
+  ctx: AgentCtx,
+  pin: Pin,
+  prompt: string,
+  opts: { logAnswer?: boolean } = {},
+): Promise<{ receipt: TradeReceipt; served: Hex; answer: string }> {
   if (modelHash(phalaModel) !== pin.requested) {
     throw new Error(`PHALA_MODEL "${phalaModel}" does not hash to the account's requestedModelHash ${pin.requested}.`);
   }
@@ -263,18 +269,18 @@ async function inferenceReceipt(ctx: Ctx, pin: Pin, prompt: string): Promise<{ r
   if (BigInt(Math.floor(Date.now() / 1000)) > expiry) throw new Error(`receipt key ${pubkey} registration expired.`);
   const answer = (JSON.parse(new TextDecoder().decode(completion.responseBody)) as { choices?: { message?: { content?: string } }[] })
     .choices?.[0]?.message?.content;
-  console.log(`inference ${completion.receiptId}: served "${local.servedModel}", answer ${JSON.stringify(answer ?? '')}`);
+  console.log(`inference ${completion.receiptId}: served "${local.servedModel}"${opts.logAnswer === false ? '' : `, answer ${JSON.stringify(answer ?? '')}`}`);
   const receipt: TradeReceipt = {
     pubkey,
     receiptBytes: `0x${Buffer.from(receiptSigningInput(doc)).toString('hex')}` as Hex,
     signature: (doc.signature.startsWith('0x') ? doc.signature : `0x${doc.signature}`) as Hex,
   };
-  return { receipt, served };
+  return { receipt, served, answer: answer ?? '' };
 }
 
 /// Token balances of the account. With `at`, pinned to that block and retried until the RPC backend
 /// has it, so a read straight after a receipt cannot return the pre-transaction balance.
-async function balances(ctx: Ctx, usdg: Address, at?: bigint) {
+export async function balances(ctx: AgentCtx, usdg: Address, at?: bigint) {
   for (let attempt = 0; ; attempt++) {
     try {
       const [u, s] = await Promise.all(
@@ -318,7 +324,7 @@ async function expectRevert(p: Promise<unknown>, name: string): Promise<readonly
 /// The quote asset the agent trades against TSLA: the account's own `usdg()` unless QUOTE_TOKEN
 /// names another allowlisted token (the account trades any token the owner has given limits and
 /// a pool).
-async function market(ctx: Ctx) {
+export async function market(ctx: AgentCtx) {
   const usdg = (env('QUOTE_TOKEN', '') || (await read<Address>(ctx, 'usdg'))) as Address;
   const key = poolKey(usdg, TSLA);
   if (!(await read<boolean>(ctx, 'allowedPool', [poolId(key)]))) throw new Error(`pool ${poolId(key)} is not allowlisted on the account.`);
@@ -333,8 +339,8 @@ async function market(ctx: Ctx) {
   return { usdg, key, perTrade, daily, approvalAbove, buy };
 }
 
-/// minOut from the account's own swap simulated at this block, less SLIPPAGE_BPS.
-async function quoteMinOut(ctx: Ctx, t: Trade, r: TradeReceipt): Promise<bigint> {
+/// minOut from the account's own swap simulated at this block, less `slippageBps` (default SLIPPAGE_BPS).
+export async function quoteMinOut(ctx: AgentCtx, t: Trade, r: TradeReceipt, slippageBps?: number): Promise<bigint> {
   const { result } = await ctx.publicClient.simulateContract({
     address: ctx.account,
     abi: agentAccountAbi,
@@ -343,7 +349,7 @@ async function quoteMinOut(ctx: Ctx, t: Trade, r: TradeReceipt): Promise<bigint>
     account: ctx.agent.address,
   });
   const out = (result as readonly [bigint, bigint])[1];
-  const bps = BigInt(env('SLIPPAGE_BPS', '100'));
+  const bps = BigInt(slippageBps ?? env('SLIPPAGE_BPS', '100'));
   const minOut = (out * (10_000n - bps)) / 10_000n;
   if (minOut === 0n) throw new Error(`simulated output ${out} is too small for a nonzero minOut.`);
   return minOut;
@@ -371,22 +377,28 @@ const quoterAbi = [
   },
 ] as const;
 
-async function quoterMinOut(ctx: Ctx, t: Trade): Promise<bigint> {
+/// The canonical V4Quoter's output for exactly this swap at the current head.
+export async function quoterOut(ctx: AgentCtx, t: Trade): Promise<bigint> {
   const { result } = await ctx.publicClient.simulateContract({
     address: V4_QUOTER,
     abi: quoterAbi,
     functionName: 'quoteExactInputSingle',
     args: [{ poolKey: t.key, zeroForOne: t.zeroForOne, exactAmount: t.amountIn, hookData: '0x' }],
   });
+  return result[0];
+}
+
+async function quoterMinOut(ctx: AgentCtx, t: Trade): Promise<bigint> {
+  const out = await quoterOut(ctx, t);
   const bps = BigInt(env('SLIPPAGE_BPS', '100'));
-  const minOut = (result[0] * (10_000n - bps)) / 10_000n;
-  if (minOut === 0n) throw new Error(`quoted output ${result[0]} is too small for a nonzero minOut.`);
+  const minOut = (out * (10_000n - bps)) / 10_000n;
+  if (minOut === 0n) throw new Error(`quoted output ${out} is too small for a nonzero minOut.`);
   return minOut;
 }
 
-type Executed = { tradeId: bigint; amountIn: bigint; amountOut: bigint; servedModelHash: Hex; proposalId: bigint; agentMeasurement: Hex };
+export type Executed = { tradeId: bigint; amountIn: bigint; amountOut: bigint; servedModelHash: Hex; proposalId: bigint; agentMeasurement: Hex };
 
-async function executedLog(ctx: Ctx, hash: Hex): Promise<{ log: Executed; block: bigint }> {
+export async function executedLog(ctx: AgentCtx, hash: Hex): Promise<{ log: Executed; block: bigint }> {
   const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'success') throw new Error(`tx ${hash} reverted`);
   const logs = parseEventLogs({ abi: agentAccountAbi, logs: rcpt.logs, eventName: 'TradeExecuted' });
