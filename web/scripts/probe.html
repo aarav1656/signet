@@ -15,8 +15,13 @@
   const f = document.getElementById('f');
   f.style.width = w + 'px';
   f.style.height = '900px';
-  f.src = path;
+  f.src = q.get('app') ? '/probe-app.html?go=' + encodeURIComponent(path) : path;
+  const clicks = (q.get('click') || '').split('|').filter(Boolean);
   f.onload = () => setTimeout(() => {
+    clicks.forEach((s, i) => setTimeout(() => f.contentDocument.querySelector(s)?.click(), i * 800));
+    setTimeout(measure, clicks.length ? clicks.length * 800 + Number(q.get('after') || 6000) : 0);
+  }, wait);
+  function measure() {
     const d = f.contentDocument;
     const de = d.documentElement;
     const out = [];
@@ -32,8 +37,9 @@
       h1: [...d.querySelectorAll('h1')].map((h) => ({ text: h.innerText.slice(0, 120), box: [Math.round(h.getBoundingClientRect().width), Math.round(h.getBoundingClientRect().height)], fs: getComputedStyle(h).fontSize, lh: getComputedStyle(h).lineHeight })),
       fonts: [...new Set([...d.querySelectorAll('h1,h2,h3,p,.hex,button')].map((e) => getComputedStyle(e).fontFamily.split(',')[0]))],
       cs: (q.get('cs') || '').split('|').filter(Boolean).map((s) => { const e = d.querySelector(s); if (!e) return [s, null]; const c = getComputedStyle(e); const r = e.getBoundingClientRect(); return [s, { w: Math.round(r.width), x: Math.round(r.left), maxWidth: c.maxWidth, display: c.display, padding: c.padding, ml: c.marginLeft }]; }),
+      kids: (q.get('kids') || '').split('|').filter(Boolean).map((s) => [s, [...(d.querySelector(s)?.children || [])].map((k) => { const r = k.getBoundingClientRect(); return [String(k.className).slice(0, 14) || k.tagName, Math.round(r.left), Math.round(r.width), Math.round(r.height)]; })]),
       sel: Object.fromEntries(sels.map((s) => [s, [...d.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').slice(0, 400))])),
     };
     document.getElementById('report').textContent = JSON.stringify(report);
-  }, wait);
+  }
 </script>

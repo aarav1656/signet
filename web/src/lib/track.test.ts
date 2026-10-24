@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import raw from '../../lib/track-record.json';
-import { agentByMeasurement, fmtAmount, fmtPct, parseTrack, ranked, TRACK } from './track';
+import { PAXOS_USDG, TSLA } from './rhc.generated';
+import { agentByMeasurement, decimalAmount, executedPriceUsd, fmtAmount, fmtPct, parseTrack, ranked, TRACK } from './track';
 
 const m = (c: string) => `0x${c.repeat(64)}`;
 const trade = (c: string, block: number) => ({ tx: m(c), block, time: 1_790_000_000 + block, account: '0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D', tokenIn: 'USDG', tokenOut: 'TSLA', amountIn: '1', amountOut: '0.0039', priceUsdAtTrade: 255.7, modelHash: m('c') });
@@ -16,6 +17,9 @@ describe('the shipped track record', () => {
   });
   it('has the refusal, with the reason the chain decoded', () => {
     expect(TRACK.refusals.some((r) => r.tx === '0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8' && r.reason === 'MeasurementNotApproved')).toBe(true);
+  });
+  it('leaves no trade with an amount the page would print as base units', () => {
+    for (const a of TRACK.agents) for (const t of a.trades) expect(Number(t.amountIn) < 1e6 && Number(t.amountOut) < 1e6, t.tx).toBe(true);
   });
 });
 
@@ -57,5 +61,38 @@ describe('ranking and formatting', () => {
     expect(fmtAmount('0.003910026278631909')).toBe('0.00391');
     expect(fmtAmount('1')).toBe('1.00');
     expect(fmtAmount('104.5')).toBe('104.50');
+  });
+});
+
+describe('a record written by another process', () => {
+  it('reads ISO times, millisecond times and numeric strings', () => {
+    const iso = parseTrack(rec([{ measurement: m('a'), trades: [{ ...trade('b', '12' as unknown as number), time: '2026-10-01T15:11:15.000Z' }] }])).agents[0].trades[0];
+    expect(iso.time).toBe(Date.parse('2026-10-01T15:11:15.000Z') / 1000);
+    expect(iso.block).toBe(12);
+    expect(parseTrack(rec([{ measurement: m('a'), trades: [{ ...trade('b', 1), time: 1_790_867_475_000 }] }])).agents[0].trades[0].time).toBe(1_790_867_475);
+  });
+  it('scales base-unit amounts by the token decimals and leaves decimal amounts alone', () => {
+    expect(decimalAmount('1000000', 'USDG')).toBe('1');
+    expect(decimalAmount('3910026278631909', 'TSLA')).toBe('0.003910026278631909');
+    expect(decimalAmount('0.0039', 'TSLA')).toBe('0.0039');
+    expect(decimalAmount('1', 'USDG')).toBe('1');
+    expect(decimalAmount('123456789', 'WETH')).toBe('123456789');
+  });
+  it('names a token address by its symbol', () => {
+    const t = parseTrack(rec([{ measurement: m('a'), trades: [{ ...trade('b', 1), tokenIn: PAXOS_USDG, tokenOut: TSLA, amountIn: '1000000' }] }])).agents[0].trades[0];
+    expect([t.tokenIn, t.tokenOut, t.amountIn]).toEqual(['USDG', 'TSLA', '1']);
+  });
+  it('rejects a time that is neither a number nor a date', () => {
+    expect(() => parseTrack(rec([{ measurement: m('a'), trades: [{ ...trade('b', 1), time: 'soon' }] }]))).toThrow(/not a time/);
+  });
+});
+
+describe('executedPriceUsd', () => {
+  it('prices a buy and a sell from their own amounts', () => {
+    expect(executedPriceUsd({ tokenIn: 'USDG', tokenOut: 'TSLA', amountIn: '1', amountOut: '0.004' })).toBe(250);
+    expect(executedPriceUsd({ tokenIn: 'TSLA', tokenOut: 'USDG', amountIn: '0.004', amountOut: '1' })).toBe(250);
+  });
+  it('has no price for a zero-sized leg', () => {
+    expect(executedPriceUsd({ tokenIn: 'USDG', tokenOut: 'TSLA', amountIn: '1', amountOut: '0' })).toBeNull();
   });
 });

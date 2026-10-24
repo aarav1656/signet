@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { Address, Hash } from 'viem';
 import { useConnection, usePublicClient, useSendTransaction, useSwitchChain, useWriteContract } from 'wagmi';
@@ -16,6 +17,7 @@ import { DEFAULT_LIMITS, REQUESTED_MODEL_HASH, VENUE_GATEWAY_MEASUREMENT, type L
 import { CreateAction } from '../Account';
 import { readOperatorQuote } from '../account/operator';
 import { parseLimits, pending, planFollow, type FollowSpec, type Step, type StepId } from './followPlan';
+import { cvmError } from './cvmError';
 import { followCalldata } from './followCalls';
 import { readFollowState } from './followRead';
 
@@ -94,7 +96,7 @@ export function FollowPanel({ agent }: { agent: TrackAgent }) {
         try {
           q = await readOperatorQuote(client as never, OPERATOR_CVM_URL, account);
         } catch (e) {
-          setNote(`The agent did not hand over a quote (${e instanceof Error ? e.message.split('\n')[0] : String(e)}). Your account is set up; any wallet can admit the agent with a fresh quote once it answers.`);
+          setNote(`The agent did not hand over a quote (${cvmError(e, OPERATOR_CVM_URL)}). Your account is set up; any wallet can admit the agent with a fresh quote once it answers.`);
           break;
         }
         if (q.measurement.toLowerCase() !== agent.measurement.toLowerCase()) {
@@ -176,6 +178,7 @@ export function FollowPanel({ agent }: { agent: TrackAgent }) {
                 {wrongChain ? `Switch to ${rhcChain.name}` : label}
               </button>
               {limitError && <span className="small">{limitError}</span>}
+              <Link className="textbtn" to={`/account?account=${account}#account`}>Fund this account and see its gate log</Link>
             </div>
           </>
         )}

@@ -1,42 +1,25 @@
 {
-  "generatedAt": "2026-10-24T01:10:55.429Z",
+  "generatedAt": "2026-10-24T01:37:41.569Z",
   "chainId": 46630,
-  "block": 141615960,
-  "agents": [
-    {
-      "measurement": "0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829",
-      "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
-      "label": "Chiron operator agent 2",
-      "model": "meta-llama/llama-3.3-70b-instruct, served as llama3-3-70b",
-      "accounts": [
-        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
-      ],
-      "trades": [
-        {
-          "tx": "0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03",
-          "block": 127188951,
-          "time": 1790867475,
-          "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
-          "tokenIn": "USDG",
-          "tokenOut": "TSLA",
-          "amountIn": "1",
-          "amountOut": "0.003910026278631909",
-          "priceUsdAtTrade": 255.75275682031813,
-          "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59"
-        }
-      ],
-      "pnlUsd": 0,
-      "returnPct": 0,
-      "markPriceUsd": 255.75275682031813,
-      "tradeCount": 1,
-      "firstTrade": 1790867475,
-      "lastTrade": 1790867475
+  "block": 141628662,
+  "pricing": {
+    "feed": "Chainlink RHTSLA / USD 0x4A1166a659A55625345e9515b32adECea5547C38 on Robinhood Chain mainnet 4663",
+    "feedChainId": 4663,
+    "decimals": 8,
+    "mark": {
+      "roundId": "18446744073709553346",
+      "updatedAt": 1792772153,
+      "priceUsd": 372.07125
     },
+    "quoteAssetsUsd": 1,
+    "note": "Stock Token legs are priced from the mainnet Chainlink round current at each trade block time (round id recorded per trade). Quote assets (TestUSDG, USDG) count 1 USD. pnlUsd marks the net position at the latest round; pnlAtTradeUsd values each trade at its own round."
+  },
+  "agents": [
     {
       "measurement": "0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8",
       "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
-      "label": "Chiron operator agent 1",
-      "model": "meta-llama/llama-3.3-70b-instruct, served as llama3-3-70b",
+      "label": "Chiron reference agent, CVM boot 1",
+      "workload": "compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
       "accounts": [
         "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
       ],
@@ -46,11 +29,17 @@
           "block": 127176968,
           "time": 1790865145,
           "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
-          "tokenIn": "testUSDG",
-          "tokenOut": "TSLA",
-          "amountIn": "1",
-          "amountOut": "0.003984027527308004",
-          "priceUsdAtTrade": 251.00228177281124,
+          "tokenIn": "0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC",
+          "tokenOut": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
+          "amountIn": "1000000",
+          "amountOut": "3984027527308004",
+          "priceUsdAtTrade": 354.3,
+          "venuePriceUsd": 251.00228177281124,
+          "oracle": {
+            "roundId": "18446744073709553034",
+            "updatedAt": 1790864622,
+            "answer": "35430000000"
+          },
           "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59"
         },
         {
@@ -58,30 +47,232 @@
           "block": 127177130,
           "time": 1790865177,
           "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
-          "tokenIn": "testUSDG",
-          "tokenOut": "TSLA",
-          "amountIn": "2.000001",
-          "amountOut": "0.007944291302953708",
-          "priceUsdAtTrade": 251.75323055643673,
+          "tokenIn": "0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC",
+          "tokenOut": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
+          "amountIn": "2000001",
+          "amountOut": "7944291302953708",
+          "priceUsdAtTrade": 354.3,
+          "venuePriceUsd": 251.75323055643673,
+          "oracle": {
+            "roundId": "18446744073709553034",
+            "updatedAt": 1790864622,
+            "answer": "35430000000"
+          },
           "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59"
         }
       ],
-      "pnlUsd": 0.05069942507114522,
-      "returnPct": 1.6899802723780832,
-      "markPriceUsd": 255.75275682031813,
+      "pnlUsd": 1.4381834975740135,
+      "pnlAtTradeUsd": 1.2262023615617248,
+      "deployedUsd": 3.000001,
+      "returnPct": 47.93943393932247,
       "tradeCount": 2,
       "firstTrade": 1790865145,
       "lastTrade": 1790865177
+    },
+    {
+      "measurement": "0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829",
+      "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
+      "label": "Chiron reference agent, CVM boot 2",
+      "workload": "compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      ],
+      "trades": [
+        {
+          "tx": "0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03",
+          "block": 127188951,
+          "time": 1790867475,
+          "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+          "tokenIn": "0x7E955252E15c84f5768B83c41a71F9eba181802F",
+          "tokenOut": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
+          "amountIn": "1000000",
+          "amountOut": "3910026278631909",
+          "priceUsdAtTrade": 356.395,
+          "venuePriceUsd": 255.75275682031813,
+          "oracle": {
+            "roundId": "18446744073709553037",
+            "updatedAt": 1790867442,
+            "answer": "35639500000"
+          },
+          "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59"
+        }
+      ],
+      "pnlUsd": 0.4548083650234227,
+      "pnlAtTradeUsd": 0.3935138155730191,
+      "deployedUsd": 1,
+      "returnPct": 45.48083650234227,
+      "tradeCount": 1,
+      "firstTrade": 1790867475,
+      "lastTrade": 1790867475
+    }
+  ],
+  "attestations": [
+    {
+      "measurement": "0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8",
+      "label": "Chiron reference agent, CVM boot 1",
+      "workload": "compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
+      "agents": [
+        "0x4a0bcae7f9969ea0f224e69f4b8778a69df78ea8"
+      ],
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      ],
+      "admissions": 1,
+      "firstAdmission": {
+        "tx": "0x1f15df28041e7b8938ca6653eb5a75231f525568ab015644ec535796caa68134",
+        "block": 127176129,
+        "time": 1790865003,
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      },
+      "tradeCount": 2
+    },
+    {
+      "measurement": "0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829",
+      "label": "Chiron reference agent, CVM boot 2",
+      "workload": "compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
+      "agents": [
+        "0xdd241ec759ec0ba4a1d08c8bf19fc4a8a6aea5c7"
+      ],
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      ],
+      "admissions": 3,
+      "firstAdmission": {
+        "tx": "0x06ed38eb1fc614f1319b377bda6ce74a9b02909f9b838fc14e911b1d8a4a56c3",
+        "block": 127186719,
+        "time": 1790867020,
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      },
+      "tradeCount": 1
+    },
+    {
+      "measurement": "0x0793ff52158fe39bc866db8fbf1f828906fd5f7ab628007586b5fea5ef9431b0",
+      "label": "Agent 0x0793ff52",
+      "workload": null,
+      "agents": [
+        "0x00e052627f691ca075bcd0dbc7220b5708551579"
+      ],
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      ],
+      "admissions": 2,
+      "firstAdmission": {
+        "tx": "0x470b7b86b5b55b1fc29c0369acdbc2cdc0bb0bf21d34b5a982e3ffd03867029e",
+        "block": 127631393,
+        "time": 1790949860,
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      },
+      "tradeCount": 0
+    },
+    {
+      "measurement": "0xe1a2b8938825d678136ad8a4841e6f0f97a3e2c91c330cb85364de26c40ab6d0",
+      "label": "Agent 0xe1a2b893",
+      "workload": null,
+      "agents": [
+        "0xc662ffe967a845dcb96b75333b6c5853355f93e6"
+      ],
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      ],
+      "admissions": 1,
+      "firstAdmission": {
+        "tx": "0xa45b46c61c579c083eea5a5b044f343ad847b64ddfdae356758b6e9ac1b89798",
+        "block": 127642898,
+        "time": 1790951550,
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      },
+      "tradeCount": 0
+    },
+    {
+      "measurement": "0x993bd67c8e9de5d37d9af6ef41c5c5fdb53b113b8a2b666827e0e619f4978e9a",
+      "label": "Chiron operator agent",
+      "workload": "image ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f1867126d58ee3e99cf1fef4fc8d253c68dbe5bed41db6eb3f33aa5a201463",
+      "agents": [
+        "0x71f15e33d967f9b0d573cb03cfe3e7fdbdfd3461"
+      ],
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+        "0xE1d7939105cF8B3670d6b4a0E15546C036e6c34c",
+        "0x06AAadCc83873775D8A72F42B912f57ab3dc2506",
+        "0xFaaAa4d1ee944d317b10233505D8c57425C53b55",
+        "0x5492A8e671D37e5785020c02b83cA5603be8D5D7",
+        "0xE18536E5C17ff51d6EbfF3Ff876DE337308EAeDe"
+      ],
+      "admissions": 60,
+      "firstAdmission": {
+        "tx": "0x2889f10bf20edff1fa512f52b99d3eb76ac903becdc9410c70a13e11abded196",
+        "block": 127666613,
+        "time": 1790955198,
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      },
+      "tradeCount": 0
+    },
+    {
+      "measurement": "0x890d1a4c40e1e79cd7afdae1cd312413e69f5b159ac9ef0f45311521a86271a8",
+      "label": "Workload B",
+      "workload": "compose 0e3d4c8ce0d296763092988aa025da9579b598bf043cc424624730c660d2db6c",
+      "agents": [
+        "0xd28c6ccfe73ded1aa39cbc8f33bccc1f96c3b7e5",
+        "0xfc3a78b860ba261c4e6af824695cf6a83d6c6b93"
+      ],
+      "accounts": [
+        "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      ],
+      "admissions": 2,
+      "firstAdmission": {
+        "tx": "0x0b875142f93eb90ff56fef84c3026f4c7ef452c605103436dd1002998098d794",
+        "block": 141625555,
+        "time": 1792805446,
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      },
+      "tradeCount": 0
     }
   ],
   "refusals": [
+    {
+      "tx": "0xb1adb7231fbd38b77489769d7db754b30f36fa9b1ba97bf14f51980f3b12528c",
+      "block": 127177045,
+      "time": 1790865161,
+      "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+      "reason": "ExceedsPerTradeCap",
+      "method": "execute",
+      "measurement": "0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8"
+    },
+    {
+      "tx": "0xc0b2e5bc95048ad424a246277a819dfad0238b394ba4bf08cf9dc0231c7e1e08",
+      "block": 127187358,
+      "time": 1790867143,
+      "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+      "reason": "NotAgent",
+      "method": "execute",
+      "measurement": "0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829"
+    },
     {
       "tx": "0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8",
       "block": 127632496,
       "time": 1790950019,
       "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
       "reason": "MeasurementNotApproved",
+      "method": "registerAgent",
       "measurement": "0xfd34caabef222327146cb5c059810f08bf7c41adb6cc48312be21cc228020149"
+    },
+    {
+      "tx": "0xefa89753c88e6fe97dad5da70519670506f1c5664660f175594aeb6b62824ca2",
+      "block": 141625421,
+      "time": 1792805430,
+      "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+      "reason": "MeasurementNotApproved",
+      "method": "registerAgent",
+      "measurement": "0x890d1a4c40e1e79cd7afdae1cd312413e69f5b159ac9ef0f45311521a86271a8"
+    },
+    {
+      "tx": "0xed767c450292d1916d3a16a21865556a691a7376672f2bb58b974ecba17d8454",
+      "block": 141626350,
+      "time": 1792805547,
+      "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+      "reason": "MeasurementNotApproved",
+      "method": "registerAgent",
+      "measurement": "0x399932395e8ef175193ae5550e77319c0d25a6b09dc12510f9e24de1f3cec387"
     }
   ]
 }

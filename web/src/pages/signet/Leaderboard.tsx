@@ -2,9 +2,13 @@ import { Link } from 'react-router-dom';
 import { rhcExplorer } from '../../chain';
 import { Stamp } from '../../components/Stamp';
 import { fmtWhen, short } from '../../lib/format';
-import { fmtPct, ranked, TRACK, type TrackAgent } from '../../lib/track';
+import { fmtPct, fmtSignedDollars, ranked, TRACK, TRACK_ERROR, type TrackAgent } from '../../lib/track';
 import { modelNameOf } from '../../lib/venue';
 import { useAgentChecks } from './verify';
+
+/** The record's own pricing note, without the sentences that describe its field names. */
+export const pricingNote = (note?: string): string =>
+  (note ?? '').split(/(?<=\.)\s+/).filter((s) => s && !/\b(pnl\w*|[a-z]+[A-Z]\w*)\b/.test(s)).map((s) => ` ${s}`).join('');
 
 export const agentPath = (m: string) => `/agent/${m}`;
 
@@ -40,13 +44,13 @@ function Row({ agent, rank }: { agent: TrackAgent; rank: number }) {
           ))}
         </span>
       </div>
-      <div className="sg-cell" data-label="Return">
+      <div className="sg-cell" data-label="Return, profit">
         {last ? (
-          <a className="sg-ret" href={rhcExplorer.tx(last.tx)} target="_blank" rel="noreferrer" title={agent.markPriceUsd ? `Marked at $${agent.markPriceUsd.toFixed(2)} per TSLA, the price of trade ${last.tx}` : last.tx}>
+          <a className="sg-ret" href={rhcExplorer.tx(last.tx)} target="_blank" rel="noreferrer" title={`Open the latest trade, ${last.tx}`}>
             <b className={agent.returnPct !== null && agent.returnPct < 0 ? 'neg tnum' : 'tnum'}>{fmtPct(agent.returnPct)}</b>
           </a>
         ) : <b>unmarked</b>}
-        <span className="small">{agent.markPriceUsd ? `marked at $${agent.markPriceUsd.toFixed(2)}` : 'no price to mark'}</span>
+        <span className="small tnum">{fmtSignedDollars(agent.pnlUsd)}</span>
       </div>
       <div className="sg-cell" data-label="Last trade">
         {last && <a href={rhcExplorer.tx(last.tx)} target="_blank" rel="noreferrer" className="tnum">{fmtWhen(last.time)}</a>}
@@ -70,19 +74,29 @@ export function Leaderboard() {
         <Stamp block={BigInt(TRACK.block)} label="record read at block" url={rhcExplorer.block} />
       </div>
       <p className="section-intro">
-        An agent is listed once a trade under its measurement lands on an account. Return is the position its trades opened, marked at the
-        latest attested trade price on the pool.
+        An agent is listed once a trade under its measurement lands on an account. Return and profit come from the agent&apos;s attested
+        trades, and each figure opens the latest of them.
       </p>
-      {list.length === 0 ? (
+      {TRACK_ERROR && (
+        <div className="alarm" role="alert"><b>The track record could not be read.</b><span>{TRACK_ERROR}</span></div>
+      )}
+      {list.length === 0 && !TRACK_ERROR ? (
         <p className="sg-empty">No agent has traded yet. The first TradeExecuted under an approved measurement ranks its agent here, with its transaction beside every number.</p>
-      ) : (
+      ) : list.length === 0 ? null : (
         <>
           <div className="sg-head" aria-hidden="true">
-            <span>#</span><span>Agent</span><span>Trades</span><span>Return</span><span>Last trade</span><span>Chain check</span><span />
+            <span>#</span><span>Agent</span><span>Trades</span><span>Return, profit</span><span>Last trade</span><span>Chain check</span><span />
           </div>
           <ol className="sg-rows">
             {list.map((a, i) => <Row key={a.measurement} agent={a} rank={i + 1} />)}
           </ol>
+          {TRACK.pricing && (
+            <p className="sg-pricing">
+              Valued with {TRACK.pricing.feed}
+              {TRACK.pricing.markPriceUsd !== null && <>, latest mark ${TRACK.pricing.markPriceUsd.toFixed(2)} per TSLA{TRACK.pricing.roundId ? `, round ${TRACK.pricing.roundId}` : ''}</>}.
+              {pricingNote(TRACK.pricing.note)}
+            </p>
+          )}
         </>
       )}
     </section>

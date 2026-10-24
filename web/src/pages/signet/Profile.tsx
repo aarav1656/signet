@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { rhcExplorer } from '../../chain';
 import { HexValue, TitleBlock } from '../../components/Stamp';
 import { fmtCountdown, fmtWhen, short } from '../../lib/format';
 import { RHC_VERIFIER } from '../../lib/rhc.generated';
-import { agentByMeasurement, fmtAmount, fmtDollars, fmtPct, TRACK, type TrackAgent, type TrackTrade } from '../../lib/track';
+import { agentByMeasurement, executedPriceUsd, fmtAmount, fmtDollars, fmtPct, fmtSignedDollars, TRACK, type TrackAgent, type TrackRefusal, type TrackTrade } from '../../lib/track';
 import { modelNameOf, symbolOf } from '../../lib/venue';
 import { FollowPanel } from './Follow';
-import { HashDiff, SwapProof } from './SwapProof';
+import { HashDiff, SwapProof, useReceipts } from './SwapProof';
 import { useVerdict } from './Leaderboard';
 import { useAdmissions, useAgentChecks, type TradeCheck } from './verify';
 
@@ -16,8 +16,15 @@ function tradeTitle(t: TrackTrade): string {
   const verb = i === 'USDG' ? 'Bought' : 'Sold';
   const stock = verb === 'Bought' ? `${fmtAmount(t.amountOut)} ${o}` : `${fmtAmount(t.amountIn)} ${i}`;
   const usd = verb === 'Bought' ? `${fmtAmount(t.amountIn)} ${i}` : `${fmtAmount(t.amountOut)} ${o}`;
-  return `${verb} ${stock} for ${usd}${t.priceUsdAtTrade ? ` at ${fmtDollars(t.priceUsdAtTrade)}` : ''}`;
+  const px = executedPriceUsd({ ...t, tokenIn: i, tokenOut: o });
+  return `${verb} ${stock} for ${usd}${px ? ` at ${fmtDollars(px)}` : ''}`;
 }
+
+const REFUSAL_TEXT: Record<string, string> = {
+  ExceedsPerTradeCap: "above the owner's per-trade limit, so no swap ran",
+  NotAgent: 'the caller was not the key admitted on this account',
+  MeasurementNotApproved: 'the measurement in the quote is not one the owner approved',
+};
 
 function ReceiptLine({ check }: { check?: TradeCheck }) {
   if (!check) return <p className="rcpt">Reading the transaction from the chain</p>;
@@ -29,17 +36,43 @@ function ReceiptLine({ check }: { check?: TradeCheck }) {
     : <p className="rcpt">Receipt hash mismatch: {r.checks.filter((c) => !c.ok).map((c) => c.name).join(', ') || r.reason}</p>;
 }
 
+type Item = { kind: 'trade'; block: number; trade: TrackTrade } | { kind: 'refusal'; block: number; refusal: TrackRefusal };
+
 function Timeline({ agent }: { agent: TrackAgent }) {
   const q = useAgentChecks(agent);
-  const rows = [...agent.trades].reverse();
+  const refusals = TRACK.refusals.filter((r) => r.measurement.toLowerCase() === agent.measurement.toLowerCase());
+  const refused = useReceipts(refusals.map((r) => r.tx));
+  const items: Item[] = [
+    ...agent.trades.map((trade): Item => ({ kind: 'trade', block: trade.block, trade })),
+    ...refusals.map((refusal): Item => ({ kind: 'refusal', block: refusal.block, refusal })),
+  ].sort((x, y) => y.block - x.block);
   return (
     <section className="log sg-log" aria-label="Receipt timeline" aria-busy={q.isPending}>
       <div className="lh">
         <span>Receipt timeline</span>
-        <span>{rows.length} attested {rows.length === 1 ? 'trade' : 'trades'}</span>
+        <span>{agent.trades.length} attested {agent.trades.length === 1 ? 'trade' : 'trades'}{refusals.length > 0 && `, ${refusals.length} refused`}</span>
       </div>
       <ol className="rows">
-        {rows.map((t, i) => {
+        {items.map((it, i) => {
+          if (it.kind === 'refusal') {
+            const r = it.refusal;
+            const rc = refused.data?.[refusals.indexOf(r)];
+            const confirmed = rc?.status === 'reverted';
+            return (
+              <li key={r.tx} style={{ ['--i' as string]: Math.min(i, 10) }}>
+                <a className="r ref" href={rhcExplorer.tx(r.tx)} target="_blank" rel="noreferrer" aria-label={`Refused ${r.reason}, open transaction on the explorer`}>
+                  <i className="d" aria-hidden="true" />
+                  <div>
+                    <h3>{r.method ?? 'call'} refused with {r.reason}()</h3>
+                    <p>{REFUSAL_TEXT[r.reason] ?? 'the account refused the call'}<span className="when"> · block {r.block.toLocaleString('en-US')} · {fmtWhen(r.time)}</span></p>
+                    <p className={confirmed ? 'rcpt ok' : 'rcpt'}>{rc ? (confirmed ? 'Reverted on chain, nothing moved' : 'The chain does not show this transaction as reverted') : 'Reading the transaction from the chain'}</p>
+                  </div>
+                  <code>REFUSED</code>
+                </a>
+              </li>
+            );
+          }
+          const t = it.trade;
           const check = q.data?.checks.find((c) => c.tx === t.tx);
           const model = modelNameOf(t.modelHash);
           return (
@@ -119,7 +152,7 @@ function NotListed({ id }: { id: string }) {
       <h1 className="t-title">No attested agent has this measurement</h1>
       <p className="lede">
         <span className="hex">{id.length > 20 ? short(id) : id}</span> has not traded on Robinhood Chain testnet under an approved measurement. An agent is listed
-        the block its first trade confirms.
+        once its first trade is in the track record, which is generated from the chain&apos;s TradeExecuted events.
       </p>
       <div className="actions"><Link className="btn" to="/">See the attested agents</Link><Link className="btn line" to="/creator">Publish an agent</Link></div>
     </div>
@@ -138,6 +171,11 @@ export function Profile() {
 
 function AgentPage({ agent }: { agent: TrackAgent }) {
   const v = useVerdict(agent);
+  const { hash } = useLocation();
+  // A link to #follow lands on a freshly rendered route, so the browser has no anchor to scroll to until now.
+  useEffect(() => {
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [hash]);
   const last = agent.trades.at(-1);
   return (
     <>
@@ -151,7 +189,7 @@ function AgentPage({ agent }: { agent: TrackAgent }) {
         <TitleBlock
           cells={[
             { label: 'Return', value: last ? <a href={rhcExplorer.tx(last.tx)} target="_blank" rel="noreferrer">{fmtPct(agent.returnPct)}</a> : 'unmarked', lead: true },
-            { label: 'Marked at', value: agent.markPriceUsd ? `${fmtDollars(agent.markPriceUsd)} per TSLA` : 'no price' },
+            { label: 'Profit', value: fmtSignedDollars(agent.pnlUsd) },
             { label: 'First trade', value: fmtWhen(agent.firstTrade) },
             { label: 'Last trade', value: fmtWhen(agent.lastTrade), mobileHide: true },
             { label: 'Chain check', value: v.text, tone: v.kind === 'mismatch' ? 'alarm' : undefined },

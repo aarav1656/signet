@@ -1,3 +1,4 @@
+/* Hallmark · design.md-managed project (web/DESIGN.md, gate log) · home: ruled ledger board · profile: timeline beside a spec panel · pre-emit critique: P4 H4 E4 S4 R5 V3 */
 /* Signet pages on the gate-log system: graphite ground, amber for a verified state, red only for a refusal. Tokens come from styles.css. */
 
 /* ---------- home: the claim, then the board ---------- */
@@ -37,6 +38,7 @@
 .sg-state.mismatch { color: var(--ink); }
 .sg-state.verified { color: var(--ink); }
 .sg-follow { min-height: 36px; padding: 0 14px; font-size: 13px; }
+.sg-pricing { margin-top: 12px; max-width: 110ch; font-size: 12.5px; line-height: 1.6; color: var(--mute); }
 .sg-empty { padding: 28px 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--soft); max-width: 72ch; }
 
 /* ---------- swap the code ---------- */

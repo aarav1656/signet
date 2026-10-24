@@ -1,4 +1,5 @@
-import { isAddress, isHex, type Address, type Hex } from 'viem';
+import { formatUnits, isAddress, isHex, type Address, type Hex } from 'viem';
+import { symbolOf } from './venue';
 import raw from '../../lib/track-record.json';
 
 export type TrackTrade = {
@@ -12,6 +13,8 @@ export type TrackTrade = {
   amountOut: string;
   priceUsdAtTrade: number | null;
   modelHash: Hex;
+  /** The price feed round a trade was valued at, when the record carries one. */
+  oracle?: { roundId: string };
 };
 
 export type TrackAgent = {
@@ -27,15 +30,36 @@ export type TrackAgent = {
   lastTrade: number;
 };
 
-export type TrackRefusal = { tx: Hex; block: number; time: number; account: Address; reason: string; measurement: Hex };
+export type TrackRefusal = { tx: Hex; block: number; time: number; account: Address; reason: string; measurement: Hex; method?: string };
 
-export type TrackRecord = { generatedAt: string; chainId: number; block: number; agents: TrackAgent[]; refusals: TrackRefusal[] };
+/** How the record values positions: the feed, the round of the latest mark and the price it gave. */
+export type TrackPricing = { feed: string; markPriceUsd: number | null; roundId?: string; updatedAt?: number; note?: string };
+
+export type TrackRecord = { generatedAt: string; chainId: number; block: number; pricing?: TrackPricing; agents: TrackAgent[]; refusals: TrackRefusal[] };
 
 const hex32 = (x: unknown): x is Hex => typeof x === 'string' && isHex(x, { strict: true }) && x.length === 66;
 const num = (x: unknown, what: string): number => {
-  if (typeof x !== 'number' || !Number.isFinite(x)) throw new Error(`track record: ${what} is not a number`);
-  return x;
+  const n = typeof x === 'string' && x.trim() !== '' ? Number(x) : x;
+  if (typeof n !== 'number' || !Number.isFinite(n)) throw new Error(`track record: ${what} is not a number`);
+  return n;
 };
+/** Unix seconds from seconds, milliseconds or an ISO timestamp. */
+const seconds = (x: unknown, what: string): number => {
+  if (typeof x === 'string' && Number.isNaN(Number(x))) {
+    const ms = Date.parse(x);
+    if (Number.isNaN(ms)) throw new Error(`track record: ${what} is not a time`);
+    return Math.floor(ms / 1000);
+  }
+  const n = num(x, what);
+  return n > 1e11 ? Math.floor(n / 1000) : n;
+};
+const DECIMALS: Record<string, number> = { USDG: 6, TSLA: 18 };
+/** An amount as a decimal string. A whole number of 7 or more digits is base units and is scaled by the token's decimals. */
+export function decimalAmount(raw: unknown, symbol: string): string {
+  const s = String(raw);
+  const d = DECIMALS[symbol];
+  return d !== undefined && /^\d{7,}$/.test(s) ? formatUnits(BigInt(s), d) : s;
+}
 const numOrNull = (x: unknown, what: string): number | null => (x === null || x === undefined ? null : num(x, what));
 
 /** Read the track record's JSON into the shapes the app renders. A malformed record throws; nothing is defaulted. */
@@ -47,15 +71,17 @@ export function parseTrack(input: unknown): TrackRecord {
     if (!hex32(a.measurement)) throw new Error('track record: agent measurement is not bytes32');
     const trades = (Array.isArray(a.trades) ? (a.trades as Record<string, unknown>[]) : []).map((t): TrackTrade => {
       if (!hex32(t.tx) || !hex32(t.modelHash) || !isAddress(String(t.account))) throw new Error('track record: a trade has a malformed tx, model hash or account');
+      const [tokenIn, tokenOut] = [symbolOf(String(t.tokenIn)), symbolOf(String(t.tokenOut))];
       return {
-        tx: t.tx, block: num(t.block, 'trade block'), time: num(t.time, 'trade time'), account: t.account as Address,
-        tokenIn: String(t.tokenIn), tokenOut: String(t.tokenOut), amountIn: String(t.amountIn), amountOut: String(t.amountOut),
+        tx: t.tx, block: num(t.block, 'trade block'), time: seconds(t.time, 'trade time'), account: t.account as Address,
+        tokenIn, tokenOut, amountIn: decimalAmount(t.amountIn, tokenIn), amountOut: decimalAmount(t.amountOut, tokenOut),
         priceUsdAtTrade: numOrNull(t.priceUsdAtTrade, 'trade price'), modelHash: t.modelHash,
+        ...(t.oracle && typeof t.oracle === 'object' ? { oracle: { roundId: String((t.oracle as Record<string, unknown>).roundId) } } : {}),
       };
     });
     trades.sort((x, y) => x.block - y.block);
-    const first = trades[0]?.time ?? num(a.firstTrade, 'firstTrade');
-    const last = trades.at(-1)?.time ?? num(a.lastTrade, 'lastTrade');
+    const first = trades[0]?.time ?? seconds(a.firstTrade, 'firstTrade');
+    const last = trades.at(-1)?.time ?? seconds(a.lastTrade, 'lastTrade');
     return {
       measurement: a.measurement,
       modelHash: hex32(a.modelHash) ? a.modelHash : (trades.at(-1)?.modelHash as Hex),
@@ -71,12 +97,34 @@ export function parseTrack(input: unknown): TrackRecord {
   });
   const refusals = (o.refusals as Record<string, unknown>[]).map((r): TrackRefusal => {
     if (!hex32(r.tx) || !hex32(r.measurement) || !isAddress(String(r.account))) throw new Error('track record: a refusal has a malformed tx, measurement or account');
-    return { tx: r.tx, block: num(r.block, 'refusal block'), time: num(r.time, 'refusal time'), account: r.account as Address, reason: String(r.reason), measurement: r.measurement };
+    return { tx: r.tx, block: num(r.block, 'refusal block'), time: seconds(r.time, 'refusal time'), account: r.account as Address, reason: String(r.reason), measurement: r.measurement, ...(typeof r.method === 'string' ? { method: r.method } : {}) };
   });
-  return { generatedAt: String(o.generatedAt), chainId: 46630, block: num(o.block, 'block'), agents, refusals };
+  const p = o.pricing as Record<string, unknown> | undefined;
+  const mark = p?.mark as Record<string, unknown> | undefined;
+  const pricing: TrackPricing | undefined =
+    p && typeof p.feed === 'string'
+      ? {
+          feed: p.feed,
+          markPriceUsd: numOrNull(mark?.priceUsd, 'mark price'),
+          ...(mark?.roundId !== undefined ? { roundId: String(mark.roundId) } : {}),
+          ...(mark?.updatedAt !== undefined ? { updatedAt: num(mark.updatedAt, 'mark time') } : {}),
+          ...(typeof p.note === 'string' ? { note: p.note } : {}),
+        }
+      : undefined;
+  return { generatedAt: String(o.generatedAt), chainId: 46630, block: num(o.block, 'block'), ...(pricing ? { pricing } : {}), agents, refusals };
 }
 
-export const TRACK: TrackRecord = parseTrack(raw);
+/** The file is data from another process: an unreadable one empties the board and says why instead of blanking the app. */
+function load(): { track: TrackRecord; error?: string } {
+  try {
+    return { track: parseTrack(raw) };
+  } catch (e) {
+    return { track: { generatedAt: '', chainId: 46630, block: 0, agents: [], refusals: [] }, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+const loaded = load();
+export const TRACK: TrackRecord = loaded.track;
+export const TRACK_ERROR: string | undefined = loaded.error;
 
 /** Highest return first; an agent with no marked return ranks below every marked one, then by trade count. */
 export function ranked(agents: readonly TrackAgent[]): TrackAgent[] {
@@ -91,6 +139,16 @@ export function fmtPct(p: number | null): string {
   const s = Math.abs(p).toFixed(2);
   return p > 0 && s !== '0.00' ? `+${s}%` : p < 0 && s !== '0.00' ? `-${s}%` : '0.00%';
 }
+
+/** The price a trade cleared at on the pool, from its own amounts: dollars paid or received per Stock Token. */
+export function executedPriceUsd(t: Pick<TrackTrade, 'tokenIn' | 'tokenOut' | 'amountIn' | 'amountOut'>): number | null {
+  const buy = t.tokenIn === 'USDG';
+  const [usd, stock] = buy ? [Number(t.amountIn), Number(t.amountOut)] : [Number(t.amountOut), Number(t.amountIn)];
+  return Number.isFinite(usd) && Number.isFinite(stock) && stock > 0 ? usd / stock : null;
+}
+
+/** "+$0.05", "-$1.20"; "unmarked" when there is no figure. */
+export const fmtSignedDollars = (v: number | null) => (v === null ? 'unmarked' : `${v > 0 ? '+' : ''}${fmtDollars(v)}`);
 
 export const fmtDollars = (v: number | null) => (v === null ? 'unmarked' : `${v < 0 ? '-' : ''}$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 

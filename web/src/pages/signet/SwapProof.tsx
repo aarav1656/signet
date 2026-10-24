@@ -26,7 +26,7 @@ export function HashDiff({ value, against, tone }: { value: Hex; against?: Hex; 
 
 type Receipt = { status: 'success' | 'reverted'; block: bigint; gasUsed: bigint };
 
-function useReceipts(hashes: Hex[]) {
+export function useReceipts(hashes: Hex[]) {
   const client = usePublicClient({ chainId: rhcChain.id });
   return useQuery({
     queryKey: ['signet-receipts', ...hashes],
@@ -61,9 +61,11 @@ function useRevertReason(hash: Hex | undefined) {
 
 /** The passing attested trade and the refusal to set beside it: the newest trade of any agent, and the refusal of a different workload. */
 export function pickProof(agents: readonly TrackAgent[], refusals: readonly TrackRefusal[]): { agent: TrackAgent; trade: TrackTrade; refusal: TrackRefusal } | undefined {
-  const refusal = refusals.at(-1);
+  // A different workload is a refused admission whose measurement no listed agent carries.
+  const listed = new Set(agents.map((a) => a.measurement.toLowerCase()));
+  const refusal = [...refusals].sort((a, b) => b.block - a.block).find((r) => r.reason === 'MeasurementNotApproved' && !listed.has(r.measurement.toLowerCase()));
   const all = agents.flatMap((agent) => agent.trades.map((trade) => ({ agent, trade })));
-  const latest = all.sort((a, b) => b.trade.block - a.trade.block).find((x) => x.agent.measurement.toLowerCase() !== refusal?.measurement.toLowerCase());
+  const latest = all.sort((a, b) => b.trade.block - a.trade.block)[0];
   return refusal && latest ? { ...latest, refusal } : undefined;
 }
 
@@ -76,7 +78,7 @@ export function SwapProof() {
     return (
       <section className="section" aria-labelledby="swap-h">
         <div className="section-head"><h2 id="swap-h" className="t-section">Swap the code</h2></div>
-        <p className="section-intro">The proof needs one attested trade and one refused workload on the same chain. The first of each lands here the block it confirms.</p>
+        <p className="section-intro">The proof needs one attested trade and one refused workload on the same chain. Both come from the chain's own events, and the first of each appears here once the track record includes it.</p>
       </section>
     );
   }
@@ -126,7 +128,7 @@ export function SwapProof() {
                 {reason.isError && <span className="small"> recorded reason, the explorer index did not answer</span>}
               </dd>
             </div>
-            <div><dt>Call</dt><dd><code>registerAgent(quote, refBlock)</code> <span className="small">on <HexValue value={refusal.account} head={6} tail={4} href={rhcExplorer.address(refusal.account)} /></span></dd></div>
+            <div><dt>Call</dt><dd><code>{refusal.method ?? 'registerAgent'}(quote, refBlock)</code> <span className="small">on <HexValue value={refusal.account} head={6} tail={4} href={rhcExplorer.address(refusal.account)} /></span></dd></div>
             <div><dt>Transaction</dt><dd><HexValue value={refusal.tx} head={8} tail={6} href={rhcExplorer.tx(refusal.tx)} /> <span className="small">block {(refRc?.block ?? BigInt(refusal.block)).toLocaleString('en-US')}, {fmtWhen(refusal.time)}</span></dd></div>
           </dl>
         </article>

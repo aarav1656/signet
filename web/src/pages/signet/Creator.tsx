@@ -6,6 +6,7 @@ import { HexValue } from '../../components/Stamp';
 import { DEMO_ACCOUNT, OPERATOR_CVM_URL } from '../../lib/rhc.generated';
 import { agentByMeasurement, TRACK } from '../../lib/track';
 import { readOperatorQuote, type OperatorQuote } from '../account/operator';
+import { cvmError } from './cvmError';
 import { agentPath } from './Leaderboard';
 import { HashDiff } from './SwapProof';
 
@@ -26,7 +27,7 @@ function ReadMeasurement() {
       // The nonce binds to one account; any account works for reading what the Verifier proves, and nothing is sent.
       setRead(await readOperatorQuote(client as never, url, DEMO_ACCOUNT));
     } catch (e) {
-      setErr(e instanceof Error ? e.message.split('\n')[0] : String(e));
+      setErr(cvmError(e, url));
     } finally {
       setBusy(false);
     }
@@ -68,7 +69,7 @@ const STEPS: { title: string; body: string }[] = [
   { title: 'Run the agent in a TDX CVM', body: 'The agent generates its trading key inside the enclave and asks the CVM for a quote that commits to that key and to the account it will trade for.' },
   { title: 'Read the measurement', body: 'The Stylus Verifier parses the quote to Intel\'s root and returns the key and the measurement. That 32-byte value is your agent\'s identity. It changes when the code changes.' },
   { title: 'Followers approve it', body: 'A follower\'s account calls setMeasurement with your value. Your key is admitted to that account only against a fresh quote that proves it.' },
-  { title: 'Trades list you', body: 'Every TradeExecuted records your measurement and the served model. The leaderboard and your profile are built from those events, so the record cannot belong to other code.' },
+  { title: 'Trades list you', body: 'Every TradeExecuted records your measurement and the served model. The track record behind the leaderboard and your profile is generated from those events, so a trade cannot be credited to other code.' },
 ];
 
 export function Creator() {
