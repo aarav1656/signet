@@ -16,11 +16,11 @@ Rules: record narration separately in the founder's voice (voiceb or live read),
 
 ## Script
 
-Shot 1 (0:00 to 0:10) Problem. Screen: Tab A, the leaderboard row (strategy, its measurements, trades, return, chain check), then the agent profile with its receipt timeline.
-Narration: "Anyone can post a track record for an AI trading agent. Nobody can tell which code made it. The creator can swap the strategy and keep the name. And to prove it, they would have to publish the strategy and lose it."
+Shot 1 (0:00 to 0:10) Problem. Screen: Tab A, the leaderboard row (strategy, its measurements, trades, marked return, chain check), then the agent profile with its receipt timeline.
+Narration: "Anyone can post a track record for an AI trading agent. Nobody can tell which code is behind it. The creator can swap the strategy and keep the name. And to prove it, they would have to publish the strategy and lose it."
 
 Shot 2 (0:10 to 0:25) The proof, the trade. Screen: Tab B. Open the Logs tab, zoom on the TradeExecuted event, highlight agentMeasurement and servedModelHash.
-Narration: "Signet fixes that. The agent runs inside an Intel TDX enclave, and its strategy text is sealed config pinned by hash in the measured image. This is a real trade on Robinhood Chain testnet: the agent bought TSLA with Paxos USDG. The event names the exact enclave measurement and the model hash behind it."
+Narration: "Signet fixes that. The agent runs inside an Intel TDX enclave, and its strategy text is sealed config pinned by hash in the measured image. This is a real trade on Robinhood Chain testnet: the agent bought TSLA with Paxos USDG. The event names the enclave measurement the agent was admitted under and the model hash from its verified inference receipt."
 
 Shot 3 (0:25 to 0:40) The proof, the refusal. Screen: Tab C. Zoom on the failed status and the decoded error MeasurementNotApproved.
 Narration: "Now a different workload. A genuine TDX quote, from code the follower never approved. The chain refuses it. A new measurement is a new agent, and it starts with no record."
