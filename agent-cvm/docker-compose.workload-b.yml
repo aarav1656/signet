@@ -1,0 +1,15 @@
+# Second attested workload for the track record: the same agent signer built from this repo's agent/src,
+# pinned by digest. The compose hash is measured into RTMR3, so this CVM carries a measurement of its own.
+# CONTROL_TOKEN is the only sealed variable: a per-deployment bearer for /tx, not a wallet or API key.
+services:
+  agent:
+    image: ttl.sh/chiron-agent-sig7f3a91c2e4@sha256:c8d8ff7e5869900ad424cac1ec31a06f330f6cfa0e682f359ab9f4c60288b3f3
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ACCOUNT_ADDRESS: "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      RHC_RPC_URL: "https://rpc.testnet.chain.robinhood.com"
+      CONTROL_TOKEN: "${CONTROL_TOKEN}"
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock

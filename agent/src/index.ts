@@ -46,7 +46,7 @@ import {
   x402 as x402Address,
 } from './config.ts';
 import { checkGatewaySigner, explainRefusal } from './gateway-check.ts';
-import { runAcctApprove, runAcctOvercap, runAcctRegister, runAcctRevoke, runAcctTrade } from './account.ts';
+import { runAcctApprove, runAcctOvercap, runAcctRefuseWorkload, runAcctRegister, runAcctRevoke, runAcctTrade } from './account.ts';
 import {
   enclaveDigest,
   modelHash,
@@ -807,6 +807,8 @@ if (mode === 'refuse') {
   await runGateRefuse();
 } else if (mode === 'acct-register') {
   await runAcctRegister();
+} else if (mode === 'acct-refuse-workload') {
+  await runAcctRefuseWorkload();
 } else if (mode === 'acct-trade') {
   await runAcctTrade();
 } else if (mode === 'acct-overcap') {
@@ -817,7 +819,7 @@ if (mode === 'refuse') {
   await runAcctRevoke();
 } else {
   console.error(
-    'Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt|gate-open|gate-pay|gate-refuse|acct-register|acct-trade|acct-overcap|acct-approve|acct-revoke>',
+    'Usage: node src/index.ts <refuse|register|open [legacy]|pay|pay-receipt|gate-open|gate-pay|gate-refuse|acct-register|acct-refuse-workload|acct-trade|acct-overcap|acct-approve|acct-revoke>',
   );
   process.exit(1);
 }

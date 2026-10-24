@@ -1,12 +1,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { accountState, explainRefusal, rhcClient, verifyReceipt } from './chain.js';
+import { registerTrackRecord } from './track-record-tool.js';
 
 const hash = z.string().regex(/^0x[0-9a-fA-F]{64}$/, 'a 32-byte hex transaction hash');
 const addr = z.string().regex(/^0x[0-9a-fA-F]{40}$/, 'a 20-byte hex address');
 const json = (v: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(v, null, 2) }] });
 
-/** The three Chiron tools on one server; stdio (server.ts) and Streamable HTTP (api/mcp.ts) both serve it. */
+/** The Chiron tools (receipts, accounts, refusals, track record) on one server; stdio (server.ts) and Streamable HTTP (api/mcp.ts) both serve it. */
 export function buildServer(rpcUrl?: string): McpServer {
   const c = rhcClient(rpcUrl);
   const server = new McpServer({ name: 'chiron', version: '0.1.0' });
@@ -30,5 +31,6 @@ export function buildServer(rpcUrl?: string): McpServer {
     { description: 'Explain in plain words why a reverted Chiron account transaction was refused (decodes the custom error).', inputSchema: { tx_hash: hash } },
     async ({ tx_hash }) => json(await explainRefusal(c, tx_hash as `0x${string}`)),
   );
+  registerTrackRecord(server);
   return server;
 }

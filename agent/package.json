@@ -18,6 +18,7 @@
     "acct-approve": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-approve",
     "acct-revoke": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-revoke",
     "acct-register": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-register",
+    "acct-refuse-workload": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/index.ts acct-refuse-workload",
     "test": "node --env-file-if-exists=.env --test test/*.test.ts",
     "assay-model-swap": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/assay-model-swap.ts",
     "assay-usdg-permit": "node --env-file-if-exists=../.env --env-file-if-exists=.env src/assay-usdg-permit.ts"

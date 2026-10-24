@@ -61,7 +61,7 @@ The contract-level description, every live transaction with its read-back, gas f
 | `Verifier`, `ReceiptVerifier` | `verifier/`, `receipt-verifier/` | Stylus (Rust): the Intel TDX DCAP quote chain and the Ed25519 inference receipt, verified in the transaction that uses them |
 | Reference agent | `agent/`, `agent-cvm/` | A trading agent in a Phala Cloud TDX CVM that generates its key in memory, serves quotes per account and signs trades there |
 | Assay | `contracts/src/Assay.sol` | Pay-per-call USDG channel that settles inference only against a receipt naming the pinned model |
-| MCP server | `mcp/` | `verify_receipt`, `account_state`, `explain_refusal` over viem, hosted at `/mcp` |
+| MCP server | `mcp/` | `verify_receipt`, `account_state`, `explain_refusal` over viem, and `get_track_record(measurement)`: every trade of one TDX workload with the Chainlink round that priced it, its PnL and return, attestations and refusals; hosted at `/mcp` |
 | Web app | `web/` | The Signet leaderboard, agent profile with receipt timeline, follow flow, creator page, and the account gate log |
 
 Deployed on Robinhood Chain testnet (46630):
