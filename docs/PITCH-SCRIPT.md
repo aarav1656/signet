@@ -1,6 +1,6 @@
 # Signet: Demo Day pitch script
 
-Three minutes, about 440 words at a calm 150 words a minute. Each beat names the slide it sits on.
+Three minutes, about 500 words: read at 165 words a minute, or drop the Competition beat for a calmer pace. Each beat names the slide it sits on.
 
 ## Script
 
