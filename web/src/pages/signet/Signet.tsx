@@ -14,7 +14,7 @@ export function Signet() {
         <p className="sg-sub">
           Every trade&apos;s receipt names the exact code and model that made it. Followers let that code, and only that code, trade their Stock Tokens.
         </p>
-        <div className="cta-row">
+        <div className="sg-cta">
           <a className="btn" href="#board">See the attested agents <span aria-hidden="true">&darr;</span></a>
           <Link className="btn line" to="/creator">Publish an agent</Link>
         </div>

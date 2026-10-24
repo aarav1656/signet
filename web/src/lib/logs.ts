@@ -1,4 +1,4 @@
-/** The Robinhood Chain RPC refuses an eth_getLogs span above 10,000,000 blocks. */
+/** The Robinhood Chain RPC refuses an eth_getLogs span above 10,000,000 blocks (100,000 when a topic position lists several values). */
 export const LOG_SPAN = 9_000_000n;
 
 /** Split [from, to] into consecutive windows of at most `span` blocks. */

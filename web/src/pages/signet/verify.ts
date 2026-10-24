@@ -12,7 +12,7 @@ import { recheck, type ReceiptState } from '../account/receiptCheck';
 const ZERO32 = `0x${'0'.repeat(64)}` as Hex;
 const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
-export type RecordedTrade = { measurement: Hex; servedModelHash: Hex; requestHash: Hex; responseHash: Hex };
+export type RecordedTrade = { measurement: Hex; servedModelHash: Hex; requestHash: Hex; responseHash: Hex; proposalId?: bigint };
 
 export type TradeCheck = { tx: Hex; ok: boolean; detail: string; recorded?: RecordedTrade; receipt?: ReceiptState };
 
@@ -36,16 +36,25 @@ async function pinOf(c: PublicClient, account: Address): Promise<{ requested: He
   return { requested, accepted: accepted.filter((h) => h !== ZERO32) };
 }
 
+async function proposalTx(c: PublicClient, account: Address, proposalId: bigint, trade: TrackTrade): Promise<Hex> {
+  const logs = await inWindows(RHC_DEPLOY_BLOCK, BigInt(trade.block), (fromBlock, toBlock) =>
+    c.getContractEvents({ address: account, abi: accountAbi, eventName: 'TradeProposed', args: { proposalId }, fromBlock, toBlock }),
+  );
+  return logs.at(-1)?.transactionHash ?? trade.tx;
+}
+
 /** Read one trade back from the chain: success status, the recorded measurement and model, and the receipt hash recomputed from calldata. */
 export async function checkTrade(c: PublicClient, agent: TrackAgent, trade: TrackTrade): Promise<TradeCheck> {
   const rc = await c.getTransactionReceipt({ hash: trade.tx });
   if (rc.status !== 'success') return { tx: trade.tx, ok: false, detail: 'the transaction reverted' };
   const events = parseEventLogs({ abi: accountAbi, eventName: 'TradeExecuted', logs: rc.logs })
     .filter((l) => eq(l.address, trade.account))
-    .map((l) => ({ measurement: l.args.agentMeasurement, servedModelHash: l.args.servedModelHash, requestHash: l.args.requestHash, responseHash: l.args.responseHash }));
+    .map((l) => ({ measurement: l.args.agentMeasurement, servedModelHash: l.args.servedModelHash, requestHash: l.args.requestHash, responseHash: l.args.responseHash, proposalId: l.args.proposalId }));
   const m = matchTrade(events, agent, trade);
   if (!m.ok || !m.recorded) return { tx: trade.tx, ok: false, detail: m.detail, recorded: m.recorded };
-  const receipt = await recheck(c, trade.account, { receipt: { requestHash: m.recorded.requestHash, responseHash: m.recorded.responseHash, served: m.recorded.servedModelHash, carrierTx: trade.tx } }, await pinOf(c, trade.account));
+  // An owner-approved trade carries its receipt in the agent's propose call, not in the owner's approveTrade call.
+  const carrierTx = m.recorded.proposalId ? await proposalTx(c, trade.account, m.recorded.proposalId, trade) : trade.tx;
+  const receipt = await recheck(c, trade.account, { receipt: { requestHash: m.recorded.requestHash, responseHash: m.recorded.responseHash, served: m.recorded.servedModelHash, carrierTx } }, await pinOf(c, trade.account));
   return { tx: trade.tx, ok: true, detail: m.detail, recorded: m.recorded, receipt };
 }
 

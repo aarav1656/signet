@@ -5,7 +5,7 @@
 .sg-hd { font: 600 clamp(34px, 5vw, 64px)/1.03 var(--body); font-stretch: 96%; letter-spacing: -0.035em; max-width: 21ch; animation: row-in 560ms var(--ease) backwards; }
 .sg-hd em { font-style: normal; color: var(--amber); }
 .sg-sub { max-width: 54ch; font-size: 18px; line-height: 1.5; color: var(--soft); animation: row-in 560ms var(--ease) 80ms backwards; }
-.sg-hero .cta-row { animation: row-in 560ms var(--ease) 150ms backwards; }
+.sg-cta { display: flex; flex-wrap: wrap; gap: 12px; animation: row-in 560ms var(--ease) 150ms backwards; }
 
 .sg-board { margin-top: 72px; }
 .sg-head, .sg-row {
@@ -71,7 +71,7 @@
 .sg-prof { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; align-items: start; }
 .sg-prof-main { display: grid; gap: 24px; min-width: 0; }
 .sg-prof-side { min-width: 0; }
-.sg-log { animation: none; }
+.sg-log { animation: none; grid-area: auto; }
 .sg-log .r h3 { overflow-wrap: anywhere; }
 .sg-code .doc-head { gap: 6px; }
 .sg-code-body > div { display: grid; gap: 6px; padding: 14px 20px 16px; border-top: 1px solid var(--line); min-width: 0; }
@@ -152,3 +152,8 @@
   .sg-hd { font-size: 33px; }
   .sg-row .sg-txs a { font-size: 11px; }
 }
+
+/* .lede in styles.css names a grid area for the home stage; inside a page head it is an ordinary row. */
+.pagehead .lede { grid-area: auto; }
+.sg-log .when { white-space: normal; }
+.sg-log .r p { overflow-wrap: anywhere; }

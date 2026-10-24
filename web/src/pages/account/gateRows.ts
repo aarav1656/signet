@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  parseEventLogs,
   decodeFunctionData,
   keccak256,
   toFunctionSelector,
@@ -243,7 +244,10 @@ async function timesFor(c: PublicClient, blocks: bigint[]) {
 
 export type GateLogData = { head: bigint; logs: AccountLog[]; times: Map<bigint, bigint>; refusals: Refusal[]; refusalsError?: string };
 
-/** Every account event from the deploy block to the head (bounded getLogs), plus the reverted calls. */
+/**
+ * Every account event from the deploy block to the head, plus the reverted calls. The RPC allows 10M blocks for a
+ * topic-free eth_getLogs but only 100k for one that lists several event topics, so the logs are read topic-free and decoded here.
+ */
 export function useGateLog(account: Address) {
   const client = usePublicClient({ chainId: rhcChain.id });
   return useQuery({
@@ -254,7 +258,7 @@ export function useGateLog(account: Address) {
     queryFn: async (): Promise<GateLogData> => {
       const c = client as PublicClient;
       const head = await c.getBlockNumber();
-      const logs = (await inWindows(RHC_DEPLOY_BLOCK, head, (fromBlock, toBlock) => c.getContractEvents({ address: account, abi: accountAbi, fromBlock, toBlock }))) as unknown as AccountLog[];
+      const logs = parseEventLogs({ abi: accountAbi, logs: await inWindows(RHC_DEPLOY_BLOCK, head, (fromBlock, toBlock) => c.getLogs({ address: account, fromBlock, toBlock })) }) as unknown as AccountLog[];
       const seeds = account.toLowerCase() === LEGACY_ACCOUNT.toLowerCase() ? RHC_REFUSAL_TXS : [];
       const refusalsP = readRefusals(account, seeds).then(
         (refusals) => ({ refusals, refusalsError: undefined as string | undefined }),
