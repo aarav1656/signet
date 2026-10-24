@@ -1,0 +1,220 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "Signet: one measurement, enforced on chain",
+  "output": "/tmp/arch/signet-architecture.html",
+  "quality_profile": "showcase",
+  "viewBox": [
+   980,
+   400
+  ]
+ },
+ "components": [
+  {
+   "id": "agent",
+   "type": "backend",
+   "label": "Creator's agent",
+   "sublabel": "STRATEGY_SHA256 pinned",
+   "pos": [
+    30,
+    40
+   ],
+   "size": [
+    210,
+    64
+   ]
+  },
+  {
+   "id": "quote",
+   "type": "security",
+   "label": "TDX quote",
+   "sublabel": "measurement + compose hash",
+   "pos": [
+    30,
+    160
+   ],
+   "size": [
+    210,
+    64
+   ]
+  },
+  {
+   "id": "account",
+   "type": "backend",
+   "label": "Follower's AgentAccount",
+   "sublabel": "admits one measurement",
+   "pos": [
+    330,
+    160
+   ],
+   "size": [
+    220,
+    64
+   ]
+  },
+  {
+   "id": "tdxv",
+   "type": "security",
+   "label": "Stylus TDX Verifier",
+   "sublabel": "Rust, Intel cert chain",
+   "pos": [
+    720,
+    40
+   ],
+   "size": [
+    210,
+    64
+   ]
+  },
+  {
+   "id": "rcpt",
+   "type": "security",
+   "label": "Stylus ReceiptVerifier",
+   "sublabel": "model hash",
+   "pos": [
+    720,
+    160
+   ],
+   "size": [
+    210,
+    64
+   ]
+  },
+  {
+   "id": "pool",
+   "type": "cloud",
+   "label": "Uniswap v4 PoolManager",
+   "sublabel": "USDG to Stock Token",
+   "pos": [
+    720,
+    290
+   ],
+   "size": [
+    210,
+    64
+   ]
+  },
+  {
+   "id": "event",
+   "type": "messagebus",
+   "label": "TradeExecuted",
+   "sublabel": "measurement + model hash",
+   "pos": [
+    330,
+    290
+   ],
+   "size": [
+    220,
+    64
+   ]
+  },
+  {
+   "id": "board",
+   "type": "external",
+   "label": "Leaderboard + MCP",
+   "sublabel": "re-reads every receipt",
+   "pos": [
+    30,
+    290
+   ],
+   "size": [
+    210,
+    64
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "security-group",
+   "label": "Phala CVM, Intel TDX",
+   "wraps": [
+    "agent",
+    "quote"
+   ]
+  },
+  {
+   "kind": "region",
+   "label": "Robinhood Chain 46630, Arbitrum Stylus",
+   "wraps": [
+    "account",
+    "tdxv",
+    "rcpt",
+    "pool",
+    "event"
+   ]
+  }
+ ],
+ "connections": [
+  {
+   "id": "agent-quote",
+   "from": "agent",
+   "to": "quote",
+   "label": "attests",
+   "fromSide": "bottom",
+   "toSide": "top",
+   "labelAt": [
+    135,
+    132
+   ]
+  },
+  {
+   "id": "quote-account",
+   "from": "quote",
+   "to": "account",
+   "label": "registerAgent",
+   "variant": "emphasis"
+  },
+  {
+   "id": "agent-account",
+   "from": "agent",
+   "to": "account",
+   "label": "execute",
+   "fromSide": "right",
+   "toSide": "top"
+  },
+  {
+   "id": "account-tdxv",
+   "from": "account",
+   "to": "tdxv",
+   "label": "verify quote",
+   "variant": "security",
+   "labelSegment": 1
+  },
+  {
+   "id": "account-rcpt",
+   "from": "account",
+   "to": "rcpt",
+   "label": "check receipt",
+   "variant": "security",
+   "labelDx": 32,
+   "labelDy": 14
+  },
+  {
+   "id": "account-pool",
+   "from": "account",
+   "to": "pool",
+   "label": "swap",
+   "variant": "emphasis"
+  },
+  {
+   "id": "account-event",
+   "from": "account",
+   "to": "event",
+   "label": "emits",
+   "fromSide": "bottom",
+   "toSide": "top",
+   "labelAt": [
+    440,
+    257
+   ]
+  },
+  {
+   "id": "board-event",
+   "from": "board",
+   "to": "event",
+   "label": "reads",
+   "variant": "dashed"
+  }
+ ]
+}

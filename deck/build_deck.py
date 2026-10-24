@@ -160,81 +160,124 @@ pic(s1, media["image6.png"], 6.9, 0.35, 3.3, 3.3)
 pic(s1, media["image5.png"], 7.0, 3.55, 2.6, 0.9)
 notes(s1, "0:00 to 0:08. Signet puts AI trading agents on Robinhood Chain whose track record is provable and whose strategy stays private. A record belongs to the code that made it, and today nothing says which code that was.")
 
-# ---------------------------------------------------------------- 2 problem
-s2 = new_slide("0 of 22 viral AI trading bot posts gave a wallet you could check")
-box(s2, 0.3, 1.4, 4.4, 3.2, [
-    P("0 / 22", 80, LIME, HEAD, after=4, align=PP_ALIGN.CENTER),
-    P("viral “my AI trading bot made 200x” posts that gave a wallet address to check. @Meta_ZET vetted all 22.", 15, WHITE, BODY, align=PP_ALIGN.CENTER),
-], anchor=MSO_ANCHOR.MIDDLE)
-box(s2, 4.9, 1.4, 4.8, 3.2, [
-    P("“Until an agent can prove its track record without human intervention, it's just a cool demo.”", 24, WHITE, HEAD, after=10),
-    P("@AndresLeo383120, 522 followers, 2026-07-14", 12, LIME, HEAD),
-], anchor=MSO_ANCHOR.MIDDLE, margins=0.25)
-footnote(s2, "Source: gtm/signals.md rows 1 and 14, both re-read through api.fxtwitter.com on 2026-10-24; text verbatim, follower counts as of that read.")
-notes(s2, "0:08 to 0:26. Someone vetted 22 viral posts claiming a 200x AI trading bot. Not one gave a wallet you could check. One reply says it plainly: until an agent can prove its track record without human intervention, it is a cool demo. Followers cannot tell which code is behind a record, and creators cannot open the strategy to prove it.")
+# ---------------------------------------------------------------- evidence helpers
+from PIL import Image as _Image
 
-# ---------------------------------------------------------------- 3 why it matters
-s3 = new_slide("150,000+ customers run agentic accounts at Robinhood. Nobody can check which code trades.")
-stat(s3, 0.3, 1.4, 3.0, 1.5, "150,000+", "customers with agentic trading accounts", 40)
-stat(s3, 3.5, 1.4, 3.0, 1.5, "~30M", "agent tool uses a day", 40)
-box(s3, 6.7, 1.4, 3.0, 1.5, [P("“Robinhood does not control, supervise, monitor, recommend, or audit agents.”", 14, WHITE, HEAD)], anchor=MSO_ANCHOR.MIDDLE)
-box(s3, 0.3, 3.05, 9.4, 1.6, [
-    PR([R("The account answers how much an agent can lose. ", 20, WHITE, HEAD), R("It does not say which code is trading.", 20, LIME, HEAD)]),
-], anchor=MSO_ANCHOR.MIDDLE, margins=0.18)
-footnote(s3, "Sources: Robinhood newsroom, HOOD Summit, 2026-09-29 (150,000+ customers with agentic accounts, ~30M tool uses a day, audit statement).")
-notes(s3, "")
 
-# ---------------------------------------------------------------- 4 solution
-s4 = new_slide("A follower's account admits one workload and refuses the rest")
-flow = [
-    ("Creator's agent", "Runs in an Intel TDX confidential VM. Makes its key inside. Strategy text is sealed config."),
-    ("Stylus Verifier", "Walks Intel's cert chain on chain, in the admitting transaction."),
-    ("Follower's AgentAccount", "Stores the agent key only for a measurement the follower approved."),
-    ("Uniswap v4", "Swaps settle through the canonical PoolManager inside the account's caps."),
+def shot(slide, path, x, y, w=None, h=None, line=LIME, lw=1.25):
+    """Adds a screenshot at the given width (or height), keeps its aspect, outlines it. Returns the placed height."""
+    im = _Image.open(path)
+    ar = im.width / im.height
+    if w:
+        h = w / ar
+    else:
+        w = h * ar
+    p = pic(slide, path, x, y, w, h)
+    p.line.color.rgb = line
+    p.line.width = Pt(lw)
+    return h
+
+
+def tile_cap(slide, x, y, w, handle, what):
+    text(slide, x, y, w, 0.26, [PR([R(handle, 11, LIME, HEAD), R("  " + what, 11, WHITE, BODY)])], anchor=MSO_ANCHOR.MIDDLE, margins=0.02)
+
+
+# ---------------------------------------------------------------- A robinhood launch
+s2 = new_slide("150,000+ customers have opened agentic trading accounts at Robinhood", 28)
+shot(s2, "deck/img/x-robinhood-agents.png", 0.3, 1.4, w=3.2)
+shot(s2, "deck/img/newsroom-head.png", 3.75, 1.4, w=5.95)
+shot(s2, "deck/img/newsroom-150k.png", 3.75, 2.85, w=5.95)
+box(s2, 3.75, 3.6, 5.95, 1.05, [
+    PR([R("150,000+ ", 30, LIME, HEAD), R("agentic accounts since May", 15, WHITE, HEAD)], after=1),
+    P("Agents use Robinhood's tools almost 30 million times a day. Robinhood Agents launched on 2026-09-29.", 12, WHITE, BODY),
+], anchor=MSO_ANCHOR.MIDDLE, margins=0.14)
+footnote(s2, "Sources: x.com/RobinhoodApp/status/2105074572722679839 (2026-09-29, 389K views); Robinhood newsroom, HOOD Summit, robinhood.com/us/en/newsroom/hood-summit-2026/ (2026-09-29). Captured 2026-10-24.")
+
+# ---------------------------------------------------------------- B no audit
+s3 = new_slide("Robinhood does not control, supervise, monitor, recommend, or audit agents", 28)
+shot(s3, "deck/img/newsroom-audit.png", 0.3, 1.4, w=9.4)
+box(s3, 0.3, 3.55, 9.4, 1.1, [
+    PR([R("Limits answer how much an agent can lose. ", 21, WHITE, HEAD), R("Nothing says which code is trading.", 21, LIME, HEAD)]),
+], anchor=MSO_ANCHOR.MIDDLE, margins=0.2)
+footnote(s3, "Source: Robinhood newsroom, HOOD Summit, 2026-09-29, the agentic trading disclosure; the sentence is verbatim and highlighted. Captured 2026-10-24.")
+
+# ---------------------------------------------------------------- C bot posts
+s_c = new_slide("0 of 22 viral AI trading bot posts gave a wallet you could check", 28)
+tiles = [
+    ("metazet", "@Meta_ZET", "22 vetted, 0 with a wallet"),
+    ("dee_fvg", "@dee_fvg", "$0.01 to $101K, a video"),
+    ("goddyfx01", "@goddyfx01", "$9.91 to $158,890, a video"),
+    ("solst1ne", "@SolSt1ne", "$38 to $8,740, a video"),
+    ("whitman", "@WhitmanXAI", "$100 to $35K, a screenshot"),
+    ("eastenray", "@EaStEnRaY1", "100% win rate, a video"),
 ]
-for i, (h, b) in enumerate(flow):
-    x = 0.3 + i * 2.38
-    box(s4, x, 1.5, 2.1, 2.1, [P(h, 17, LIME, HEAD, after=6), P(b, 13, WHITE, BODY)], margins=0.14)
-    if i < 3:
-        a = box(s4, x + 2.12, 2.35, 0.24, 0.32, None, fill=LIME, line=None, shape=MSO_SHAPE.RIGHT_ARROW)
-box(s4, 0.3, 3.8, 9.4, 0.85, [
-    PR([R("Every TradeExecuted ", 15, LIME, HEAD), R("names the measurement the agent was admitted under and the model hash of its verified inference receipt. A different workload is refused.", 15, WHITE, BODY)]),
-], anchor=MSO_ANCHOR.MIDDLE, margins=0.16)
-footnote(s4, "Sources: README.md, contracts/src/AgentAccount.sol. The measurement is Intel TDX's hash of the workload; the account checks it in the transaction that admits the key.")
-notes(s4, "")
+TW, TH = 3.05, 3.05 * 400 / 956
+for i, (key, handle, what) in enumerate(tiles):
+    cx = 0.3 + (i % 3) * 3.175
+    cy = 1.36 + (i // 3) * (TH + 0.36)
+    shot(s_c, f"deck/img/tile-{key}.png", cx, cy, w=TW, line=LIME if i == 0 else WHITE, lw=3 if i == 0 else 1)
+    tile_cap(s_c, cx, cy + TH + 0.03, TW, handle, what)
+footnote(s_c, "Sources: each tile is the post itself on x.com, read 2026-10-24; the top left post is the 22-post vetting (x.com/Meta_ZET/status/2110788179754094667). The caption names the proof each post attaches. None of the six gives a wallet address or a transaction.")
 
-# ---------------------------------------------------------------- 5 demo
-MONO = "Courier New"
-s5 = new_slide("One real trade and one real refusal, both on chain")
-box(s5, 0.3, 1.35, 5.5, 3.3, [
-    PR([R("ATTESTED TRADE  ", 13, LIME, HEAD), R("bought TSLA with 1 USDG", 13, WHITE, HEAD)], after=4),
-    PR([R("TradeExecuted", 14, LIME, MONO)], after=2),
-    PR([R("amountIn  1 USDG   amountOut  0.00391 TSLA", 11, WHITE, MONO)], after=2),
-    PR([R("agentMeasurement", 11, WHITE, MONO)], after=0),
-    PR([R("0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829", 9, LIME, MONO)], after=2),
-    PR([R("servedModelHash", 11, WHITE, MONO)], after=0),
-    PR([R("0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59", 9, LIME, MONO)], after=6),
-    PR([R("Open the Logs tab on the explorer: the event carries the workload measurement and the model hash.", 13, WHITE, BODY)], after=4),
-    PR([R("success, 504,449 gas, block 127,188,951", 13, WHITE, HEAD)], after=2),
-    PR([R("tx 0x0023f359…3b03", 14, LIME, HEAD, link=EXPLORER + TX_TRADE)]),
-], margins=0.16)
-box(s5, 6.0, 1.35, 3.7, 3.3, [
-    P("REFUSED WORKLOAD", 13, LIME, HEAD, after=4),
-    P("A genuine Intel quote from other code", 18, WHITE, HEAD, after=6),
-    P("registerAgent reverts MeasurementNotApproved", 14, WHITE, BODY, after=6),
-    P("failed, 2,349,054 gas, block 127,632,496", 13, WHITE, HEAD, after=4),
-    PR([R("tx 0xf98156ad…fcc8", 14, LIME, HEAD, link=EXPLORER + TX_REFUSAL)]),
-], margins=0.16)
-footnote(s5, "Sources: cast receipt, chain 46630 (rpc.testnet.chain.robinhood.com), 2026-10-24: trade status 1, 504,449 gas; refusal status 0, 2,349,054 gas. Log fields decoded from the trade's receipt logs.")
-notes(s5, "")
+# ---------------------------------------------------------------- architecture
+s4 = new_slide("One measurement admitted, enforced on chain", 28)
+s4.shapes.title.top, s4.shapes.title.height = Inches(0.2), Inches(0.75)
+shot(s4, "deck/img/architecture.png", 0.35, 1.0, w=9.3)
+footnote(s4, "Sources: contracts/src/AgentAccount.sol, contracts/deployments/46630.json, verifier/, receipt-verifier/, agent-cvm/deployments/2026-10-24.json. Diagram built with archify from deck/img/architecture.archify.json.")
 
-# ---------------------------------------------------------------- 5b leaderboard
-s5b = new_slide("The leaderboard re-reads every trade from the chain")
-pic(s5b, "deck/img/leaderboard.png", 0.3, 1.35, w=9.4)
-stat(s5b, 0.3, 3.75, 3.0, 0.9, "3 of 3", "receipts re-read and verified", 28, 12)
-stat(s5b, 3.5, 3.75, 3.0, 0.9, "1 strategy", "2 measurements, one compose hash", 28, 12)
-box(s5b, 6.7, 3.75, 3.0, 0.9, [P("The return marks testnet fills to the mainnet Chainlink price. The receipts are the proof.", 12, WHITE, BODY)], anchor=MSO_ANCHOR.MIDDLE, margins=0.12)
-footnote(s5b, "Source: the Signet app built from web/ in this repository, record read at block 141,782,630 (web/lib/track-record.json); Chainlink RHTSLA/USD 0x4A1166a6...7C38 on chain 4663.")
+# ---------------------------------------------------------------- the CVM is admitted
+s_adm = new_slide("A real enclave, verified by Intel and admitted by the follower's account", 28)
+shot(s_adm, "deck/img/phala-verified.png", 0.3, 1.4, w=6.6)
+shot(s_adm, "deck/img/explorer-admit.png", 0.3, 3.05, w=6.6)
+box(s_adm, 7.1, 1.4, 2.6, 1.32, [
+    P("PHALA ATTESTATION EXPLORER", 10, LIME, HEAD, after=3),
+    P("Quote verified. MRCONFIG holds the compose hash 9f997c38…2606, which pins the strategy hash.", 12, WHITE, BODY),
+], anchor=MSO_ANCHOR.MIDDLE, margins=0.12)
+box(s_adm, 7.1, 3.05, 2.6, 1.45, [
+    P("ADMITTING TRANSACTION", 10, LIME, HEAD, after=3),
+    P("registerAgent succeeded on Robinhood Chain, block 141,688,284.", 12, WHITE, BODY, after=3),
+    PR([R("tx 0x5fdc4acb…965c", 12, LIME, HEAD, link=EXPLORER + "0x5fdc4acb64d8f1dddc9042c9101c652f87f7483cc1163d0c878b431c44ce965c")]),
+], anchor=MSO_ANCHOR.MIDDLE, margins=0.12)
+footnote(s_adm, "Sources: proof.t16z.com/reports/36dc782d…c702 (quote from the CVM's /quote endpoint, 2026-10-24); agent-cvm/deployments/2026-10-24.json (composeHash); explorer.testnet.chain.robinhood.com, tx 0x5fdc4acb…965c.")
+
+# ---------------------------------------------------------------- demo: trade
+s5 = new_slide("One real trade: the receipt names the workload and the model", 28)
+h5 = shot(s5, "deck/img/explorer-trade-logs.png", 0.3, 1.4, w=6.6)
+box(s5, 0.3, 1.4 + h5 + 0.15, 6.6, 4.65 - (1.4 + h5 + 0.15), [
+    PR([R("TradeExecuted ", 14, LIME, HEAD), R("carries the measurement the agent was admitted under and the model hash of its verified inference receipt.", 14, WHITE, BODY)]),
+], anchor=MSO_ANCHOR.MIDDLE, margins=0.15)
+box(s5, 7.1, 1.4, 2.6, 3.25, [
+    P("ATTESTED TRADE", 11, LIME, HEAD, after=4),
+    P("Bought TSLA with 1 USDG", 17, WHITE, HEAD, after=6),
+    P("amountOut 0.00391 TSLA", 12, WHITE, BODY, after=4),
+    P("success, 504,449 gas, block 127,188,951", 12, WHITE, BODY, after=8),
+    PR([R("tx 0x0023f359…3b03", 13, LIME, HEAD, link=EXPLORER + TX_TRADE)]),
+], anchor=MSO_ANCHOR.MIDDLE, margins=0.14)
+footnote(s5, "Source: explorer.testnet.chain.robinhood.com, Logs tab of tx 0x0023f359…3b03, chain 46630, captured 2026-10-24; highlighted rows are agentMeasurement and servedModelHash.")
+
+# ---------------------------------------------------------------- demo: refusal
+s_ref = new_slide("One real refusal: a genuine Intel quote from other code is reverted", 28)
+h6 = shot(s_ref, "deck/img/explorer-refusal.png", 0.3, 1.4, w=6.6)
+box(s_ref, 0.3, 1.4 + h6 + 0.15, 6.6, 4.65 - (1.4 + h6 + 0.15), [
+    PR([R("The hardware is real and the code is not the approved code, ", 14, WHITE, BODY), R("so the account reverts.", 14, LIME, HEAD)]),
+], anchor=MSO_ANCHOR.MIDDLE, margins=0.15)
+box(s_ref, 7.1, 1.4, 2.6, 3.25, [
+    P("REFUSED WORKLOAD", 11, LIME, HEAD, after=4),
+    P("registerAgent reverts", 17, WHITE, HEAD, after=2),
+    P("MeasurementNotApproved", 12, LIME, HEAD, after=6),
+    P("failed, 2,349,054 gas, block 127,632,496", 12, WHITE, BODY, after=8),
+    PR([R("tx 0xf98156ad…fcc8", 13, LIME, HEAD, link=EXPLORER + TX_REFUSAL)]),
+], anchor=MSO_ANCHOR.MIDDLE, margins=0.14)
+footnote(s_ref, "Source: explorer.testnet.chain.robinhood.com, tx 0xf98156ad…fcc8, chain 46630, captured 2026-10-24 (status Failed, revert reason MeasurementNotApproved).")
+
+# ---------------------------------------------------------------- live leaderboard
+s5b = new_slide("The live app re-reads every trade from the chain", 28)
+hl = shot(s5b, "deck/img/leaderboard-live.png", 0.3, 1.35, w=9.4)
+y0 = 1.35 + hl + 0.2
+stat(s5b, 0.3, y0, 3.0, 4.65 - y0, "3 of 3", "receipts re-read and verified", 28, 12)
+stat(s5b, 3.5, y0, 3.0, 4.65 - y0, "1 strategy", "2 measurements, one compose hash", 28, 12)
+box(s5b, 6.7, y0, 3.0, 4.65 - y0, [P("The return marks testnet fills to the mainnet Chainlink price. The receipts are the proof.", 12, WHITE, BODY)], anchor=MSO_ANCHOR.MIDDLE, margins=0.12)
+footnote(s5b, "Source: signet-agents.vercel.app captured 2026-10-24, record read at block 141,782,630; Chainlink RHTSLA/USD 0x4A1166a6...7C38 on chain 4663.")
 
 # ---------------------------------------------------------------- 6 innovation
 s6 = new_slide("Private strategy, public proof")
@@ -479,18 +522,21 @@ clear_notes(gtm, "Canvas 2 of 2, the official GTM Canvas for Signet. Who buys an
 # ---------------------------------------------------------------- 3-minute script (about 480 spoken words)
 SCRIPT = [
     (s1, "0:00 to 0:08. Signet puts AI trading agents on Robinhood Chain with a provable record and a private strategy. A record belongs to the code behind it."),
-    (s2, "0:08 to 0:26. Someone vetted 22 viral posts claiming a 200x AI trading bot. Zero gave a wallet you could check. One reply says it plainly: until an agent can prove its track record without human intervention, it is a cool demo."),
-    (s3, "0:26 to 0:40. Robinhood has over 150,000 customers with agentic accounts and about 30 million tool uses a day, and says it does not audit agents. Limits answer how much an agent can lose. Nothing answers which code is trading."),
-    (s4, "0:40 to 1:00. Follow the flow. The creator's agent runs in an Intel TDX enclave and makes its key inside. A Stylus verifier on Robinhood Chain walks Intel's certificate chain in the transaction that admits the key. The follower's account stores that key only for a measurement the follower approved, then swaps through the canonical Uniswap v4 pool. Any other workload is refused."),
-    (s5, "1:00 to 1:25. Here is the proof on Robinhood Chain testnet. The agent bought TSLA with one USDG. The event records the measurement the agent was admitted under and the model hash from its verified inference receipt. Now the refusal. A genuine Intel quote from a different workload was submitted. The hardware is real and the code is not the approved code, so the chain reverts with MeasurementNotApproved after more than 2.3 million gas of verification."),
-    (s5b, "1:25 to 1:38. The leaderboard in the app lists each strategy by its compose hash with every boot's measurement beside it, and re-reads each trade from the chain. The return is a marking of testnet fills to the mainnet Chainlink price, so the number to trust is the receipts column."),
-    (s6, "1:38 to 1:54. Three ideas. The measured compose pins the strategy's hash and the CVM boots only on a match, while the strategy text is sealed config. That is private strategy, public proof, and a CVM built that way is admitted on the live account. A Stylus verifier walks Intel's certificate chain for about 2.37 million gas. And the verifier crate checks platform status, enclave identity and revocation lists."),
-    (s7, "1:54 to 2:05. The follower's account holds the money, so it carries the tests. 351 forge tests across 25 suites. A mutation run removes 123 guards one at a time and catches 122, the last is documented as equivalent. The agent key can never become owner."),
-    (s8, "2:05 to 2:15. The first targets are named. DeployFinance gave an AI one hundred thousand dollars for 70 days. Growi runs a vault near three million dollars of profit with a strategy it will not open. Arcana hosts 40 creators on Robinhood Chain and is the leaderboard we ask to add a measurement column."),
-    (s9, "2:15 to 2:22. The model has two fees. Creators earn a performance fee on new profit above the follower's high-water mark. Followers pay a flat subscription for an admitted agent. Signet takes a share of each fee."),
-    (s10, "2:22 to 2:32. Arcana proves a record was not edited, but the platform holds keys and prompts. Hyperliquid proves the PnL, not the code. Robinhood gives limits. Knidos proves trades fit parameters. Automata verifies quotes on chain but has no trading account. Phala proves a workload ran in a TEE. Signet proves the measurement and model behind every trade."),
-    (s11, "2:32 to 2:41. We start with people we can name. We message them with the TSLA receipt attached. One sentence: your next record can be a measurement, not a screenshot."),
-    (s12, "2:41 to 3:00. The ask: an introduction to Robinhood Chain partnerships and five creators willing to run an agent in an enclave. Milestones across thirty days. A record you can verify, a strategy you keep. Open the transaction on the explorer and check the trade yourself."),
+    (s2, "0:08 to 0:16. Robinhood launched Robinhood Agents on September 29. Over 150,000 customers have opened agentic trading accounts, and agents use its tools almost 30 million times a day."),
+    (s3, "0:16 to 0:25. In the same disclosure Robinhood says it does not control, supervise, monitor, recommend, or audit agents. Limits answer how much an agent can lose. Nothing says which code is trading."),
+    (s_c, "0:25 to 0:35. The posts that sell these agents give nothing to check. Someone vetted 22 viral AI trading bot posts and zero gave a wallet you could check. These are six of the genre: a video, a screenshot, a referral link."),
+    (s4, "0:35 to 0:52. Follow the flow. The creator's agent runs in an Intel TDX enclave and its quote carries the measurement and the compose hash that pins the strategy. A Stylus verifier on Robinhood Chain walks Intel's certificate chain in the transaction that admits the key. The follower's account stores that key only for a measurement the follower approved, then swaps through the canonical Uniswap v4 pool. Every trade emits a receipt that names the measurement and the model."),
+    (s_adm, "0:52 to 1:00. This is the live enclave. Phala's explorer verifies its Intel quote, and the measurement config holds the compose hash that pins the strategy. The follower's account admitted it in this registerAgent transaction."),
+    (s5, "1:00 to 1:11. The agent bought TSLA with one USDG on Robinhood Chain testnet. Open the Logs tab. The TradeExecuted event records the measurement the agent was admitted under and the model hash from its verified inference receipt."),
+    (s_ref, "1:11 to 1:21. Now the refusal. A genuine Intel quote from a different workload was submitted. The hardware is real and the code is not the approved code, so the account reverts with MeasurementNotApproved after more than 2.3 million gas of verification."),
+    (s5b, "1:21 to 1:30. The live app lists each strategy by its compose hash with every boot's measurement beside it, and re-reads each trade from the chain. The return marks testnet fills to the mainnet Chainlink price, so the number to trust is the receipts column."),
+    (s6, "1:30 to 1:46. Three ideas. The measured compose pins the strategy's hash and the CVM boots only on a match, while the strategy text is sealed config. That is private strategy, public proof, and a CVM built that way is admitted on the live account. A Stylus verifier walks Intel's certificate chain for about 2.37 million gas. And the verifier crate checks platform status, enclave identity and revocation lists."),
+    (s7, "1:46 to 1:57. The follower's account holds the money, so it carries the tests. 351 forge tests across 25 suites. A mutation run removes 123 guards one at a time and catches 122, the last is documented as equivalent. The agent key can never become owner."),
+    (s8, "1:57 to 2:07. The first targets are named. DeployFinance gave an AI one hundred thousand dollars for 70 days. Growi runs a vault near three million dollars of profit with a strategy it will not open. Arcana hosts 40 creators on Robinhood Chain and is the leaderboard we ask to add a measurement column."),
+    (s9, "2:07 to 2:14. The model has two fees. Creators earn a performance fee on new profit above the follower's high-water mark. Followers pay a flat subscription for an admitted agent. Signet takes a share of each fee."),
+    (s10, "2:14 to 2:24. Arcana proves a record was not edited, but the platform holds keys and prompts. Hyperliquid proves the PnL, not the code. Robinhood gives limits. Knidos proves trades fit parameters. Automata verifies quotes on chain but has no trading account. Phala proves a workload ran in a TEE. Signet proves the measurement and model behind every trade."),
+    (s11, "2:24 to 2:33. We start with people we can name. We message them with the TSLA receipt attached. One sentence: your next record can be a measurement, not a screenshot."),
+    (s12, "2:33 to 2:52. The ask: an introduction to Robinhood Chain partnerships and five creators willing to run an agent in an enclave. Milestones across thirty days. A record you can verify, a strategy you keep. Open the transaction on the explorer and check the trade yourself."),
 ]
 for sl, txt in SCRIPT:
     notes(sl, txt)
