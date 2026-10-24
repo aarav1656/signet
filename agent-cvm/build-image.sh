@@ -24,7 +24,8 @@ rm -f "$STAGE"/rootfs/app/agent/node_modules/.package-lock.json
 COPYFILE_DISABLE=1 tar --no-xattrs --no-acls --no-mac-metadata -C "$STAGE/rootfs" --uid 0 --gid 0 --numeric-owner -cf "$STAGE/layer.tar" app
 
 export DOCKER_CONFIG="$STAGE/docker"
-printf '%s' "$GH_TOKEN" | "$CRANE" auth login ghcr.io -u pranjalcodesinw3 --password-stdin >/dev/null
+# ghcr.io needs GH_TOKEN; an anonymous registry such as ttl.sh (image ref ttl.sh/<name>:24h) needs none.
+if [ -n "${GH_TOKEN:-}" ]; then printf '%s' "$GH_TOKEN" | "$CRANE" auth login ghcr.io -u pranjalcodesinw3 --password-stdin >/dev/null; fi
 "$CRANE" append --platform linux/amd64 -b "$BASE" -f "$STAGE/layer.tar" -t "$IMAGE" >/dev/null
 "$CRANE" mutate "$IMAGE" -w /app/agent --cmd node,src/cvm.ts --env NODE_ENV=production \
   -l org.opencontainers.image.source=https://github.com/pranjalcodesinw3/chiron -t "$IMAGE" >/dev/null

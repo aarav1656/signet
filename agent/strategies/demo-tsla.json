@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "prompt": "You run a small fixed-size TSLA accumulation rule. Each cycle the agent may spend {amountIn} raw USDG on the TSLA Stock Token, never more, never a sale. The pool quote for this trade is {quoteOut} raw TSLA. The account holds {usdgBalance} raw USDG and {tslaBalance} raw TSLA. Answer BUY only if the account holds at least {amountIn} raw USDG and the quote is positive, otherwise answer HOLD. Reply with exactly one word.",
+  "parameters": {
+    "amountIn": "1000000",
+    "slippageBps": 100,
+    "intervalSeconds": 3600,
+    "maxTradesPerDay": 6
+  },
+  "rules": {
+    "buyReply": "BUY",
+    "minQuoteOut": "1"
+  }
+}
