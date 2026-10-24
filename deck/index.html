@@ -225,6 +225,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 <main id="deck">
 
 <section class="slide" aria-labelledby="s1">
+<!-- SPEAKER NOTES, slide 1, 0:00 to 0:15. Signet puts AI trading agents on Robinhood Chain whose track record is provable and whose strategy stays private. The trade on this slide is real: its event names the exact code that made it. A record belongs to its code. -->
   <div>
     <h1 id="s1">A trading agent's record belongs to its code.</h1>
     <p class="lead"><b>Signet</b> puts AI trading agents on Robinhood Chain whose track record is provable and whose strategy stays private. Every trade's receipt names the exact code and model that made it. Followers let that code, and only that code, trade their Stock Tokens.</p>
@@ -251,6 +252,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s2">
+<!-- SPEAKER NOTES, slide 2, 0:15 to 0:35. Someone vetted 22 viral AI bot posts claiming 200x. Not one gave a wallet you could check. Followers cannot tell which code is behind a record, and creators cannot open the strategy to prove it. One reply says it plainly: until an agent can prove its track record without a human, it is a cool demo. -->
   <div>
     <h2 id="s2">Zero of 22 viral AI-bot PnL posts could be checked.</h2>
     <p class="lead">Followers cannot tell which code is behind a record, and creators cannot publish the strategy to prove it without giving it away.</p>
@@ -270,6 +272,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s3">
+<!-- SPEAKER NOTES, slide 3, 0:35 to 0:55. Robinhood has over 150,000 agentic accounts and about 30 million tool uses a day. Limits cap the loss, and the page says Robinhood does not audit agents. The account answers how much can it lose. Which code is trading, and did that code earn the record, are open. -->
   <div>
     <h2 id="s3">Limits cap the loss. Nothing says whose code is trading.</h2>
     <p class="lead">Over <b>150,000 customers</b> have opened agentic trading accounts at Robinhood, and agents use its tools almost <b>30 million times a day</b>. The account is the safety net. The identity of the agent is the open question.</p>
@@ -293,6 +296,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide wide" aria-labelledby="s4">
+<!-- SPEAKER NOTES, slide 4, 0:55 to 1:20. The agent generates its key inside an Intel TDX enclave. Its quote commits to a nonce from the last 256 blocks. A Stylus verifier in Rust walks Intel's certificate chain on chain and returns a measurement. The follower's account stores the key only if they approved that measurement. By design the measured image commits to the strategy's hash, and the strategy text stays inside the enclave. -->
   <div>
     <h2 id="s4">The chain records which code traded.</h2>
     <p class="lead">The strategy stays in the enclave. What reaches the chain is the code's measurement, the model's hash and a hash of each request and response.</p>
@@ -308,6 +312,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s5">
+<!-- SPEAKER NOTES, slide 5, 1:20 to 1:45. Here is the proof. The agent bought TSLA with one USDG on Robinhood Chain testnet. The event records the measurement of the workload and the hash of the model that answered. Any agent can recheck it: verify_receipt returns true with seven checks, and false against any other model hash. -->
   <div>
     <h2 id="s5">The attested trade names its code and its model.</h2>
     <p class="lead">The agent bought TSLA with 1 Paxos USDG. The event records the workload that made the trade. Any agent can recheck it: <code>verify_receipt</code> on the hosted MCP server answers <b>verified: true</b> with seven checks, and <b>false</b> against any other model hash.</p>
@@ -335,6 +340,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s6">
+<!-- SPEAKER NOTES, slide 6, 1:45 to 2:05. Now the refusal. A genuine Intel TDX quote from a different workload, Phala's inference gateway, was submitted to registerAgent. The hardware is real and the code is not the one the owner approved, so the chain reverts with MeasurementNotApproved. A new measurement is a new agent with an empty record. -->
   <div>
     <h2 id="s6">A different workload is refused on chain.</h2>
     <p class="lead">A genuine Intel TDX quote from another workload, Phala's inference gateway, was submitted to <code>registerAgent</code>. The hardware is real and the code is not the one the owner approved. A new measurement is a new agent with an empty record.</p>
@@ -361,6 +367,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s7">
+<!-- SPEAKER NOTES, slide 7, 2:05 to 2:20. Following is a call on the follower's own account. Approve one measurement, set per-trade and 24 hour caps, and the swap reverts unless the balance delta matches. Unapprove, and the agent is out in the same transaction. -->
   <div>
     <h2 id="s7">Followers approve one hash. Limits sit underneath.</h2>
     <p class="lead">Following is a call on the follower's own account. Funds never leave it, and the account, not the agent, calls the Uniswap v4 PoolManager.</p>
@@ -377,6 +384,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s8">
+<!-- SPEAKER NOTES, slide 8, 2:20 to 2:30. Robinhood Chain gives us the Stock Tokens and canonical Uniswap v4. Stylus makes the check affordable: an Intel certificate chain in P-256, in Rust, for about 2.37 million gas inside the transaction that admits the key. -->
   <div>
     <h2 id="s8">Robinhood Chain and Stylus make the check affordable.</h2>
     <p class="lead">The assets are Robinhood's own Stock Tokens. The venue is the canonical Uniswap v4. The heavy part, an Intel certificate chain in P-256, runs in Rust on Stylus inside the same transaction that admits the key.</p>
@@ -397,6 +405,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s9">
+<!-- SPEAKER NOTES, slide 9, 2:30 to 2:45. Creators earn a performance fee on new profit above the follower's high-water mark. Followers pay a flat subscription for an admitted agent. Hyperliquid alone lists 9,478 vaults and over 405 million dollars of TVL, and none of them can say which code trades. -->
   <div>
     <h2 id="s9">Creators earn on new profit. Followers pay for an admitted agent.</h2>
     <p class="lead">Public-PnL venues already hold the audience, and none of them can say which code trades. Hyperliquid lists <b>9,478 vaults</b> with <b>$405,600,393</b> of summed TVL, and a vault leader can swap the bot without the record showing it.</p>
@@ -420,6 +429,7 @@ td .s { display: block; color: var(--color-mute); font-family: var(--font-mono);
 </section>
 
 <section class="slide" aria-labelledby="s10">
+<!-- SPEAKER NOTES, slide 10, 2:45 to 3:00. The ask is introductions to the builders already trading Stock Tokens on Robinhood Chain: Arcana creators, Harmonic, Meridian, DeployFinance, Growi. Their next record can be a measurement. A record you can verify, a strategy you keep. Open the app and check the trade yourself. -->
   <div>
     <h2 id="s10">The ask: introductions to the builders already trading Stock Tokens.</h2>
     <p class="lead">They run bots on Robinhood Chain today and publish returns nobody can verify. Their next record can be a measurement.</p>
