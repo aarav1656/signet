@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "prompt": "The account holds {usdgBalance} raw USDG and {tslaBalance} raw TSLA. Spending {amountIn} raw USDG buys {quoteOut} raw TSLA at the current pool price. Buy only when the pool pays more TSLA than the last cycle did. Reply BUY or HOLD.",
+  "parameters": { "amountIn": "1000000", "slippageBps": 50, "intervalSeconds": 900, "maxTradesPerDay": 2 },
+  "rules": { "buyReply": "BUY", "minQuoteOut": "1000" }
+}
