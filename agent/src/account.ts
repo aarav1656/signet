@@ -581,6 +581,37 @@ export async function runAcctRegister(): Promise<void> {
 }
 
 
+/// A workload the owner never approved is refused on chain. The CVM supplies a quote; the Stylus
+/// Verifier is asked by eth_call which measurement it carries; that measurement must be unapproved.
+/// registerAgent is then sent with a fixed gas limit so the node mines the revert instead of failing
+/// at estimation. Post-condition: the receipt is a mined revert, the calldata replayed at the parent
+/// block decodes MeasurementNotApproved(measurement), and agent() / agentMeasurement() are unchanged.
+export async function runAcctRefuseWorkload(): Promise<void> {
+  const ctx = await setup();
+  const verifier = await read<Address>(ctx, 'verifier');
+  const q = await cvmQuote();
+  const { result } = await ctx.publicClient.simulateContract({ address: verifier, abi: verifierAbi, functionName: 'verify', args: [q.quote, q.nonce] });
+  const [signer, measurement] = result;
+  if (signer.toLowerCase() !== ctx.agent.address.toLowerCase()) throw new Error(`Verifier returned signer ${signer}, the CVM reports ${ctx.agent.address}.`);
+  if (await read<boolean>(ctx, 'approvedMeasurement', [measurement])) throw new Error(`measurement ${measurement} is approved; this mode needs an unapproved workload.`);
+  console.log(`Verifier accepts the CVM quote: signer ${signer} measurement ${measurement}, not approved by the owner`);
+
+  const hash = await ctx.ownerWallet.writeContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'registerAgent', args: [q.quote, q.refBlock], gas: 4_000_000n });
+  const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });
+  if (rcpt.status !== 'reverted') throw new Error(`registerAgent ${hash} did not revert (status ${rcpt.status})`);
+  let refused: { name?: string; args?: readonly unknown[] } = {};
+  try {
+    await ctx.publicClient.simulateContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'registerAgent', args: [q.quote, q.refBlock], account: ctx.owner, blockNumber: rcpt.blockNumber - 1n });
+  } catch (err) {
+    refused = revertName(err);
+  }
+  if (refused.name !== 'MeasurementNotApproved' || String(refused.args?.[0]).toLowerCase() !== measurement.toLowerCase()) {
+    throw new Error(`registerAgent ${hash} reverted with ${refused.name ?? 'undecodable data'}, expected MeasurementNotApproved(${measurement})`);
+  }
+  const [agent, m] = await Promise.all([read<Address>(ctx, 'agent', [], rcpt.blockNumber), read<Hex>(ctx, 'agentMeasurement', [], rcpt.blockNumber)]);
+  console.log(`registerAgent tx ${hash} block ${rcpt.blockNumber}: reverted MeasurementNotApproved(${measurement}); agent() ${agent} measurement ${m} at that block`);
+}
+
 async function ownerSetMeasurement(ctx: Ctx, measurement: Hex, approved: boolean) {
   const hash = await ctx.ownerWallet.writeContract({ address: ctx.account, abi: agentAccountAbi, functionName: 'setMeasurement', args: [measurement, approved] });
   const rcpt = await ctx.publicClient.waitForTransactionReceipt({ hash });

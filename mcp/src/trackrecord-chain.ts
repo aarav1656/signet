@@ -13,7 +13,7 @@ import {
 } from 'viem';
 import { agentAccountAbi } from './account-abi.js';
 import { rhcClient } from './chain.js';
-import { summarize, venuePrice, type AgentRecord, type Refusal, type TokenInfo, type Trade, type TrackRecord } from './trackrecord.js';
+import { summarize, venuePrice, type AgentRecord, type Attestation, type Refusal, type TokenInfo, type Trade, type TrackRecord } from './trackrecord.js';
 
 const DEPLOY_BLOCK = 127033401n;
 const WINDOW = 5_000_000n;
@@ -42,6 +42,9 @@ const WORKLOADS: Record<string, { label: string; workload: string }> = {
   '0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8': { label: 'Chiron reference agent, CVM boot 1', workload: 'compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c' },
   '0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829': { label: 'Chiron reference agent, CVM boot 2', workload: 'compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c' },
   '0x993bd67c8e9de5d37d9af6ef41c5c5fdb53b113b8a2b666827e0e619f4978e9a': { label: 'Chiron operator agent', workload: 'image ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f1867126d58ee3e99cf1fef4fc8d253c68dbe5bed41db6eb3f33aa5a201463' },
+  // agent-cvm/docker-compose.workload-b.yml and the one-value-changed variant, both on dstack-0.5.12 (not a dev image).
+  '0x890d1a4c40e1e79cd7afdae1cd312413e69f5b159ac9ef0f45311521a86271a8': { label: 'Workload B', workload: 'compose 0e3d4c8ce0d296763092988aa025da9579b598bf043cc424624730c660d2db6c' },
+  '0x399932395e8ef175193ae5550e77319c0d25a6b09dc12510f9e24de1f3cec387': { label: 'Workload B, modified (AGENT_REVISION=2)', workload: 'compose 9921659eee3a0e30ad0ae11c0c516bd5021d66a1b10d638b3810b29303792184' },
 };
 
 const feedAbi = parseAbi([
@@ -115,7 +118,7 @@ export async function discoverAccounts(c: PublicClient, head: bigint): Promise<A
 
 type RawTrade = { account: Address; tx: Hex; block: bigint; args: Record<string, unknown> };
 
-type Admission = { agent: string; measurement: string; block: bigint };
+type Admission = { agent: string; measurement: string; block: bigint; tx: Hex; account: Address };
 
 /** One pass over an account's logs: its executed trades and every agent admission (key, measurement, block). */
 async function accountHistory(c: PublicClient, account: Address, head: bigint) {
@@ -125,23 +128,37 @@ async function accountHistory(c: PublicClient, account: Address, head: bigint) {
   const admissions: Admission[] = [];
   for (const l of logs) {
     if (l.eventName === 'TradeExecuted') trades.push({ account, tx: l.transactionHash, block: l.blockNumber, args: l.args as Record<string, unknown> });
-    else admissions.push({ agent: l.args.agent.toLowerCase(), measurement: l.args.measurement, block: l.blockNumber });
+    else admissions.push({ agent: l.args.agent.toLowerCase(), measurement: l.args.measurement, block: l.blockNumber, tx: l.transactionHash, account });
   }
   return { trades, admissions };
 }
 
 /** Reverted agent-side calls to an account, from the explorer's address history, with the custom error decoded from the revert data. */
-async function refusalsFor(account: Address, admissions: Admission[]): Promise<Refusal[]> {
+type ExplorerTx = { hash: Hex; block_number: number; raw_input: Hex; value: string; from?: { hash: string }; to?: { hash: string } };
+
+/** Revert output of a mined revert: the explorer's decoded field, else its raw trace, else an eth_call replay at the parent block. */
+async function revertData(c: PublicClient, t: ExplorerTx, indexed?: Hex): Promise<Hex> {
+  if (indexed) return indexed;
+  const trace = await fetch(`${EXPLORER}/api/v2/transactions/${t.hash}/raw-trace`).then((r) => (r.ok ? (r.json() as Promise<{ output?: string }>) : undefined)).catch(() => undefined);
+  if (trace?.output && trace.output.length >= 10) return trace.output as Hex;
+  try {
+    await c.call({ account: t.from?.hash as Address, to: t.to?.hash as Address, data: t.raw_input, value: BigInt(t.value), blockNumber: BigInt(t.block_number) - 1n });
+  } catch (e) {
+    for (let cur = e as { data?: unknown; cause?: unknown } | undefined; cur; cur = cur.cause as typeof cur) if (typeof cur.data === 'string' && cur.data.length >= 10) return cur.data as Hex;
+  }
+  throw new Error(`no revert data for ${t.hash}: explorer, raw trace and replay all came back empty`);
+}
+
+async function refusalsFor(c: PublicClient, account: Address, admissions: Admission[]): Promise<Refusal[]> {
   const out: Refusal[] = [];
   let query = '';
   for (let page = 0; page < 50; page++) {
     const r = await fetch(`${EXPLORER}/api/v2/addresses/${account}/transactions${query}`);
     if (!r.ok) throw new Error(`explorer ${r.status} for ${account}`);
-    const j = (await r.json()) as { items: { hash: Hex; block_number: number; timestamp: string; status: string; method: string | null; to?: { hash: string }; revert_reason?: { raw?: Hex } | null; from?: { hash: string } }[]; next_page_params: Record<string, unknown> | null };
+    const j = (await r.json()) as { items: (ExplorerTx & { timestamp: string; status: string; method: string | null; revert_reason?: { raw?: Hex } | null })[]; next_page_params: Record<string, unknown> | null };
     for (const t of j.items) {
       if (t.status !== 'error' || !['registerAgent', 'execute', 'propose'].includes(t.method ?? '') || t.to?.hash.toLowerCase() !== account.toLowerCase()) continue;
-      const data = t.revert_reason?.raw;
-      if (!data) continue;
+      const data = await revertData(c, t, t.revert_reason?.raw);
       let reason = 'unknown';
       // the caller's most recent admission before the refusal names the workload that was refused
       let measurement: string | null = admissions.filter((a) => a.agent === t.from?.hash.toLowerCase() && a.block < BigInt(t.block_number)).at(-1)?.measurement ?? null;
@@ -170,7 +187,7 @@ export async function buildTrackRecord(opts: { rpc?: string; log?: (s: string) =
 
   const hist = await Promise.all(accounts.map((a) => accountHistory(c, a, head)));
   const raws = hist.flatMap((h) => h.trades).sort((a, b) => Number(a.block - b.block));
-  const refusals = (await Promise.all(accounts.map((a, i) => refusalsFor(a, hist[i].admissions)))).flat().sort((a, b) => a.block - b.block);
+  const refusals = (await Promise.all(accounts.map((a, i) => refusalsFor(c, a, hist[i].admissions)))).flat().sort((a, b) => a.block - b.block);
   const mark = await feed.latest();
   const markPrice = Number(mark.answer) / 1e8;
 
@@ -215,6 +232,24 @@ export async function buildTrackRecord(opts: { rpc?: string; log?: (s: string) =
     };
   });
 
+  const byMeasurement = new Map<string, Admission[]>();
+  for (const a of hist.flatMap((h) => h.admissions).sort((x, y) => Number(x.block - y.block))) byMeasurement.set(a.measurement, [...(byMeasurement.get(a.measurement) ?? []), a]);
+  const attestations: Attestation[] = [];
+  for (const [measurement, adm] of byMeasurement) {
+    const known = WORKLOADS[measurement.toLowerCase()];
+    const first = adm[0];
+    attestations.push({
+      measurement,
+      label: known?.label ?? `Agent ${measurement.slice(0, 10)}`,
+      workload: known?.workload ?? null,
+      agents: [...new Set(adm.map((a) => a.agent))],
+      accounts: [...new Set(adm.map((a) => a.account))],
+      admissions: adm.length,
+      firstAdmission: { tx: first.tx, block: Number(first.block), time: Number((await c.getBlock({ blockNumber: first.block })).timestamp), account: first.account },
+      tradeCount: agents.filter((g) => g.measurement === measurement).reduce((n, g) => n + g.tradeCount, 0),
+    });
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     chainId: 46630,
@@ -228,6 +263,7 @@ export async function buildTrackRecord(opts: { rpc?: string; log?: (s: string) =
       note: 'Stock Token legs are priced from the mainnet Chainlink round current at each trade block time (round id recorded per trade). Quote assets (TestUSDG, USDG) count 1 USD. pnlUsd marks the net position at the latest round; pnlAtTradeUsd values each trade at its own round.',
     },
     agents,
+    attestations,
     refusals,
   };
 }

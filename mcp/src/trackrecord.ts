@@ -28,6 +28,18 @@ export type Refusal = {
   measurement: string | null;
 };
 
+/** A workload measurement an account admitted an agent under (AgentRegistered), whether or not it has traded. */
+export type Attestation = {
+  measurement: string;
+  label: string;
+  workload: string | null;
+  agents: string[];
+  accounts: string[];
+  admissions: number;
+  firstAdmission: { tx: string; block: number; time: number; account: string };
+  tradeCount: number;
+};
+
 export type AgentRecord = {
   measurement: string;
   modelHash: string;
@@ -57,6 +69,7 @@ export type TrackRecord = {
     note: string;
   };
   agents: AgentRecord[];
+  attestations: Attestation[];
   refusals: Refusal[];
 };
 
@@ -105,7 +118,7 @@ export function summarize(trades: Trade[], tokens: Record<string, TokenInfo>, ma
 /** get_track_record: one agent by measurement (0x + 64 hex, any case), or every agent when omitted. */
 export function selectTrackRecord(tr: TrackRecord, measurement?: string) {
   if (!measurement) {
-    return { generatedAt: tr.generatedAt, chainId: tr.chainId, block: tr.block, pricing: tr.pricing, agents: tr.agents.map(({ trades, ...a }) => ({ ...a, tradeTxs: trades.map((t) => t.tx) })), refusals: tr.refusals };
+    return { generatedAt: tr.generatedAt, chainId: tr.chainId, block: tr.block, pricing: tr.pricing, agents: tr.agents.map(({ trades, ...a }) => ({ ...a, tradeTxs: trades.map((t) => t.tx) })), attestations: tr.attestations, refusals: tr.refusals };
   }
   const m = measurement.toLowerCase();
   const agents = tr.agents.filter((a) => a.measurement.toLowerCase() === m);
@@ -116,7 +129,9 @@ export function selectTrackRecord(tr: TrackRecord, measurement?: string) {
     pricing: tr.pricing,
     measurement,
     found: agents.length > 0,
+    attested: tr.attestations.some((a) => a.measurement.toLowerCase() === m),
     agents,
+    attestations: tr.attestations.filter((a) => a.measurement.toLowerCase() === m),
     refusals: tr.refusals.filter((r) => r.measurement?.toLowerCase() === m),
   };
 }

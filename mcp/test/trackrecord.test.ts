@@ -80,6 +80,15 @@ describe('committed web/lib/track-record.json', () => {
     }
   });
 
+  it('every traded measurement was attested, and every MeasurementNotApproved refusal names its workload', () => {
+    const attested = new Set(tr.attestations.map((a) => a.measurement.toLowerCase()));
+    assert.ok(tr.attestations.length >= 2);
+    for (const a of tr.agents) assert.ok(attested.has(a.measurement.toLowerCase()), `${a.measurement} traded without an AgentRegistered`);
+    const refused = tr.refusals.filter((r) => r.reason === 'MeasurementNotApproved');
+    assert.ok(refused.length >= 1);
+    for (const r of refused) assert.match(r.measurement ?? '', /^0x[0-9a-f]{64}$/);
+  });
+
   it('selects by measurement, case-insensitive, and reports a miss', () => {
     const m = tr.agents[0].measurement;
     const hit = selectTrackRecord(tr, m.toUpperCase().replace('0X', '0x')) as { found: boolean; agents: { trades: unknown[] }[] };

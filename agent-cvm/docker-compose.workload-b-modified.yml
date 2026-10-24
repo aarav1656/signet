@@ -1,0 +1,16 @@
+# workload-b with one environment value changed (AGENT_REVISION). Same image, same account. The compose
+# hash is measured into RTMR3, so the CVM carries a different measurement from workload-b, and an
+# account whose owner approved workload-b refuses it: registerAgent reverts MeasurementNotApproved.
+services:
+  agent:
+    image: ttl.sh/chiron-agent-sig7f3a91c2e4@sha256:c8d8ff7e5869900ad424cac1ec31a06f330f6cfa0e682f359ab9f4c60288b3f3
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ACCOUNT_ADDRESS: "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      RHC_RPC_URL: "https://rpc.testnet.chain.robinhood.com"
+      AGENT_REVISION: "2"
+      CONTROL_TOKEN: "${CONTROL_TOKEN}"
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
