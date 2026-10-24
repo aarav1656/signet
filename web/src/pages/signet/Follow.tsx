@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Address, Hash } from 'viem';
-import { useConnection, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi';
+import { useConnection, usePublicClient, useSendTransaction, useSwitchChain, useWriteContract } from 'wagmi';
 import { accountAbi } from '../../abi/AgentAccount.generated';
 import { rhcChain, rhcExplorer } from '../../chain';
 import { EligibilityGate } from '../../components/Eligibility';
@@ -10,15 +10,15 @@ import { Wallet } from '../../components/Wallet';
 import { useMyAccounts } from '../../hooks/useMyAccounts';
 import { useTx } from '../../hooks/useTx';
 import { short } from '../../lib/format';
-import { PAXOS_USDG, OPERATOR_CVM_URL, TSLA } from '../../lib/rhc.generated';
+import { OPERATOR_CVM_URL } from '../../lib/rhc.generated';
 import type { TrackAgent } from '../../lib/track';
-import { DEFAULT_LIMITS, REQUESTED_MODEL_HASH, VENUE_GATEWAY_MEASUREMENT, VENUE_POOL, type LimitsInput } from '../../lib/venue';
+import { DEFAULT_LIMITS, REQUESTED_MODEL_HASH, VENUE_GATEWAY_MEASUREMENT, type LimitsInput } from '../../lib/venue';
 import { CreateAction } from '../Account';
 import { readOperatorQuote } from '../account/operator';
 import { parseLimits, pending, planFollow, type FollowSpec, type Step, type StepId } from './followPlan';
+import { followCalldata } from './followCalls';
 import { readFollowState } from './followRead';
 
-const ZERO32 = `0x${'0'.repeat(64)}` as const;
 const RPC = 'https://rpc.testnet.chain.robinhood.com';
 
 type Limits = { usdg: LimitsInput; tsla: LimitsInput };
@@ -46,6 +46,7 @@ export function FollowPanel({ agent }: { agent: TrackAgent }) {
   const { mutate: switchChain } = useSwitchChain();
   const client = usePublicClient({ chainId: rhcChain.id });
   const { writeContractAsync } = useWriteContract();
+  const { mutateAsync: sendTransactionAsync } = useSendTransaction();
   const mineQ = useMyAccounts();
   const mine = mineQ.data ?? [];
   const [picked, setPicked] = useState<Address>();
@@ -75,22 +76,19 @@ export function FollowPanel({ agent }: { agent: TrackAgent }) {
   const wrongChain = conn.isConnected && conn.chainId !== rhcChain.id;
   const limitError = !usdg.ok ? usdg.reason : !tsla.ok ? tsla.reason : undefined;
 
-  const write = (step: StepId): Promise<Hash> => {
-    const base = { address: account as Address, abi: accountAbi, chainId: rhcChain.id } as const;
-    if (step === 'limits-usdg' && usdg.ok) return writeContractAsync({ ...base, functionName: 'setLimits', args: [PAXOS_USDG, usdg.value] });
-    if (step === 'limits-tsla' && tsla.ok) return writeContractAsync({ ...base, functionName: 'setLimits', args: [TSLA, tsla.value] });
-    if (step === 'pool') return writeContractAsync({ ...base, functionName: 'setPool', args: [VENUE_POOL, true] });
-    if (step === 'model') return writeContractAsync({ ...base, functionName: 'setModel', args: [REQUESTED_MODEL_HASH, [agent.modelHash, ZERO32, ZERO32, ZERO32], VENUE_GATEWAY_MEASUREMENT] });
-    if (step === 'measurement') return writeContractAsync({ ...base, functionName: 'setMeasurement', args: [agent.measurement, true] });
-    throw new Error(`no call for step ${step}`);
+  const write = (step: Exclude<StepId, 'admit'>): Promise<Hash> => {
+    if (!usdg.ok || !tsla.ok) throw new Error(limitError);
+    const data = followCalldata(step, { measurement: agent.measurement, servedModelHash: agent.modelHash, usdg: usdg.value, tsla: tsla.value });
+    return sendTransactionAsync({ to: account as Address, data, chainId: rhcChain.id });
   };
 
   async function follow() {
     if (!account || !client) return;
     setNote(undefined);
     for (const step of todo) {
-      setActive(step.id);
-      if (step.id === 'admit') {
+      const id = step.id;
+      setActive(id);
+      if (id === 'admit') {
         // A quote names a block hash the chain answers for 256 blocks, so admission asks the agent for a fresh one.
         let q;
         try {
@@ -106,7 +104,7 @@ export function FollowPanel({ agent }: { agent: TrackAgent }) {
         const r = await tx.run('Admit the agent', () => writeContractAsync({ address: account, abi: accountAbi, functionName: 'registerAgent', args: [q.quote, q.refBlock], chainId: rhcChain.id }));
         if (!r) break;
       } else {
-        const r = await tx.run(step.title, () => write(step.id));
+        const r = await tx.run(step.title, () => write(id));
         if (!r) break;
       }
     }

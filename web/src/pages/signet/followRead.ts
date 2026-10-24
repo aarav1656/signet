@@ -8,7 +8,18 @@ const lim = (r: readonly [boolean, bigint, bigint, bigint]) => ({ allowed: r[0],
 
 /** What an account says today about following `measurement`, every read pinned to one block. */
 export async function readFollowState(c: PublicClient, account: Address, measurement: Hex): Promise<{ state: FollowState; owner: Address; block: bigint }> {
-  const block = (await c.getBlock()).number;
+  // The RPC is a pool of nodes: the one that reports the head can be a block ahead of the one that serves the reads.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await readAt(c, account, measurement, (await c.getBlock()).number - BigInt(attempt));
+    } catch (e) {
+      if (attempt >= 4 || !/unsupported block number/.test(String(e))) throw e;
+      await new Promise((r) => setTimeout(r, 400));
+    }
+  }
+}
+
+async function readAt(c: PublicClient, account: Address, measurement: Hex, block: bigint) {
   const base = { address: account, abi: accountAbi, blockNumber: block } as const;
   const [owner, approved, requestedModelHash, accepted, gatewayMeasurement, poolAllowed, usdg, tsla, agent, agentMeasurement, agentExpiry] = await Promise.all([
     c.readContract({ ...base, functionName: 'owner' }),
