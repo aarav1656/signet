@@ -616,6 +616,10 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     }
 
     function revokeAgent() external onlyOwner {
+        if (agentMeasurement != bytes32(0)) {
+            approvedMeasurement[agentMeasurement] = false;
+            emit MeasurementSet(agentMeasurement, false);
+        }
         _revokeAgent();
     }
 

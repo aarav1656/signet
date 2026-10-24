@@ -289,6 +289,17 @@ contract AgentAccountTest is AgentAccountTestBase {
         _exec(_buy(1e6));
     }
 
+    function test_revokeAgent_unapprovesTheMeasurementSoAReplayIsRefused() public {
+        assertTrue(account.approvedMeasurement(AGENT_M));
+        vm.prank(owner);
+        account.revokeAgent();
+        assertFalse(account.approvedMeasurement(AGENT_M));
+        bytes memory q = _quote(agentAddr, AGENT_M);
+        vm.expectRevert(abi.encodeWithSelector(AgentAccount.MeasurementNotApproved.selector, AGENT_M));
+        account.registerAgent(q, block.number - 1);
+        assertEq(account.agent(), address(0));
+    }
+
     function test_execute_revertsAfterRevoke() public {
         vm.prank(owner);
         account.revokeAgent();

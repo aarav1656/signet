@@ -108,19 +108,20 @@ contract SecurityReview20261024Test is Test {
 
     // ------------------------------------------------------------- F-1 revokeAgent is not durable
 
-    /// SECURITY.md guarantee 6 and "Admission lasts 24 hours": "calling revokeAgent clears the
-    /// agent at once" and a compromised key "stops trading ... at once on revokeAgent". A stranger
-    /// re-admits the same key one transaction later; the key trades again.
-    function test_F1_revokeAgent_isUndoneByAStranger() public forked {
+    /// revokeAgent unapproves the live measurement, so a stranger replaying the revoked key's quote
+    /// is refused. Before the fix the same replay re-admitted the key and it traded again.
+    function test_F1_revokeAgent_isDurable() public forked {
         vm.prank(deployer);
         account.revokeAgent();
         assertEq(account.agent(), address(0));
+        assertFalse(account.approvedMeasurement(AGENT_M), "measurement still approved");
 
-        _cvmQuoteRegister(account, agent, AGENT_M, stranger);
-        assertEq(account.agent(), agent, "revoked key is back");
-        uint256 before = account.tradeCount();
-        _execute(account, agent, 1e6);
-        assertEq(account.tradeCount(), before + 1, "revoked key traded");
+        uint256 ref = block.number - 1;
+        bytes memory quote = abi.encode(agent, AGENT_M, account.attestNonce(ref));
+        vm.prank(stranger);
+        vm.expectRevert(abi.encodeWithSelector(AgentAccount.MeasurementNotApproved.selector, AGENT_M));
+        account.registerAgent(quote, ref);
+        assertEq(account.agent(), address(0), "revoked key is not back");
     }
 
     /// Control: unapproving the measurement is durable, the same stranger replay is refused.

@@ -47,6 +47,7 @@ MUTANTS = [
     ("ArbSys revert is final", "if (!ok) revert StaleRefBlock();", ""),
     ("zero ref hash reverts (RR-2)", "if (h == bytes32(0)) revert StaleRefBlock();", ""),
     ("unapproving the live measurement revokes", "if (!approved && agent != address(0) && agentMeasurement == measurement) _revokeAgent();", ""),
+    ("revokeAgent unapproves the live measurement", "approvedMeasurement[agentMeasurement] = false;\n            emit MeasurementSet(agentMeasurement, false);\n        }\n        _revokeAgent();", "}\n        _revokeAgent();"),
     ("revoke clears agent", "agent = address(0);", ""),
     ("revoke bumps epoch", "uint256 epoch = ++agentEpoch;\n        agent = address(0);", "uint256 epoch = agentEpoch;\n        agent = address(0);"),
     # freshness (I2)
