@@ -1,0 +1,27 @@
+# Source of the measured compose file. agent-cvm/render-compose.sh fills the two fields below and
+# writes agent-cvm/docker-compose.yml; the render refuses an image that is not pinned by digest.
+#
+# Everything in this file is literal, so all of it is inside compose-hash, which dstack extends
+# into RTMR3: the image digest (the code), the account, the chain and RPC, the inference base URL,
+# the model id, and STRATEGY_SHA256, the SHA-256 of the strategy file. The strategy text itself is
+# not here. It travels as the sealed variable STRATEGY_B64, and the agent refuses to start unless
+# its bytes hash to STRATEGY_SHA256 (agent/src/strategy.ts), so replacing the sealed payload
+# cannot change what trades. PHALA_API_KEY is the only other sealed variable. The owner key is
+# never in this file or in the CVM, and the CVM serves no route that submits a trade.
+services:
+  agent:
+    image: __IMAGE__
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ACCOUNT_ADDRESS: "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
+      RHC_RPC_URL: "https://rpc.testnet.chain.robinhood.com"
+      RHC_CHAIN_ID: "46630"
+      PHALA_BASE_URL: "https://inference.phala.com"
+      PHALA_MODEL: "meta-llama/llama-3.3-70b-instruct"
+      STRATEGY_SHA256: "__STRATEGY_SHA256__"
+      STRATEGY_B64: "${STRATEGY_B64}"
+      PHALA_API_KEY: "${PHALA_API_KEY}"
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
