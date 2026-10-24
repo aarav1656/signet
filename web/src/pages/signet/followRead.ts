@@ -1,6 +1,7 @@
 import type { Address, Hex, PublicClient } from 'viem';
 import { accountAbi } from '../../abi/AgentAccount.generated';
-import { PAXOS_USDG, TSLA } from '../../lib/rhc.generated';
+import { inWindows } from '../../lib/logs';
+import { PAXOS_USDG, RHC_DEPLOY_BLOCK, TSLA } from '../../lib/rhc.generated';
 import { poolIdOf, VENUE_POOL } from '../../lib/venue';
 import type { FollowState } from './followPlan';
 
@@ -21,6 +22,9 @@ export async function readFollowState(c: PublicClient, account: Address, measure
 
 async function readAt(c: PublicClient, account: Address, measurement: Hex, block: bigint) {
   const base = { address: account, abi: accountAbi, blockNumber: block } as const;
+  // approvedMeasurement is a mapping: the measurements ever set are the MeasurementSet logs, each read back for its current flag.
+  const logs = await inWindows(RHC_DEPLOY_BLOCK, block, (fromBlock, toBlock) => c.getContractEvents({ ...base, eventName: 'MeasurementSet', fromBlock, toBlock }));
+  const seen = [...new Set(logs.map((l) => (l.args.measurement as Hex).toLowerCase() as Hex))].filter((m) => m !== measurement.toLowerCase());
   const [owner, approved, requestedModelHash, accepted, gatewayMeasurement, poolAllowed, usdg, tsla, agent, agentMeasurement, agentExpiry] = await Promise.all([
     c.readContract({ ...base, functionName: 'owner' }),
     c.readContract({ ...base, functionName: 'approvedMeasurement', args: [measurement] }),
@@ -34,8 +38,9 @@ async function readAt(c: PublicClient, account: Address, measurement: Hex, block
     c.readContract({ ...base, functionName: 'agentMeasurement' }),
     c.readContract({ ...base, functionName: 'agentExpiry' }),
   ]);
+  const flags = seen.length ? await c.multicall({ allowFailure: false, blockNumber: block, contracts: seen.map((m) => ({ address: account, abi: accountAbi, functionName: 'approvedMeasurement' as const, args: [m] as const })) }) : [];
   return {
     owner, block,
-    state: { approved, requestedModelHash, acceptedServedHashes: accepted, gatewayMeasurement, poolAllowed, usdg: lim(usdg), tsla: lim(tsla), agent, agentMeasurement, agentExpiry },
+    state: { approved, othersApproved: seen.filter((_, i) => flags[i]), requestedModelHash, acceptedServedHashes: accepted, gatewayMeasurement, poolAllowed, usdg: lim(usdg), tsla: lim(tsla), agent, agentMeasurement, agentExpiry },
   };
 }

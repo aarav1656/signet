@@ -3,7 +3,7 @@ import type { Hex } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { rhcChain, rhcExplorer } from '../../chain';
 import { HexValue } from '../../components/Stamp';
-import { fmtWhen } from '../../lib/format';
+import { fmtWhen, short } from '../../lib/format';
 import { fmtAmount, TRACK, type TrackAgent, type TrackRefusal, type TrackTrade } from '../../lib/track';
 import { modelNameOf, symbolOf } from '../../lib/venue';
 import { RHC_EXPLORER_URL } from '../../lib/rhc.generated';
@@ -59,18 +59,19 @@ function useRevertReason(hash: Hex | undefined) {
   });
 }
 
-/** The passing attested trade and the refusal to set beside it: the newest trade of any agent, and the refusal of a different workload. */
-export function pickProof(agents: readonly TrackAgent[], refusals: readonly TrackRefusal[]): { agent: TrackAgent; trade: TrackTrade; refusal: TrackRefusal } | undefined {
-  // A different workload is a refused admission whose measurement no listed agent carries.
-  const listed = new Set(agents.map((a) => a.measurement.toLowerCase()));
-  const refusal = [...refusals].sort((a, b) => b.block - a.block).find((r) => r.reason === 'MeasurementNotApproved' && !listed.has(r.measurement.toLowerCase()));
-  const all = agents.flatMap((agent) => agent.trades.map((trade) => ({ agent, trade })));
-  const latest = all.sort((a, b) => b.trade.block - a.trade.block)[0];
-  return refusal && latest ? { ...latest, refusal } : undefined;
+/**
+ * The passing attested trade and the refusal to set beside it: the newest trade of any agent, and the first different workload the account
+ * turned away. A different workload is a refused admission whose measurement no listed agent carries and no account ever admitted. Later ones come back as `others`.
+ */
+export function pickProof(agents: readonly TrackAgent[], refusals: readonly TrackRefusal[], admitted: readonly string[] = []): { trade: TrackTrade; refusal: TrackRefusal; others: TrackRefusal[] } | undefined {
+  const listed = new Set([...agents.map((a) => a.measurement.toLowerCase()), ...admitted.map((m) => m.toLowerCase())]);
+  const different = refusals.filter((r) => r.reason === 'MeasurementNotApproved' && !listed.has(r.measurement.toLowerCase())).sort((a, b) => a.block - b.block);
+  const latest = agents.flatMap((a) => a.trades).sort((a, b) => b.block - a.block)[0];
+  return different.length && latest ? { trade: latest, refusal: different[0], others: different.slice(1) } : undefined;
 }
 
 export function SwapProof() {
-  const proof = pickProof(TRACK.agents, TRACK.refusals);
+  const proof = pickProof(TRACK.agents, TRACK.refusals, TRACK.admitted);
   const hashes = proof ? [proof.trade.tx, proof.refusal.tx] : [];
   const rc = useReceipts(hashes);
   const reason = useRevertReason(proof?.refusal.tx);
@@ -82,7 +83,7 @@ export function SwapProof() {
       </section>
     );
   }
-  const { agent, trade, refusal } = proof;
+  const { trade, refusal, others } = proof;
   const [passRc, refRc] = rc.data ?? [];
   const passLive = passRc?.status === 'success';
   const refLive = refRc?.status === 'reverted';
@@ -106,7 +107,7 @@ export function SwapProof() {
             <code>{rc.isPending ? 'READING' : passLive ? 'EXECUTED' : 'NOT CONFIRMED'}</code>
           </header>
           <dl>
-            <div><dt>Measurement</dt><dd><HashDiff value={agent.measurement} against={refusal.measurement} tone="ok" /></dd></div>
+            <div><dt>Measurement</dt><dd><HashDiff value={trade.measurement} against={refusal.measurement} tone="ok" /></dd></div>
             <div><dt>Trade</dt><dd>{fmtAmount(trade.amountIn)} {symbolOf(trade.tokenIn)} for {fmtAmount(trade.amountOut)} {symbolOf(trade.tokenOut)}</dd></div>
             <div><dt>Model on the receipt</dt><dd>{model ?? 'a model hash'} <HexValue value={trade.modelHash} head={6} tail={4} /></dd></div>
             <div><dt>Transaction</dt><dd><HexValue value={trade.tx} head={8} tail={6} href={rhcExplorer.tx(trade.tx)} /> <span className="small">block {(passRc?.block ?? BigInt(trade.block)).toLocaleString('en-US')}, {fmtWhen(trade.time)}</span></dd></div>
@@ -119,7 +120,7 @@ export function SwapProof() {
             <code>{rc.isPending ? 'READING' : refLive ? 'REVERTED' : 'NOT CONFIRMED'}</code>
           </header>
           <dl>
-            <div><dt>Measurement</dt><dd><HashDiff value={refusal.measurement} against={agent.measurement} tone="refused" /></dd></div>
+            <div><dt>Measurement</dt><dd><HashDiff value={refusal.measurement} against={trade.measurement} tone="refused" /></dd></div>
             <div>
               <dt>Account answered</dt>
               <dd>
@@ -134,6 +135,14 @@ export function SwapProof() {
         </article>
       </div>
       <p className="sg-swap-note">Highlighted groups are the 4-byte words of the measurement that differ between the two workloads.</p>
+      {others.length > 0 && (
+        <p className="sg-swap-note">
+          The same account refused {others.length} more {others.length === 1 ? 'workload' : 'workloads'}, each a different measurement:{' '}
+          {others.map((o, i) => (
+            <span key={o.tx}>{i > 0 && ', '}<a className="hex" href={rhcExplorer.tx(o.tx)} target="_blank" rel="noreferrer" title={`${o.reason}(${o.measurement}), block ${o.block}`}>{short(o.measurement)}</a></span>
+          ))}.
+        </p>
+      )}
     </section>
   );
 }

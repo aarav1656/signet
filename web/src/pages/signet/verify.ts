@@ -1,10 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { parseEventLogs, type Address, type Hex, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { accountAbi } from '../../abi/AgentAccount.generated';
 import { rhcChain } from '../../chain';
 import { inWindows } from '../../lib/logs';
-import type { TrackAgent, TrackTrade } from '../../lib/track';
+import type { Strategy, TrackAgent, TrackTrade } from '../../lib/track';
 import { RHC_DEPLOY_BLOCK } from '../../lib/rhc.generated';
 import { agentView, type AgentView } from '../account/agent';
 import { recheck, type ReceiptState } from '../account/receiptCheck';
@@ -60,53 +60,71 @@ export async function checkTrade(c: PublicClient, agent: TrackAgent, trade: Trac
 
 export type AgentChecks = { checks: TradeCheck[]; verified: boolean };
 
-/** Every trade of an agent, re-read from the chain. `verified` is true only when the list is non-empty and every check passed. */
+const checksQuery = (client: PublicClient | undefined, agent: TrackAgent) => ({
+  queryKey: ['signet-checks', agent.measurement, agent.trades.map((t) => t.tx).join()],
+  enabled: !!client,
+  staleTime: 60_000,
+  retry: 1,
+  queryFn: async (): Promise<AgentChecks> => {
+    const checks = await Promise.all(agent.trades.map((t) => checkTrade(client as PublicClient, agent, t)));
+    return { checks, verified: checks.length > 0 && checks.every((k) => k.ok && k.receipt?.state === 'verified') };
+  },
+});
+
+/** Every trade of one boot, re-read from the chain. `verified` is true only when the list is non-empty and every check passed. */
 export function useAgentChecks(agent: TrackAgent) {
-  const client = usePublicClient({ chainId: rhcChain.id });
-  return useQuery({
-    queryKey: ['signet-checks', agent.measurement, agent.trades.map((t) => t.tx).join()],
-    enabled: !!client,
-    staleTime: 60_000,
-    retry: 1,
-    queryFn: async (): Promise<AgentChecks> => {
-      const checks = await Promise.all(agent.trades.map((t) => checkTrade(client as PublicClient, agent, t)));
-      return { checks, verified: checks.length > 0 && checks.every((k) => k.ok && k.receipt?.state === 'verified') };
-    },
-  });
+  return useQuery(checksQuery(usePublicClient({ chainId: rhcChain.id }) as PublicClient | undefined, agent));
 }
 
-export type Admission = { account: Address; agent: Address; approved: boolean; view: AgentView; admittedTx?: Hex; admittedBlock?: bigint; registeredAgent?: Address };
+/** Every trade of every boot of a strategy, each re-read against the measurement of the boot that made it. */
+export function useStrategyChecks(s: Strategy): { isPending: boolean; isError: boolean; error: unknown; data?: AgentChecks } {
+  const client = usePublicClient({ chainId: rhcChain.id }) as PublicClient | undefined;
+  const qs = useQueries({ queries: s.boots.map((b) => checksQuery(client, b)) });
+  const error = qs.find((q) => q.isError)?.error;
+  if (qs.some((q) => q.isError)) return { isPending: false, isError: true, error };
+  if (qs.some((q) => !q.data)) return { isPending: true, isError: false, error: null };
+  const checks = qs.flatMap((q) => (q.data as AgentChecks).checks);
+  return { isPending: false, isError: false, error: null, data: { checks, verified: checks.length > 0 && qs.every((q) => (q.data as AgentChecks).verified) } };
+}
 
-/** What the Stylus Verifier let through under this measurement: the key admitted, the transaction, and whether the account still approves it. */
-export function useAdmissions(agent: TrackAgent) {
-  const client = usePublicClient({ chainId: rhcChain.id });
-  return useQuery({
-    queryKey: ['signet-admissions', agent.measurement],
-    enabled: !!client,
-    refetchInterval: 30_000,
-    retry: 1,
-    queryFn: async (): Promise<{ block: bigint; now: bigint; rows: Admission[] }> => {
-      const c = client as PublicClient;
-      const head = await c.getBlock();
-      const rows = await Promise.all(
-        agent.accounts.map(async (account): Promise<Admission> => {
-          const base = { address: account, abi: accountAbi } as const;
-          const [live, approved, logs] = await Promise.all([
-            c.multicall({ allowFailure: false, blockNumber: head.number, contracts: [{ ...base, functionName: 'agent' }, { ...base, functionName: 'agentMeasurement' }, { ...base, functionName: 'agentExpiry' }] }),
-            c.readContract({ ...base, functionName: 'approvedMeasurement', args: [agent.measurement], blockNumber: head.number }),
-            inWindows(RHC_DEPLOY_BLOCK, head.number, (fromBlock, toBlock) => c.getContractEvents({ ...base, eventName: 'AgentRegistered', fromBlock, toBlock })),
-          ]);
-          const mine = logs.filter((l) => eq(l.args.measurement as string, agent.measurement));
-          const last = mine.at(-1);
-          const now = Number(head.timestamp);
-          return {
-            account, approved, agent: live[0],
-            view: eq(live[1], agent.measurement) ? agentView(live[0], live[2], now) : { state: 'none' },
-            admittedTx: last?.transactionHash, admittedBlock: last?.blockNumber, registeredAgent: last?.args.agent as Address | undefined,
-          };
-        }),
-      );
-      return { block: head.number, now: head.timestamp, rows };
-    },
-  });
+export type Admission = { measurement: Hex; account: Address; agent: Address; approved: boolean; view: AgentView; admittedTx?: Hex; admittedBlock?: bigint; registeredAgent?: Address };
+
+const admissionsQuery = (client: PublicClient | undefined, agent: TrackAgent) => ({
+  queryKey: ['signet-admissions', agent.measurement],
+  enabled: !!client,
+  refetchInterval: 30_000,
+  retry: 1,
+  queryFn: async (): Promise<{ block: bigint; now: bigint; rows: Admission[] }> => {
+    const c = client as PublicClient;
+    const head = await c.getBlock();
+    const rows = await Promise.all(
+      agent.accounts.map(async (account): Promise<Admission> => {
+        const base = { address: account, abi: accountAbi } as const;
+        const [live, approved, logs] = await Promise.all([
+          c.multicall({ allowFailure: false, blockNumber: head.number, contracts: [{ ...base, functionName: 'agent' }, { ...base, functionName: 'agentMeasurement' }, { ...base, functionName: 'agentExpiry' }] }),
+          c.readContract({ ...base, functionName: 'approvedMeasurement', args: [agent.measurement], blockNumber: head.number }),
+          inWindows(RHC_DEPLOY_BLOCK, head.number, (fromBlock, toBlock) => c.getContractEvents({ ...base, eventName: 'AgentRegistered', fromBlock, toBlock })),
+        ]);
+        const mine = logs.filter((l) => eq(l.args.measurement as string, agent.measurement));
+        const last = mine.at(-1);
+        const now = Number(head.timestamp);
+        return {
+          measurement: agent.measurement, account, approved, agent: live[0],
+          view: eq(live[1], agent.measurement) ? agentView(live[0], live[2], now) : { state: 'none' },
+          admittedTx: last?.transactionHash, admittedBlock: last?.blockNumber, registeredAgent: last?.args.agent as Address | undefined,
+        };
+      }),
+    );
+    return { block: head.number, now: head.timestamp, rows };
+  },
+});
+
+/** What the Stylus Verifier let through under each boot of a strategy: the key admitted, the transaction, and whether the account still approves it. */
+export function useAdmissions(s: Strategy): { isPending: boolean; isError: boolean; error: unknown; data?: { block: bigint; rows: Admission[] } } {
+  const client = usePublicClient({ chainId: rhcChain.id }) as PublicClient | undefined;
+  const qs = useQueries({ queries: s.boots.map((b) => admissionsQuery(client, b)) });
+  if (qs.some((q) => q.isError)) return { isPending: false, isError: true, error: qs.find((q) => q.isError)?.error };
+  if (qs.some((q) => !q.data)) return { isPending: true, isError: false, error: null };
+  const data = qs.map((q) => q.data as { block: bigint; rows: Admission[] });
+  return { isPending: false, isError: false, error: null, data: { block: data.reduce((n, d) => (d.block > n ? d.block : n), 0n), rows: data.flatMap((d) => d.rows) } };
 }

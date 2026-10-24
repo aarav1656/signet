@@ -10,6 +10,8 @@ export type OnchainLimits = { allowed: boolean; perTrade: bigint; daily: bigint;
 /** What the follower's account says today, read from the chain. */
 export type FollowState = {
   approved: boolean;
+  /** Every other measurement this account has approved today. Following leaves none of them. */
+  othersApproved: readonly Hex[];
   requestedModelHash: Hex;
   acceptedServedHashes: readonly Hex[];
   gatewayMeasurement: Hex;
@@ -31,7 +33,7 @@ export type FollowSpec = {
   tsla: { decimals: number; limits: LimitsInput };
 };
 
-export type StepId = 'limits-usdg' | 'limits-tsla' | 'pool' | 'model' | 'measurement' | 'admit';
+export type StepId = 'limits-usdg' | 'limits-tsla' | 'pool' | 'model' | 'measurement' | 'admit' | `revoke:${Hex}`;
 export type Step = { id: StepId; title: string; detail: string; done: boolean };
 
 export type ParsedLimits = { allowed: true; perTrade: bigint; daily: bigint; approvalAbove: bigint };
@@ -69,12 +71,17 @@ export function planFollow(state: FollowState, spec: FollowSpec): Step[] {
     state.acceptedServedHashes.some((h) => h !== ZERO32 && eq(h, spec.servedModelHash)) &&
     eq(state.gatewayMeasurement, spec.gatewayMeasurement);
   const admitted = state.agent !== '0x0000000000000000000000000000000000000000' && eq(state.agentMeasurement, spec.measurement);
+  // approvedMeasurement is a set. Withdrawals come before the approval, so the account never approves two at once.
+  const revokes = state.othersApproved.filter((m) => !eq(m, spec.measurement)).map((m): Step => ({
+    id: `revoke:${m}`, title: `Withdraw approval from ${m.slice(0, 10)}…${m.slice(-4)}`, detail: 'Another measurement this account approved earlier. Withdrawing it revokes that code if it is the one running.', done: false,
+  }));
   return [
     { id: 'limits-usdg', title: 'Cap what the agent can spend in USDG', detail: 'Per trade, per rolling day, and the size above which a trade waits for you.', done: usdg.ok && sameLimits(state.usdg, usdg.value) },
     { id: 'limits-tsla', title: 'Cap what the agent can sell in TSLA', detail: 'The same three limits on the Stock Token leg.', done: tsla.ok && sameLimits(state.tsla, tsla.value) },
     { id: 'pool', title: 'Allow the TSLA/USDG pool', detail: 'The one hookless 0.3% pool on the Uniswap v4 PoolManager.', done: state.poolAllowed },
     { id: 'model', title: 'Pin the model the receipts must name', detail: 'A trade whose receipt names another model reverts.', done: modelOk },
-    { id: 'measurement', title: 'Approve this measurement', detail: 'Only a key whose TDX quote carries it can trade this account.', done: state.approved },
+    ...revokes,
+    { id: 'measurement', title: 'Approve this measurement', detail: 'Only a key whose TDX quote carries it can trade this account, and no other measurement stays approved.', done: state.approved },
     { id: 'admit', title: 'Admit the running agent', detail: 'The Stylus Verifier checks a fresh quote from the agent and registers its key.', done: admitted },
   ];
 }

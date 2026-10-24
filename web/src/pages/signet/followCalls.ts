@@ -10,6 +10,7 @@ export type CallContext = { measurement: Hex; servedModelHash: Hex; usdg: Parsed
 
 /** The AgentAccount call that performs one follow step. `admit` has no fixed call: it carries a fresh quote. */
 export function followCalldata(step: Exclude<StepId, 'admit'>, ctx: CallContext): Hex {
+  if (step.startsWith('revoke:')) return encodeFunctionData({ abi: accountAbi, functionName: 'setMeasurement', args: [step.slice('revoke:'.length) as Hex, false] });
   switch (step) {
     case 'limits-usdg':
       return encodeFunctionData({ abi: accountAbi, functionName: 'setLimits', args: [PAXOS_USDG, ctx.usdg] });
@@ -21,5 +22,7 @@ export function followCalldata(step: Exclude<StepId, 'admit'>, ctx: CallContext)
       return encodeFunctionData({ abi: accountAbi, functionName: 'setModel', args: [REQUESTED_MODEL_HASH, [ctx.servedModelHash, ZERO32, ZERO32, ZERO32], VENUE_GATEWAY_MEASUREMENT] });
     case 'measurement':
       return encodeFunctionData({ abi: accountAbi, functionName: 'setMeasurement', args: [ctx.measurement, true] });
+    default:
+      throw new Error(`no call for step ${step}`);
   }
 }

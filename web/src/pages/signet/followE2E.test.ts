@@ -17,7 +17,7 @@ const RPC = 'https://rpc.testnet.chain.robinhood.com';
 //   SIGNET_E2E=1 node --env-file=../.env node_modules/vitest/vitest.mjs run src/pages/signet/followE2E.test.ts
 describe.skipIf(!KEY)('following an agent on chain', () => {
   const pub = createPublicClient({ chain: rhcChain, transport: http(RPC) });
-  const agent = ranked(TRACK.agents)[0];
+  const agent = ranked(TRACK.agents)[0]; // one boot: an account approves exactly one measurement
   const usdg = parseLimits(DEFAULT_LIMITS.usdg, 6);
   const tsla = parseLimits(DEFAULT_LIMITS.tsla, 18);
   const spec: FollowSpec = {

@@ -12,7 +12,7 @@ import { useMyAccounts } from '../../hooks/useMyAccounts';
 import { useTx } from '../../hooks/useTx';
 import { short } from '../../lib/format';
 import { OPERATOR_CVM_URL } from '../../lib/rhc.generated';
-import type { TrackAgent } from '../../lib/track';
+import { latestBoot, type Strategy } from '../../lib/track';
 import { DEFAULT_LIMITS, REQUESTED_MODEL_HASH, VENUE_GATEWAY_MEASUREMENT, type LimitsInput } from '../../lib/venue';
 import { CreateAction } from '../Account';
 import { readOperatorQuote } from '../account/operator';
@@ -43,7 +43,9 @@ function LimitFields({ symbol, value, onChange, error }: { symbol: string; value
   );
 }
 
-export function FollowPanel({ agent }: { agent: TrackAgent }) {
+export function FollowPanel({ strategy }: { strategy: Strategy }) {
+  // A boot has its own measurement; an account approves exactly one, and the newest boot is the code that is running.
+  const agent = latestBoot(strategy);
   const conn = useConnection();
   const { mutate: switchChain } = useSwitchChain();
   const client = usePublicClient({ chainId: rhcChain.id });
@@ -121,8 +123,8 @@ export function FollowPanel({ agent }: { agent: TrackAgent }) {
     <section className="sg-follow-panel" id="follow" aria-labelledby="follow-h">
       <h2 id="follow-h" className="t-section">Let this code trade for you</h2>
       <p className="prose">
-        Following approves one measurement on your own account. Only a key whose Intel TDX quote carries it can trade your Stock Tokens, and
-        the limits below stop it at a size you chose.
+        Following leaves exactly one measurement approved on your own account: <span className="hex" title={agent.measurement}>{short(agent.measurement)}</span>, the
+        latest boot of this strategy. Only a key whose Intel TDX quote carries it can trade your Stock Tokens, and the limits below stop it at a size you chose.
       </p>
       <EligibilityGate>
         {!conn.isConnected ? (

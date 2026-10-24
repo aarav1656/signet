@@ -24,6 +24,8 @@
 .sg-agent { display: grid; gap: 2px; min-width: 0; }
 .sg-agent .t-subject { text-decoration-color: var(--line-strong); overflow-wrap: anywhere; }
 .sg-agent .hex { color: var(--soft); }
+.sg-boots { display: flex; flex-wrap: wrap; gap: 0 10px; align-items: baseline; font-size: 12px; line-height: 20px; color: var(--mute); }
+.sg-boots a.hex { text-decoration-color: var(--line-strong); }
 .sg-cell { display: grid; gap: 2px; min-width: 0; font-size: 13px; }
 .sg-cell b { font: 500 18px/1.2 var(--mono); letter-spacing: -0.01em; }
 .sg-ret { text-decoration: none; justify-self: start; }
@@ -34,6 +36,7 @@
 .sg-state { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 18px; color: var(--soft); }
 .sg-state .d { margin-top: 4px; flex: none; animation: none; }
 .sg-state.checking .d, .sg-state.unread .d { background: transparent; border: 2px solid var(--mute); }
+.sg-state small { display: block; font-size: 12px; line-height: 18px; color: var(--mute); }
 .sg-state.mismatch .d { background: transparent; border: 2px solid var(--red); }
 .sg-state.mismatch { color: var(--ink); }
 .sg-state.verified { color: var(--ink); }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import raw from '../../lib/track-record.json';
 import { PAXOS_USDG, TSLA } from './rhc.generated';
-import { agentByMeasurement, decimalAmount, executedPriceUsd, fmtAmount, fmtPct, parseTrack, ranked, TRACK } from './track';
+import { agentByMeasurement, composeOf, decimalAmount, executedPriceUsd, fmtAmount, fmtPct, groupByCompose, latestBoot, parseTrack, ranked, rankedStrategies, STRATEGIES, strategyById, strategyLabel, TRACK } from './track';
 
 const m = (c: string) => `0x${c.repeat(64)}`;
 const trade = (c: string, block: number) => ({ tx: m(c), block, time: 1_790_000_000 + block, account: '0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D', tokenIn: 'USDG', tokenOut: 'TSLA', amountIn: '1', amountOut: '0.0039', priceUsdAtTrade: 255.7, modelHash: m('c') });
@@ -94,5 +94,55 @@ describe('executedPriceUsd', () => {
   });
   it('has no price for a zero-sized leg', () => {
     expect(executedPriceUsd({ tokenIn: 'USDG', tokenOut: 'TSLA', amountIn: '1', amountOut: '0' })).toBeNull();
+  });
+});
+
+describe('strategies group boots by compose hash', () => {
+  const C = 'ab'.repeat(32);
+  const boot = (c: string, workload: string | null, pnlUsd: number | null, deployedUsd: number | null, block: number) =>
+    parseTrack(rec([{ measurement: m(c), workload, label: `Agent, CVM boot ${block}`, trades: [trade(c, block)], pnlUsd, deployedUsd, returnPct: 1 }])).agents[0];
+  it('reads the compose hash from the workload string and from nothing else', () => {
+    expect(composeOf(`compose ${C}`)).toBe(`0x${C}`);
+    expect(composeOf(`image ttl.sh/x@sha256:${C}`)).toBeUndefined();
+    expect(composeOf(null)).toBeUndefined();
+    expect(composeOf('compose 1234')).toBeUndefined();
+  });
+  it('two boots of one compose are one strategy whose return is total profit over total deployed', () => {
+    const [s] = groupByCompose([boot('1', `compose ${C}`, 3, 10, 5), boot('2', `compose ${C}`, 1, 10, 9)]);
+    expect(s.boots).toHaveLength(2);
+    expect(s.trades.map((t) => t.block)).toEqual([5, 9]);
+    expect(s.returnPct).toBeCloseTo(20, 6);
+    expect(latestBoot(s).measurement).toBe(m('2'));
+  });
+  it('a different compose, or a workload with none, is its own strategy', () => {
+    const list = groupByCompose([boot('1', `compose ${C}`, 1, 10, 5), boot('2', `compose ${'cd'.repeat(32)}`, 1, 10, 6), boot('3', null, 1, 10, 7)]);
+    expect(list).toHaveLength(3);
+    expect(list.find((x) => !x.compose)?.id).toBe(m('3'));
+  });
+  it('is unmarked when one boot has no profit figure, never a partial sum', () => {
+    const [s] = groupByCompose([boot('1', `compose ${C}`, 3, 10, 5), boot('2', `compose ${C}`, null, 10, 9)]);
+    expect(s.returnPct).toBeNull();
+    expect(rankedStrategies([s, groupByCompose([boot('4', null, 1, 10, 3)])[0]])[0].id).toBe(m('4'));
+  });
+  it('opens a strategy from its compose hash or from any of its boots', () => {
+    const list = groupByCompose([boot('1', `compose ${C}`, 1, 10, 5), boot('2', `compose ${C}`, 1, 10, 9)]);
+    expect(strategyById(list, `0x${C}`)).toBeDefined();
+    expect(strategyById(list, m('2'))).toBeDefined();
+    expect(strategyById(list, m('3'))).toBeUndefined();
+  });
+  it('drops the boot suffix from a label', () => {
+    expect(strategyLabel('Chiron reference agent, CVM boot 2')).toBe('Chiron reference agent');
+    expect(strategyLabel('Operator agent')).toBe('Operator agent');
+  });
+});
+
+describe('the shipped record, grouped', () => {
+  it('folds the reference agent boots into one strategy with every trade and a measurement per boot', () => {
+    const ref = STRATEGIES.find((s) => s.boots.length > 1);
+    expect(ref, 'a strategy with more than one boot').toBeDefined();
+    expect(ref!.trades.length).toBe(ref!.boots.reduce((n, b) => n + b.trades.length, 0));
+    expect(new Set(ref!.boots.map((b) => b.measurement)).size).toBe(ref!.boots.length);
+    expect(ref!.returnPct).not.toBeNull();
+    expect(ref!.trades.some((t) => t.tx === '0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03')).toBe(true);
   });
 });

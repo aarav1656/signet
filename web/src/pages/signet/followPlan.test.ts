@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { decodeFunctionData } from 'viem';
+import { accountAbi } from '../../abi/AgentAccount.generated';
 import { DEFAULT_LIMITS, REQUESTED_MODEL_HASH, VENUE_GATEWAY_MEASUREMENT } from '../../lib/venue';
+import { followCalldata } from './followCalls';
 import { parseLimits, pending, planFollow, type FollowSpec, type FollowState, type OnchainLimits } from './followPlan';
 
 const M = `0x${'eb'.repeat(32)}` as const;
@@ -13,14 +16,14 @@ const spec: FollowSpec = {
   usdg: { decimals: 6, limits: DEFAULT_LIMITS.usdg }, tsla: { decimals: 18, limits: DEFAULT_LIMITS.tsla },
 };
 const fresh: FollowState = {
-  approved: false, requestedModelHash: ZERO, acceptedServedHashes: [ZERO, ZERO, ZERO, ZERO], gatewayMeasurement: ZERO, poolAllowed: false,
+  approved: false, othersApproved: [], requestedModelHash: ZERO, acceptedServedHashes: [ZERO, ZERO, ZERO, ZERO], gatewayMeasurement: ZERO, poolAllowed: false,
   usdg: none, tsla: none, agent: NO_AGENT, agentMeasurement: ZERO, agentExpiry: 0n,
 };
 const following = (): FollowState => {
   const u = parseLimits(spec.usdg.limits, 6), t = parseLimits(spec.tsla.limits, 18);
   if (!u.ok || !t.ok) throw new Error('defaults must parse');
   return {
-    approved: true, requestedModelHash: REQUESTED_MODEL_HASH, acceptedServedHashes: [SERVED, ZERO, ZERO, ZERO], gatewayMeasurement: VENUE_GATEWAY_MEASUREMENT,
+    approved: true, othersApproved: [], requestedModelHash: REQUESTED_MODEL_HASH, acceptedServedHashes: [SERVED, ZERO, ZERO, ZERO], gatewayMeasurement: VENUE_GATEWAY_MEASUREMENT,
     poolAllowed: true, usdg: u.value, tsla: t.value, agent: '0x4a0BCAE7c9F2F1D1B0cF0e6F4a3e2d1c0b9a78eA', agentMeasurement: M, agentExpiry: 1n,
   };
 };
@@ -45,6 +48,30 @@ describe('planFollow', () => {
   it('a pin on another model reopens the model step', () => {
     const steps = planFollow({ ...following(), acceptedServedHashes: [`0x${'11'.repeat(32)}`, ZERO, ZERO, ZERO] }, spec);
     expect(pending(steps).map((x) => x.id)).toEqual(['model']);
+  });
+});
+
+describe('following leaves exactly one measurement approved', () => {
+  const OLD = `0x${'9d'.repeat(32)}` as const;
+  const OLDER = `0x${'7a'.repeat(32)}` as const;
+  it('withdraws every other approved measurement before approving this one', () => {
+    const ids = planFollow({ ...fresh, othersApproved: [OLD, OLDER] }, spec).map((x) => x.id);
+    expect(ids).toEqual(['limits-usdg', 'limits-tsla', 'pool', 'model', `revoke:${OLD}`, `revoke:${OLDER}`, 'measurement', 'admit']);
+    expect(ids.indexOf(`revoke:${OLDER}`)).toBeLessThan(ids.indexOf('measurement'));
+  });
+  it('an account that approves this measurement and another still has the withdrawal to send', () => {
+    const steps = planFollow({ ...following(), othersApproved: [OLD] }, spec);
+    expect(pending(steps).map((x) => x.id)).toEqual([`revoke:${OLD}`]);
+  });
+  it('never withdraws the measurement being followed', () => {
+    expect(planFollow({ ...fresh, othersApproved: [M] }, spec).some((x) => x.id.startsWith('revoke:'))).toBe(false);
+  });
+  it('a withdrawal step encodes setMeasurement(measurement, false) and approval encodes true', () => {
+    const ctx = { measurement: M, servedModelHash: SERVED, usdg: { allowed: true as const, perTrade: 1n, daily: 2n, approvalAbove: 1n }, tsla: { allowed: true as const, perTrade: 1n, daily: 2n, approvalAbove: 1n } };
+    const rev = decodeFunctionData({ abi: accountAbi, data: followCalldata(`revoke:${OLD}`, ctx) });
+    const app = decodeFunctionData({ abi: accountAbi, data: followCalldata('measurement', ctx) });
+    expect([rev.functionName, rev.args]).toEqual(['setMeasurement', [OLD, false]]);
+    expect([app.functionName, app.args]).toEqual(['setMeasurement', [M, true]]);
   });
 });
 
