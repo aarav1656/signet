@@ -170,7 +170,7 @@ pub fn find_array_element<T>(
 /// Read a raw JSON string value's content bytes (quotes stripped, no escape
 /// decoding, see module doc). `start` must be the index of the opening
 /// quote as returned by [`find_member`]/[`find_array_element`].
-pub fn string_content<'a>(b: &'a [u8], start: usize, end: usize) -> R<&'a [u8]> {
+pub fn string_content(b: &[u8], start: usize, end: usize) -> R<&[u8]> {
     if end < start + 2 || b[start] != b'"' || b[end - 1] != b'"' {
         return Err(JsonError);
     }
