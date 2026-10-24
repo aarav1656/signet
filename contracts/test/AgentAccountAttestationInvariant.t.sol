@@ -147,7 +147,11 @@ contract AttestationHandler is Test {
     }
 
     function _advance(uint256 dt) internal {
-        vm.warp(vm.getBlockTimestamp() + dt % 45 minutes);
+        _warp(dt % 45 minutes);
+    }
+
+    function _warp(uint256 dt) internal {
+        vm.warp(vm.getBlockTimestamp() + dt);
         vm.roll(vm.getBlockNumber() + 1);
         if (vm.getBlockTimestamp() + 3 hours > receiptKeyUntil) {
             assay.registerReceiptKey(abi.encode("k", vm.getBlockNumber()), hex"02", vm.getBlockNumber() - 1, receiptKey);
@@ -187,6 +191,12 @@ contract AttestationHandler is Test {
         gM = bytes32(0);
         gExpiry = 0;
         revocations++;
+    }
+
+    /// Jumps a day or more ahead so attestations and the receipt key lapse and the 24 h window empties.
+    function jump(uint256 hrs) external {
+        if (_quiet(6)) return;
+        _warp(bound(hrs, 20, 30) * 1 hours);
     }
 
     // ------------------------------------------------------------------ admission
@@ -375,14 +385,20 @@ contract AttestationHandler is Test {
         if (who == owner) return;
         (uint256 u0, uint256 s0) = _balances();
         bytes memory call_;
-        which %= 8;
+        which %= 11;
+        // a real pending proposal when one exists, so the call is refused for who is calling and not for a bad id
+        uint256 pid = proposedId.length == 0 ? 1 : proposedId[amt % proposedId.length];
+        AgentAccount.Trade memory pt = proposed.length == 0 ? _trade(true, 1) : proposed[amt % proposed.length];
         if (which == 0) call_ = abi.encodeCall(AgentAccount.withdraw, (usdg, who, bound(amt, 1, 1e9)));
         else if (which == 1) call_ = abi.encodeCall(AgentAccount.withdraw, (tsla, who, bound(amt, 1, 1e17)));
         else if (which == 2) call_ = abi.encodeCall(AgentAccount.setLimits, (usdg, AgentAccount.Limits(true, 1e30, 1e30, 1e30)));
         else if (which == 3) call_ = abi.encodeCall(AgentAccount.setMeasurement, (otherM, true));
         else if (which == 4) call_ = abi.encodeCall(AgentAccount.setAttestationPolicy, (false, 5, 0));
-        else if (which == 5) call_ = abi.encodeCall(AgentAccount.approveTrade, (bound(amt, 1, 6), _trade(true, 1)));
+        else if (which == 5) call_ = abi.encodeCall(AgentAccount.approveTrade, (pid, pt));
         else if (which == 6) call_ = abi.encodeCall(AgentAccount.revokeAgent, ());
+        else if (which == 7) call_ = abi.encodeCall(AgentAccount.rejectTrade, (pid));
+        else if (which == 8) call_ = abi.encodeCall(AgentAccount.setApprovalTtl, (uint64(bound(amt, 1, 1 days))));
+        else if (which == 9) call_ = abi.encodeCall(AgentAccount.pause, ());
         else call_ = abi.encodeCall(AgentAccount.openInferenceChannel, (who, uint128(bound(amt, 1, 1e9))));
         vm.prank(who);
         (bool ok,) = address(account).call(call_);
@@ -474,6 +490,17 @@ contract AttestationHandlerSmokeTest is AgentAccountTestBase {
         h.execute(7, true, 5e6, 0); // the owner
         assertEq(h.executes(), 0);
         assertEq(h.deniedTrades(), 3);
+    }
+
+    function test_jumpLapsesTheAgentAttestation() public {
+        h.jump(20); // 20 h: inside the 24 h attestation
+        h.execute(0, true, 5e6, 0);
+        assertEq(h.executes(), 1);
+        h.jump(30); // 30 h more: past it
+        h.execute(0, true, 5e6, 0);
+        assertEq(h.executes(), 1);
+        assertEq(h.deniedTrades(), 1);
+        assertEq(h.unattestedTrades(), 0);
     }
 
     function test_revokedMeasurementStopsTheAgentAndIsRecorded() public {

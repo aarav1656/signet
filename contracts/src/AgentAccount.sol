@@ -186,6 +186,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     event TradeRejected(uint256 indexed proposalId);
     event ProposalCancelled(uint256 indexed proposalId);
     event Paused(bool paused);
+    event ApprovalTtlSet(uint64 ttl);
     event Withdrawn(address indexed token, address indexed to, uint256 amount);
     event InferenceChannelOpened(uint256 indexed channelId, address indexed provider, uint128 amount);
 
@@ -228,6 +229,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     error BadLimits();
     error NoCode(address target);
     error RenounceDisabled();
+    error ETHTransferFailed();
     error CorporateActionPending(address token, uint256 uiMultiplier, uint256 newUIMultiplier, uint256 effectiveAt);
 
     constructor(
@@ -600,6 +602,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
 
     function setApprovalTtl(uint64 ttl) external onlyOwner {
         approvalTtl = ttl;
+        emit ApprovalTtlSet(ttl);
     }
 
     function pause() external onlyOwner {
@@ -634,7 +637,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
 
     function withdrawETH(address payable to, uint256 amount) external onlyOwner nonReentrant {
         (bool ok,) = to.call{value: amount}("");
-        require(ok);
+        if (!ok) revert ETHTransferFailed();
         emit Withdrawn(address(0), to, amount);
     }
 
