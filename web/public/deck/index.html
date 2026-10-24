@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signet: Demo Day deck and Founder House canvases</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Tokens follow web/DESIGN.md (the gate log). */
+:root {
+  --bg: #121315; --panel: #17191c; --line: #26292e;
+  --ink: #e9e7e2; --soft: #b5b3ad; --mute: #8d9097; --amber: #f2b134;
+  --font-display: "Archivo", system-ui, sans-serif; --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+html, body { overflow-x: clip; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-display); }
+main { max-width: 1120px; margin: 0 auto; padding: 40px 20px 80px; }
+h1 { font-size: clamp(28px, 4vw, 44px); font-weight: 600; font-stretch: 112%; letter-spacing: -0.02em; margin: 0 0 8px; overflow-wrap: anywhere; }
+p.lede { color: var(--soft); margin: 0 0 24px; max-width: 64ch; line-height: 1.5; }
+nav.files { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 32px; }
+nav.files a { font-family: var(--font-mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); background: var(--panel); padding: 9px 12px; white-space: nowrap; }
+nav.files a:hover, nav.files a:focus-visible { border-color: var(--amber); outline: none; }
+nav.files a.primary { border-color: var(--amber); color: var(--amber); }
+h2 { font-size: 15px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); margin: 40px 0 14px; }
+figure { margin: 0 0 18px; border: 1px solid var(--line); background: var(--panel); }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { font-family: var(--font-mono); font-size: 12px; color: var(--mute); padding: 8px 12px; border-top: 1px solid var(--line); }
+footer { margin-top: 48px; color: var(--mute); font-size: 14px; }
+footer a { color: var(--soft); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Signet: the Demo Day deck</h1>
+  <p class="lede">Trading agents with a provable record and a private strategy, on Robinhood Chain. Fifteen slides for Arbitrum Founder House Singapore, then the Product and GTM canvases on the organisers' template.</p>
+  <nav class="files" aria-label="Downloads">
+    <a class="primary" href="Signet-Deck.pdf">Deck, PDF</a>
+    <a href="Signet-Deck.pptx">Deck, PPTX</a>
+    <a href="canvas/Signet-Product-Canvas.pdf">Product canvas, PDF</a>
+    <a href="canvas/Signet-Product-Canvas.pptx">Product canvas, PPTX</a>
+    <a href="canvas/Signet-GTM-Canvas.pdf">GTM canvas, PDF</a>
+    <a href="canvas/Signet-GTM-Canvas.pptx">GTM canvas, PPTX</a>
+  </nav>
+
+  <h2>Deck</h2>
+  <figure><img src="slides/slide-01.png" alt="AI trading agents with a provable record and a private strategy" loading="eager"><figcaption>1 / 15</figcaption></figure>
+  <figure><img src="slides/slide-02.png" alt="0 of 22 viral AI trading bot posts gave a wallet you could check" loading="lazy"><figcaption>2 / 15</figcaption></figure>
+  <figure><img src="slides/slide-03.png" alt="150,000+ customers run agentic accounts at Robinhood. Nobody can check which code trades." loading="lazy"><figcaption>3 / 15</figcaption></figure>
+  <figure><img src="slides/slide-04.png" alt="A follower's account admits one workload and refuses the rest" loading="lazy"><figcaption>4 / 15</figcaption></figure>
+  <figure><img src="slides/slide-05.png" alt="One real trade and one real refusal, both on chain" loading="lazy"><figcaption>5 / 15</figcaption></figure>
+  <figure><img src="slides/slide-06.png" alt="The leaderboard re-reads every trade from the chain" loading="lazy"><figcaption>6 / 15</figcaption></figure>
+  <figure><img src="slides/slide-07.png" alt="Private strategy, public proof" loading="lazy"><figcaption>7 / 15</figcaption></figure>
+  <figure><img src="slides/slide-08.png" alt="351 tests and 122 killed mutants guard the follower's account" loading="lazy"><figcaption>8 / 15</figcaption></figure>
+  <figure><img src="slides/slide-09.png" alt="Named creators already publish returns and keep the strategy sealed" loading="lazy"><figcaption>9 / 15</figcaption></figure>
+  <figure><img src="slides/slide-10.png" alt="Creators earn on new profit. Followers pay for the code they approved." loading="lazy"><figcaption>10 / 15</figcaption></figure>
+  <figure><img src="slides/slide-11.png" alt="Others prove the number or the platform. Signet proves the workload." loading="lazy"><figcaption>11 / 15</figcaption></figure>
+  <figure><img src="slides/slide-12.png" alt="Five named creators, one receipt, one message" loading="lazy"><figcaption>12 / 15</figcaption></figure>
+  <figure><img src="slides/slide-13.png" alt="The ask: introductions now, milestone funding to put five creators on chain" loading="lazy"><figcaption>13 / 15</figcaption></figure>
+  <figure><img src="slides/slide-14.png" alt="Product canvas" loading="lazy"><figcaption>14 / 15</figcaption></figure>
+  <figure><img src="slides/slide-15.png" alt="GTM canvas" loading="lazy"><figcaption>15 / 15</figcaption></figure>
+
+  <h2>Founder House canvases</h2>
+  <figure><img src="canvas/Signet-Product-Canvas.png" alt="Signet Product canvas on the Open House Singapore template" loading="lazy"><figcaption>Product canvas</figcaption></figure>
+  <figure><img src="canvas/Signet-GTM-Canvas.png" alt="Signet GTM canvas on the Open House Singapore template" loading="lazy"><figcaption>GTM canvas</figcaption></figure>
+
+  <footer><a href="/">Open the app</a> · <a href="https://github.com/aarav1656/signet">Source on GitHub</a></footer>
+</main>
+</body>
+</html>

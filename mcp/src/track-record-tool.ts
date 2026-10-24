@@ -6,7 +6,13 @@ import { selectTrackRecord, type TrackRecord } from './trackrecord.js';
 const measurement = z.string().regex(/^0x[0-9a-fA-F]{64}$/, 'a 32-byte hex TDX workload measurement');
 
 /** Snapshot written by scripts/track-record.ts; CHIRON_TRACK_RECORD overrides the path. */
-const load = (): TrackRecord => JSON.parse(readFileSync(process.env.CHIRON_TRACK_RECORD ?? new URL('../../web/lib/track-record.json', import.meta.url), 'utf8'));
+// The hosted endpoint deploys mcp/ alone, so it reads the copy in mcp/data (kept equal to web/lib by test/track-record-copy.test.ts).
+const SNAPSHOTS = [new URL('../data/track-record.json', import.meta.url), new URL('../../web/lib/track-record.json', import.meta.url)];
+const load = (): TrackRecord => {
+  if (process.env.CHIRON_TRACK_RECORD) return JSON.parse(readFileSync(process.env.CHIRON_TRACK_RECORD, 'utf8'));
+  for (const u of SNAPSHOTS) { try { return JSON.parse(readFileSync(u, 'utf8')); } catch { continue; } }
+  throw new Error('track record snapshot not found in mcp/data or web/lib');
+};
 
 export function registerTrackRecord(server: McpServer): void {
   server.registerTool(
