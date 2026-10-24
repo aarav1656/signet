@@ -20,10 +20,14 @@
 //!   4. qe_report.report_data[0..32] == SHA256(attestation_key || qe_auth_data)
 //!   5. ISV/quote signature (header||body, 632 bytes) verifies under the
 //!      attestation key (P-256)
+//!
 //! Byte layout and signed scopes match Phala-Network/dcap-qvl src/quote.rs and
 //! src/verify.rs, confirmed against a real bundle in ../reference_verify.py.
-//! TCB info / QE identity policy checks (need live Intel PCCS collateral) are out
-//! of scope, per assay.md's fallback for collateral that does not fit.
+//!
+//! `verify` and `verify_keyset` take the quote alone. `verify_with_collateral`
+//! additionally takes Intel's PCS collateral for the quote's platform (TCB Info, QE
+//! Identity, PCK CRL, root CRL), authenticates it against the same hardcoded root and
+//! returns the platform's TCB status; see `collateral.rs`.
 #![cfg_attr(not(any(test, feature = "export-abi")), no_main)]
 extern crate alloc;
 
@@ -32,6 +36,7 @@ use p256::ecdsa::{signature::Verifier as SigVerifier, Signature, VerifyingKey};
 use sha2::{Digest, Sha256};
 use stylus_sdk::{
     alloy_primitives::{keccak256, Address, Bytes, FixedBytes},
+    alloy_sol_types::{sol_data, SolType},
     prelude::*,
 };
 
@@ -43,6 +48,9 @@ use stylus_sdk::{
 /// `verify_keyset` below), so a malicious byte string can never reach it
 /// unless it also happens to be the real, attested keyset.
 mod json;
+
+/// TCB status, QE identity and CRL checks against Intel PCS collateral.
+mod collateral;
 
 /// TDReport10 body field offsets within `signed_scope` (48-byte header + 584-byte
 /// body), per dcap-qvl's `TDReport10` struct (src/quote.rs): tee_tcb_svn(16) +
@@ -405,12 +413,7 @@ fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     if needle.is_empty() || haystack.len() < needle.len() {
         return None;
     }
-    for i in 0..=(haystack.len() - needle.len()) {
-        if &haystack[i..i + needle.len()] == needle {
-            return Some(i);
-        }
-    }
-    None
+    (0..=(haystack.len() - needle.len())).find(|&i| &haystack[i..i + needle.len()] == needle)
 }
 
 /// Extract every `-----BEGIN CERTIFICATE-----...-----END CERTIFICATE-----`
@@ -604,9 +607,8 @@ fn verify_dcap_chain(quote: &[u8], now: u64) -> Result<([u8; 64], FixedBytes<32>
     let intermediate = parse_x509_cert(&certs_der[1])?;
 
     // H-2: reject an expired or not-yet-valid PCK leaf/intermediate. TCB
-    // status, QE identity and PCK CRL checks still need live Intel PCCS
-    // collateral this contract does not fetch; see README's security table
-    // for exactly what that leaves unchecked.
+    // status, QE identity and revocation need Intel PCS collateral from the
+    // caller; `verify_with_collateral` runs `collateral::check` after this.
     if now < leaf.not_before || now > leaf.not_after {
         return Err(b"LeafCertNotValid".to_vec());
     }
@@ -628,7 +630,7 @@ fn verify_dcap_chain(quote: &[u8], now: u64) -> Result<([u8; 64], FixedBytes<32>
     hasher.update(q.ecdsa_attestation_key);
     hasher.update(q.qe_auth_data);
     let expect: [u8; 32] = hasher.finalize().into();
-    if q.qe_report.len() < 32 || &q.qe_report[q.qe_report.len() - 64..q.qe_report.len() - 32] != expect {
+    if q.qe_report.len() < 32 || q.qe_report[q.qe_report.len() - 64..q.qe_report.len() - 32] != expect {
         return Err(b"QeReportDataMismatch".to_vec());
     }
 
@@ -665,7 +667,7 @@ fn verify_dcap_chain(quote: &[u8], now: u64) -> Result<([u8; 64], FixedBytes<32>
 
     let mut report_data = [0u8; 64];
     report_data.copy_from_slice(&q.signed_scope[RTMR0_OFFSET + 4 * MR_LEN..RTMR0_OFFSET + 4 * MR_LEN + 64]);
-    Ok((report_data, FixedBytes::from(measurement)))
+    Ok((report_data, measurement))
 }
 
 /// `bytes` as lowercase ASCII hex, no `0x` prefix, matching both Rust's
@@ -884,6 +886,78 @@ impl Verifier {
         }
 
         Ok(measurement)
+    }
+
+    /// `verify()` plus Intel's collateral: the quote's platform must also be in good standing.
+    ///
+    /// `collateral` is `abi.encode(tcbInfo, tcbSignature, tcbChainPem, qeIdentity, qeSignature,
+    /// qeChainPem, pckCrl, rootCrl)`, all `bytes`: `tcbInfo` and `qeIdentity` are the exact JSON
+    /// text of the `tcbInfo` / `enclaveIdentity` member from Intel PCS (the bytes Intel signed),
+    /// the signatures are the raw 64-byte r||s decoded from the hex `signature` member, the
+    /// chains are the PEM issuer chains from the PCS response headers, and the CRLs are DER.
+    /// Everything is authenticated against the hardcoded Intel root; see `collateral.rs`.
+    ///
+    /// Returns (signer, measurement, status) where `status` is the worst severity rank of the
+    /// platform, TDX module and quoting enclave (0 UpToDate, 1 SWHardeningNeeded, 2
+    /// ConfigurationNeeded, 3 ConfigurationAndSWHardeningNeeded, 4 OutOfDate, 5
+    /// OutOfDateConfigurationNeeded). Reverts on `Revoked`, on a status above `max_status`, on
+    /// a TCB Info or QE Identity whose `tcbEvaluationDataNumber` is below `min_eval`, and on
+    /// any collateral that fails to authenticate, is stale, or describes another platform.
+    pub fn verify_with_collateral(
+        &self,
+        quote: Bytes,
+        nonce: FixedBytes<32>,
+        collateral: Bytes,
+        max_status: u8,
+        min_eval: u32,
+    ) -> Result<(Address, FixedBytes<32>, u8), Vec<u8>> {
+        self.verify_with_collateral_under(quote, nonce, collateral, max_status, min_eval, &INTEL_ROOT_PUBKEY)
+    }
+}
+
+impl Verifier {
+    /// `verify_with_collateral` with the collateral trust root as a parameter, so a test can
+    /// stand in for Intel's key. The quote itself is always checked against the hardcoded root.
+    fn verify_with_collateral_under(
+        &self,
+        quote: Bytes,
+        nonce: FixedBytes<32>,
+        collateral: Bytes,
+        max_status: u8,
+        min_eval: u32,
+        root: &[u8; 64],
+    ) -> Result<(Address, FixedBytes<32>, u8), Vec<u8>> {
+        let (signer, measurement) = self.verify(quote.clone(), nonce)?;
+        let now = self.vm().block_timestamp();
+        type Abi = (
+            sol_data::Bytes,
+            sol_data::Bytes,
+            sol_data::Bytes,
+            sol_data::Bytes,
+            sol_data::Bytes,
+            sol_data::Bytes,
+            sol_data::Bytes,
+            sol_data::Bytes,
+        );
+        let d = Abi::abi_decode_params(collateral.as_ref()).map_err(|_| b"BadCollateralAbi".to_vec())?;
+        let status = collateral::check(
+            quote.as_ref(),
+            now,
+            &collateral::Collateral {
+                tcb_info: &d.0,
+                tcb_signature: &d.1,
+                tcb_chain_pem: &d.2,
+                qe_identity: &d.3,
+                qe_signature: &d.4,
+                qe_chain_pem: &d.5,
+                pck_crl: &d.6,
+                root_crl: &d.7,
+            },
+            max_status,
+            min_eval as u64,
+            root,
+        )?;
+        Ok((signer, measurement, status))
     }
 }
 
