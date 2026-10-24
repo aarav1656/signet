@@ -105,11 +105,12 @@ cd mcp && npm install
 claude mcp add chiron npx tsx $(pwd)/src/server.ts
 ```
 
-Three tools read Robinhood Chain testnet (46630) directly with viem:
+Four tools serve Robinhood Chain testnet (46630): three read it directly with viem, and `get_track_record` reads the snapshot that `scripts/track-record.ts` writes.
 
 - `verify_receipt(tx_hash)` reads the trade event, recomputes the receipt hash from the receipt bytes in the calldata exactly as `AgentAccount._consumeReceipt` keys it, and checks the recorded served model hash against the account's model pin. It returns `verified` with every check listed, and the answer is false unless every check passes.
 - `account_state(account)` returns the agent, measurement, expiry, caps and recent trades.
 - `explain_refusal(tx_hash)` decodes a reverted transaction's custom error (`NotAgent`, `ExceedsPerTradeCap`, `MeasurementNotApproved`) into plain words.
+- `get_track_record(measurement)` returns every executed trade of the agent that ran under one TDX workload measurement (tx hash, block, the mainnet Chainlink round that priced it, the recorded model hash), its PnL and return, the attestations of that measurement and the refusals issued against it. Each trade tx feeds `verify_receipt`.
 
 `npm test` in `mcp/` checks the real first trade of the live account (`0xe5052266...ddfa2`) and returns `verified: true` with seven passing checks, and a different model hash turns the answer to `verified: false`. The gate log on the hosted app runs the same hashing in the browser and marks each trade green once its recomputed receipt hash matches the chain.
 
