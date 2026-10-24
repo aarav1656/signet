@@ -32,7 +32,9 @@ ANY_AGENT_SIG = (
 
 MUTANTS = [
     # admission (I1)
-    ("quote replay check", "if (usedQuote[quoteHash]) revert QuoteAlreadyUsed();", ""),
+    ("quote replay check", "if (requireCollateral) revert CollateralRequired();\n        bytes32 quoteHash = keccak256(quote);\n        if (usedQuote[quoteHash]) revert QuoteAlreadyUsed();",
+     "if (requireCollateral) revert CollateralRequired();\n        bytes32 quoteHash = keccak256(quote);"),
+    ("quote replay check (collateral path)", "if (usedQuote[quoteHash]) revert QuoteAlreadyUsed();\n        uint8 status;", "uint8 status;"),
     ("quote marked used", "usedQuote[quoteHash] = true;", ""),
     ("measurement approved", "if (!approvedMeasurement[measurement]) revert MeasurementNotApproved(measurement);", ""),
     ("agent != owner at registration", "if (signer == owner()) revert AgentIsOwner();", ""),
@@ -152,7 +154,20 @@ MUTANTS = [
     ("onlyOwner setLimits", "Limits calldata l) external onlyOwner {", "Limits calldata l) external {"),
     ("onlyOwner setPool", "bool allowed) external onlyOwner {", "bool allowed) external {"),
     ("onlyOwner setMeasurement", "bool approved) external onlyOwner {", "bool approved) external {"),
-    ("onlyOwner setModel", "        external\n        onlyOwner\n    {", "        external\n    {"),
+    ("onlyOwner setModel", "gatewayMeasurement_)\n        external\n        onlyOwner\n    {", "gatewayMeasurement_)\n        external\n    {"),
+    # attestation policy and the collateral admission path
+    ("plain admission closed while collateral is required", "if (requireCollateral) revert CollateralRequired();", ""),
+    ("collateral path: account re-checks the ceiling", "if (status > maxTcbStatus) revert TcbStatusTooHigh(status, maxTcbStatus);", ""),
+    ("collateral path: owner's ceiling forwarded", "collateral, maxTcbStatus, minTcbEvaluation", "collateral, 255, minTcbEvaluation"),
+    ("collateral path: owner's floor forwarded", "collateral, maxTcbStatus, minTcbEvaluation", "collateral, maxTcbStatus, 0"),
+    ("collateral path: status event", "emit AgentTcbStatus(signer, status);", ""),
+    ("policy: Revoked can never be accepted", "if (maxTcbStatus_ > 5) revert BadTcbStatus(maxTcbStatus_);", ""),
+    ("policy: change revokes the current agent", "emit AttestationPolicySet(requireCollateral_, maxTcbStatus_, minTcbEvaluation_);\n        if (agent != address(0)) _revokeAgent();",
+     "emit AttestationPolicySet(requireCollateral_, maxTcbStatus_, minTcbEvaluation_);"),
+    ("policy: stores the flag", "requireCollateral = requireCollateral_;", ""),
+    ("policy: stores the ceiling", "maxTcbStatus = maxTcbStatus_;", ""),
+    ("policy: stores the floor", "minTcbEvaluation = minTcbEvaluation_;", ""),
+    ("onlyOwner setAttestationPolicy", "minTcbEvaluation_)\n        external\n        onlyOwner\n    {", "minTcbEvaluation_)\n        external\n    {"),
     ("onlyOwner setApprovalTtl", "function setApprovalTtl(uint64 ttl) external onlyOwner {", "function setApprovalTtl(uint64 ttl) external {"),
     ("onlyOwner pause", "function pause() external onlyOwner {", "function pause() external {"),
     ("onlyOwner unpause", "function unpause() external onlyOwner {", "function unpause() external {"),
@@ -174,11 +189,14 @@ MUTANTS = [
 
 
 def run(force=False):
+    shutil.rmtree("cache/invariant", ignore_errors=True)  # a persisted failing sequence must not decide the next mutant
     p = subprocess.run(CMD + (["--force"] if force else []), capture_output=True, text=True, env=ENV)
     out = p.stdout + p.stderr
     if "Compiler run failed" in out or "Error (" in out:
         return None, ["COMPILE ERROR"]
     failed = sorted(set(re.findall(r"^\[FAIL.*\] (\w+)\(", out, re.M)))  # reasons carry "[1.1e7]"
+    if not failed and re.search(r"^\[FAIL", out, re.M):  # an invariant prints its reason on a line of its own
+        failed = sorted(set(re.findall(r"^ (invariant_\w+)\(\)", out, re.M))) or ["invariant"]
     passed = re.findall(r"\[PASS\] (\w+)\(", out)
     if not failed and not passed:
         return None, [out[-400:].replace("\n", " ")]
