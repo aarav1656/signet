@@ -59,6 +59,7 @@ contract AgentAccountAttestationTest is AgentAccountTestBase {
         emit AgentRegistered(agent2, AGENT_M, uint64(block.timestamp + 86400), 2);
         vm.expectEmit(address(account));
         emit AgentTcbStatus(agent2, 0);
+        vm.prank(owner);
         (address signer, bytes32 m) = account.registerAgentWithCollateral(q, block.number - 1, _collateral(0, 20, true));
         assertEq(signer, agent2);
         assertEq(m, AGENT_M);
@@ -166,6 +167,7 @@ contract AgentAccountAttestationTest is AgentAccountTestBase {
         account.registerAgentWithCollateral(q, block.number - 1, _collateral(0, 20, false));
         assertEq(account.agent(), agentAddr);
         assertFalse(account.usedQuote(keccak256(q)));
+        vm.prank(owner);
         account.registerAgentWithCollateral(q, block.number - 1, _collateral(0, 20, true));
         assertEq(account.agent(), agent2);
     }
@@ -198,6 +200,7 @@ contract AgentAccountAttestationTest is AgentAccountTestBase {
     function test_collateral_aQuoteIsSingleUseAcrossBothPaths() public {
         vm.roll(block.number + 1);
         bytes memory q = _quote(agent2, AGENT_M);
+        vm.prank(owner);
         account.registerAgentWithCollateral(q, block.number - 1, _collateral(0, 20, true));
         vm.expectRevert(AgentAccount.QuoteAlreadyUsed.selector);
         account.registerAgentWithCollateral(q, block.number - 1, _collateral(0, 20, true));

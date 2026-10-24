@@ -10,7 +10,7 @@
     },
     {
       "source": "/mcp",
-      "destination": "https://chiron-mcp.vercel.app/api/mcp"
+      "destination": "https://signet-mcp.vercel.app/api/mcp"
     },
     {
       "source": "/(.*)",

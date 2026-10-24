@@ -132,6 +132,13 @@ abstract contract AgentAccountTestBase is Test {
         account.registerAgent(_quote(signer, m), block.number - 1);
     }
 
+    /// Replacing a live, unexpired agent with a different key is the owner's call (review F-3).
+    function _replaceAgentAsOwner(address signer, bytes32 m) internal {
+        bytes memory q = _quote(signer, m);
+        vm.prank(owner);
+        account.registerAgent(q, block.number - 1);
+    }
+
     function _registerAgentOn(AgentAccount a, address signer, bytes32 m) internal {
         a.registerAgent(_quoteOn(a, signer, m), block.number - 1);
     }

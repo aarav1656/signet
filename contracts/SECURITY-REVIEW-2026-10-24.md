@@ -28,7 +28,7 @@ PoC run: `RHC_FORK_BLOCK=141774771 RHC_FORK_URL=https://rpc.testnet.chain.robinh
 |---|---|---|
 | F-1 | Fixed in source. `revokeAgent` unapproves the live measurement. Not yet on the deployed accounts, which predate the fix. | commit `d2d6522`; the F-1 PoC in `test/security/SecurityReview20261024.t.sol` is red without the line and green with it; `AgentAccount.t.sol` unit test; mutant in `test/mutation/agent_account_mutations.py` |
 | F-2 | Wording corrected in `SECURITY.md` (Design decisions, "Admission lasts 24 hours"): expiry shows the CVM is alive, revoking a key is `setMeasurement(m, false)` or `revokeAgent`. | `contracts/SECURITY.md` |
-| F-3 | Open in the contract. A follower account created through the follow flow has exactly one approved measurement, so no second measurement exists to switch to. | `agent/src/follow.ts` |
+| F-3 | Fixed in source. While an admission is live, only the owner can admit a different key; anyone can still renew the same key, and an expired slot is open. Not yet on the deployed accounts. | `registerAgent` guard `OwnerMustReplaceLiveAgent`; `test_admit_strangerCannotReplaceTheLiveAgent` is red with the guard disabled and green with it |
 | F-4 | Open by design. A receipt is recorded with the trade and not claimed as causal. Public copy says a trade names the measurement the agent was admitted under and the model of its verified inference receipt. | README, deck, canvases |
 | F-5 | Open. Collateral freshness is the submitter's. An owner who sets `requireCollateral` accepts that window. | `contracts/src/AgentAccount.sol` |
 | F-6 | Open until the next deployment. `SECURITY.md` now states which guards are live. | `contracts/SECURITY.md`, section "Source and deployed code" |

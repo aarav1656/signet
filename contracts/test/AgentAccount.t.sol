@@ -79,10 +79,12 @@ contract AgentAccountTest is AgentAccountTestBase {
         assertEq(account.agentExpiry(), block.timestamp + 86400);
         assertEq(account.agentEpoch(), 1);
 
+        uint256 later = block.timestamp + 25 hours; // the first admission has expired: the slot is open
+        vm.warp(later);
         vm.roll(block.number + 5);
         bytes memory q = _quote(agent2, AGENT_M);
         vm.expectEmit(address(account));
-        emit AgentRegistered(agent2, AGENT_M, uint64(block.timestamp + 86400), 2);
+        emit AgentRegistered(agent2, AGENT_M, uint64(vm.getBlockTimestamp() + 86400), 2);
         vm.prank(stranger); // anyone may submit; the key comes out of the quote
         (address signer, bytes32 m) = account.registerAgent(q, block.number - 1);
         assertEq(signer, agent2);
@@ -102,7 +104,7 @@ contract AgentAccountTest is AgentAccountTestBase {
         vm.etch(address(0x64), address(new ArbSysDouble()).code);
         // positive control: the ArbSys path admits an in-window refBlock
         vm.roll(block.number + 1);
-        _registerAgent(agent2, AGENT_M);
+        _replaceAgentAsOwner(agent2, AGENT_M);
         assertEq(account.agent(), agent2);
 
         uint256 old = block.number - 300;
@@ -150,6 +152,7 @@ contract AgentAccountTest is AgentAccountTestBase {
     function test_register_revertsReplayedQuote() public {
         vm.roll(block.number + 1);
         bytes memory q = _quote(agent2, AGENT_M);
+        vm.prank(owner);
         account.registerAgent(q, block.number - 1);
         vm.expectRevert(AgentAccount.QuoteAlreadyUsed.selector);
         account.registerAgent(q, block.number - 1);
@@ -159,6 +162,7 @@ contract AgentAccountTest is AgentAccountTestBase {
         vm.roll(block.number + 1);
         bytes memory qA = _quote(agent2, AGENT_M);
         bytes memory qB = _quote(agent3, AGENT_M);
+        vm.prank(owner);
         account.registerAgent(qA, block.number - 1);
         vm.expectPartialRevert(AgentQuoteVerifier.NonceMismatch.selector);
         account.registerAgent(qB, block.number - 1);
@@ -298,6 +302,46 @@ contract AgentAccountTest is AgentAccountTestBase {
         vm.expectRevert(abi.encodeWithSelector(AgentAccount.MeasurementNotApproved.selector, AGENT_M));
         account.registerAgent(q, block.number - 1);
         assertEq(account.agent(), address(0));
+    }
+
+    /// Review F-3. A second approved measurement must not let a stranger swap the live agent.
+    function test_admit_strangerCannotReplaceTheLiveAgent() public {
+        vm.prank(owner);
+        account.setMeasurement(OTHER_M, true);
+        bytes memory q = _quote(agent2, OTHER_M);
+        vm.prank(stranger);
+        vm.expectRevert(AgentAccount.OwnerMustReplaceLiveAgent.selector);
+        account.registerAgent(q, block.number - 1);
+        assertEq(account.agent(), agentAddr, "live agent untouched");
+        assertEq(account.agentMeasurement(), AGENT_M);
+    }
+
+    /// Review F-3 controls: the owner replaces the live agent, a stranger renews the same key,
+    /// and a stranger admits a different key once the live one has expired.
+    function test_admit_ownerReplacesStrangerRenewsAndExpiryOpensTheSlot() public {
+        vm.prank(owner);
+        account.setMeasurement(OTHER_M, true);
+
+        vm.warp(block.timestamp + 1 hours);
+        vm.roll(block.number + 1);
+        uint64 before = account.agentExpiry();
+        bytes memory q1 = _quote(agentAddr, AGENT_M);
+        vm.prank(stranger);
+        account.registerAgent(q1, block.number - 1);
+        assertGt(account.agentExpiry(), before, "same key renewed by a stranger");
+        assertEq(account.agent(), agentAddr);
+
+        bytes memory q2 = _quote(agent2, OTHER_M);
+        vm.prank(owner);
+        account.registerAgent(q2, block.number - 1);
+        assertEq(account.agent(), agent2, "owner replaced the live agent");
+
+        vm.warp(block.timestamp + 25 hours);
+        vm.roll(block.number + 1);
+        bytes memory q3 = _quote(agentAddr, AGENT_M);
+        vm.prank(stranger);
+        account.registerAgent(q3, block.number - 1);
+        assertEq(account.agent(), agentAddr, "expired slot is open to a stranger");
     }
 
     function test_execute_revertsAfterRevoke() public {
@@ -769,13 +813,13 @@ contract AgentAccountTest is AgentAccountTestBase {
         AgentAccount.Trade memory t = _buy(60e6);
         uint256 id = _propose(t);
         vm.roll(block.number + 1);
-        _registerAgent(agent2, AGENT_M);
+        _replaceAgentAsOwner(agent2, AGENT_M);
         vm.prank(owner);
         vm.expectRevert(AgentAccount.ProposerNotCurrentAgent.selector);
         account.approveTrade(id, t);
 
         vm.roll(block.number + 1);
-        _registerAgent(agentAddr, AGENT_M);
+        _replaceAgentAsOwner(agentAddr, AGENT_M);
         uint256 id2 = _propose(t);
         vm.prank(owner);
         account.revokeAgent();
@@ -1207,7 +1251,7 @@ contract AgentAccountTest is AgentAccountTestBase {
     function test_reentrancy_viaTokenHook_blocked() public {
         ReentrantAgent ra = new ReentrantAgent();
         vm.roll(block.number + 1);
-        _registerAgent(address(ra), AGENT_M);
+        _replaceAgentAsOwner(address(ra), AGENT_M);
         AgentAccount.Receipt memory inner = _receipt();
         ra.arm(account, _buy(60e6), inner);
         tsla.setHook(address(ra));
