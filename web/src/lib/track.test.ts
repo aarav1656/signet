@@ -131,7 +131,7 @@ describe('strategies group boots by compose hash', () => {
     expect(strategyById(list, m('3'))).toBeUndefined();
   });
   it('drops the boot suffix from a label', () => {
-    expect(strategyLabel('Chiron reference agent, CVM boot 2')).toBe('Chiron reference agent');
+    expect(strategyLabel('Signet reference agent, CVM boot 2')).toBe('Signet reference agent');
     expect(strategyLabel('Operator agent')).toBe('Operator agent');
   });
 });

@@ -12,13 +12,13 @@
       "priceUsd": 372.07125
     },
     "quoteAssetsUsd": 1,
-    "note": "Stock Token legs are priced from the mainnet Chainlink round current at each trade block time (round id recorded per trade). Quote assets (TestUSDG, USDG) count 1 USD. pnlUsd marks the net position at the latest round; pnlAtTradeUsd values each trade at its own round."
+    "note": "Stock Token legs are priced from the mainnet Chainlink round current at each trade block time (round id recorded per trade). Quote assets (TestUSDG, USDG) count 1 USD. Testnet pool fills are valued at the mainnet Chainlink round, so the return is a marking of the position and not a performance claim. pnlUsd marks the net position at the latest round; pnlAtTradeUsd values each trade at its own round."
   },
   "agents": [
     {
       "measurement": "0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8",
       "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
-      "label": "Chiron reference agent, CVM boot 1",
+      "label": "Signet reference agent, CVM boot 1",
       "workload": "compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
       "accounts": [
         "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
@@ -72,7 +72,7 @@
     {
       "measurement": "0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829",
       "modelHash": "0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59",
-      "label": "Chiron reference agent, CVM boot 2",
+      "label": "Signet reference agent, CVM boot 2",
       "workload": "compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
       "accounts": [
         "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D"
@@ -109,7 +109,7 @@
   "attestations": [
     {
       "measurement": "0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8",
-      "label": "Chiron reference agent, CVM boot 1",
+      "label": "Signet reference agent, CVM boot 1",
       "workload": "compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
       "agents": [
         "0x4a0bcae7f9969ea0f224e69f4b8778a69df78ea8"
@@ -128,7 +128,7 @@
     },
     {
       "measurement": "0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829",
-      "label": "Chiron reference agent, CVM boot 2",
+      "label": "Signet reference agent, CVM boot 2",
       "workload": "compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c",
       "agents": [
         "0xdd241ec759ec0ba4a1d08c8bf19fc4a8a6aea5c7"

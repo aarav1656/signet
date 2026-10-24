@@ -128,7 +128,7 @@ export function FollowPanel({ strategy }: { strategy: Strategy }) {
       </p>
       <EligibilityGate>
         {!conn.isConnected ? (
-          <div className="actions"><Wallet /><span className="small">Connect the wallet that owns your Chiron account.</span></div>
+          <div className="actions"><Wallet /><span className="small">Connect the wallet that owns your Signet account.</span></div>
         ) : mineQ.isPending ? (
           <p className="small">Looking for your accounts on Robinhood Chain testnet.</p>
         ) : mine.length === 0 ? (

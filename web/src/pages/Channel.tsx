@@ -132,7 +132,7 @@ export function Channel() {
     if (/^\d+$/.test(v.trim())) setParams({ id: v.trim() }, { replace: true });
   };
   useEffect(() => {
-    document.title = `Chiron: channel ${channelId}`;
+    document.title = `Signet: channel ${channelId}`;
   }, [channelId]);
   const [provider, setProvider] = useState('');
   const [deposit, setDeposit] = useState('100');

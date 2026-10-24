@@ -210,7 +210,7 @@ export type Strategy = {
   lastTrade: number;
 };
 
-/** "Chiron reference agent, CVM boot 2" is boot 2 of "Chiron reference agent". */
+/** "Signet reference agent, CVM boot 2" is boot 2 of "Signet reference agent". */
 export const strategyLabel = (label: string): string => label.replace(/[,:]?\s+(?:CVM\s+)?boot\s+\d+$/i, '');
 
 /** Boots that share a compose hash are one strategy. Return is the strategy's profit over the dollars its boots put to work; it is unmarked unless every boot is marked. */

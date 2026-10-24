@@ -63,13 +63,14 @@ function Row({ strategy, rank }: { strategy: Strategy; rank: number }) {
           ))}
         </span>
       </div>
-      <div className="sg-cell" data-label="Return, profit">
+      <div className="sg-cell" data-label="Marked return, profit">
         {last ? (
           <a className="sg-ret" href={rhcExplorer.tx(last.tx)} target="_blank" rel="noreferrer" title={`Open the latest trade, ${last.tx}`}>
             <b className={strategy.returnPct !== null && strategy.returnPct < 0 ? 'neg tnum' : 'tnum'}>{fmtPct(strategy.returnPct)}</b>
           </a>
         ) : <b>unmarked</b>}
         <span className="small tnum">{fmtSignedDollars(strategy.pnlUsd)}</span>
+        <span className="small">marked to mainnet Chainlink</span>
       </div>
       <div className="sg-cell" data-label="Last trade">
         {last && <a href={rhcExplorer.tx(last.tx)} target="_blank" rel="noreferrer" className="tnum">{fmtWhen(last.time)}</a>}
@@ -94,7 +95,7 @@ export function Leaderboard() {
       </div>
       <p className="section-intro">
         A strategy is one compose hash. Each boot of it has its own measurement, and every trade names the measurement that made it. Return and
-        profit come from the strategy&apos;s attested trades, and each figure opens the latest of them.
+        profit mark the strategy&apos;s attested trades to the mainnet Chainlink price, and each figure opens the latest of them. The receipts column is the proof.
       </p>
       {TRACK_ERROR && (
         <div className="alarm" role="alert"><b>The track record could not be read.</b><span>{TRACK_ERROR}</span></div>
@@ -104,7 +105,7 @@ export function Leaderboard() {
       ) : list.length === 0 ? null : (
         <>
           <div className="sg-head" aria-hidden="true">
-            <span>#</span><span>Strategy</span><span>Trades</span><span>Return, profit</span><span>Last trade</span><span>Chain check</span><span />
+            <span>#</span><span>Strategy</span><span>Trades</span><span>Marked return, profit</span><span>Last trade</span><span>Chain check</span><span />
           </div>
           <ol className="sg-rows">
             {list.map((a, i) => <Row key={a.id} strategy={a} rank={i + 1} />)}

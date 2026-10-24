@@ -253,7 +253,7 @@ function OperatorStep({ snap, refetch }: Ctx) {
           <div className="field">
             <label className="label" htmlFor="op-url">Operator CVM</label>
             <input id="op-url" value={url} onChange={(e) => { setUrl(e.target.value); setRead(null); }} spellCheck={false} />
-            <span className="hint">Prefilled with the Chiron operator CVM on Phala Cloud.</span>
+            <span className="hint">Prefilled with the Signet operator CVM on Phala Cloud.</span>
           </div>
         </div>
         <div className="actions">

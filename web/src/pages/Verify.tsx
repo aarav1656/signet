@@ -129,7 +129,7 @@ export function Verify() {
   const client = usePublicClient({ chainId: assayChain.id });
   const chain = useOnChain();
   useEffect(() => {
-    document.title = 'Chiron: verify a TDX attestation and register';
+    document.title = 'Signet: verify a TDX attestation and register';
   }, []);
   const [provider, setProvider] = useState('');
   const [text, setText] = useState('');

@@ -280,7 +280,7 @@ function Refusal() {
       <TitleBlock
         cells={[
           { label: 'Network', value: `${assayChain.name}, live`, mobileHide: true },
-          { label: 'Contract', value: "Assay, Chiron's payment channel", mobileHide: true },
+          { label: 'Contract', value: "Assay, Signet's payment channel", mobileHide: true },
           verdictCell,
         ]}
       />
@@ -705,7 +705,7 @@ export function KeysSection({ title = 'Registered gateway keys', drawn = false }
 
 export function Overview() {
   useEffect(() => {
-    document.title = 'Chiron: a swapped model is not paid';
+    document.title = 'Signet: a swapped model is not paid';
   }, []);
   const constants = useAtBlock(['overview-constants', ASSAY], async (c, block) => {
     const [receiptVerifier, validity, timeout, challenge] = await Promise.all([

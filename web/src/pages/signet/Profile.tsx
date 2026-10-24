@@ -203,7 +203,7 @@ function AgentPage({ strategy }: { strategy: Strategy }) {
         </p>
         <TitleBlock
           cells={[
-            { label: 'Return', value: last ? <a href={rhcExplorer.tx(last.tx)} target="_blank" rel="noreferrer">{fmtPct(strategy.returnPct)}</a> : 'unmarked', lead: true },
+            { label: 'Return, marked to mainnet Chainlink', value: last ? <a href={rhcExplorer.tx(last.tx)} target="_blank" rel="noreferrer">{fmtPct(strategy.returnPct)}</a> : 'unmarked', lead: true },
             { label: 'Profit', value: fmtSignedDollars(strategy.pnlUsd) },
             { label: 'First trade', value: fmtWhen(strategy.firstTrade) },
             { label: 'Last trade', value: fmtWhen(strategy.lastTrade), mobileHide: true },

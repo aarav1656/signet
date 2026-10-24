@@ -39,11 +39,11 @@ export const TSLA_FEED: Address = '0x4A1166a659A55625345e9515b32adECea5547C38';
 
 /** Workloads the repo documents by measurement (docs/e2e/robinhood-testnet-agent-account.md, contracts/deployments/46630.json). */
 const WORKLOADS: Record<string, { label: string; workload: string }> = {
-  '0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8': { label: 'Chiron reference agent, CVM boot 1', workload: 'compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c' },
-  '0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829': { label: 'Chiron reference agent, CVM boot 2', workload: 'compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c' },
+  '0x9dfd5de3a81d9aa78ab912b6a759c934ba79a20cf86ac57163d05ea4a5b364c8': { label: 'Signet reference agent, CVM boot 1', workload: 'compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c' },
+  '0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829': { label: 'Signet reference agent, CVM boot 2', workload: 'compose c3103c1d27fae754b023c075567b556625353098992493299535f1b276acad7c' },
   // agent-cvm/deployments/2026-10-24.json: the CVM whose measured compose pins STRATEGY_SHA256 of agent/strategies/demo-tsla.json.
   '0x69f33c1d9eb7b80eeac3869f52c56653dba6a7656148975e41aaaa2be133c97f': { label: 'Signet demo TSLA strategy, CVM boot 1', workload: 'compose 9f997c38f9754576002490da0740372e9510adca80d1719082d3bb8e31572606' },
-  '0x993bd67c8e9de5d37d9af6ef41c5c5fdb53b113b8a2b666827e0e619f4978e9a': { label: 'Chiron operator agent', workload: 'image ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f1867126d58ee3e99cf1fef4fc8d253c68dbe5bed41db6eb3f33aa5a201463' },
+  '0x993bd67c8e9de5d37d9af6ef41c5c5fdb53b113b8a2b666827e0e619f4978e9a': { label: 'Signet operator agent', workload: 'image ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f1867126d58ee3e99cf1fef4fc8d253c68dbe5bed41db6eb3f33aa5a201463' },
   // agent-cvm/docker-compose.workload-b.yml and the one-value-changed variant, both on dstack-0.5.12 (not a dev image).
   '0x890d1a4c40e1e79cd7afdae1cd312413e69f5b159ac9ef0f45311521a86271a8': { label: 'Workload B', workload: 'compose 0e3d4c8ce0d296763092988aa025da9579b598bf043cc424624730c660d2db6c' },
   '0x399932395e8ef175193ae5550e77319c0d25a6b09dc12510f9e24de1f3cec387': { label: 'Workload B, modified (AGENT_REVISION=2)', workload: 'compose 9921659eee3a0e30ad0ae11c0c516bd5021d66a1b10d638b3810b29303792184' },
@@ -262,7 +262,7 @@ export async function buildTrackRecord(opts: { rpc?: string; log?: (s: string) =
       decimals: 8,
       mark: { roundId: mark.roundId.toString(), updatedAt: mark.updatedAt, priceUsd: markPrice },
       quoteAssetsUsd: 1,
-      note: 'Stock Token legs are priced from the mainnet Chainlink round current at each trade block time (round id recorded per trade). Quote assets (TestUSDG, USDG) count 1 USD. pnlUsd marks the net position at the latest round; pnlAtTradeUsd values each trade at its own round.',
+      note: 'Stock Token legs are priced from the mainnet Chainlink round current at each trade block time (round id recorded per trade). Quote assets (TestUSDG, USDG) count 1 USD. Testnet pool fills are valued at the mainnet Chainlink round, so the return is a marking of the position and not a performance claim. pnlUsd marks the net position at the latest round; pnlAtTradeUsd values each trade at its own round.',
     },
     agents,
     attestations,

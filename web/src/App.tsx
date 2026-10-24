@@ -23,7 +23,7 @@ function Footer() {
   return (
     <footer className="foot">
       <span>
-        Signet on {chain.name}, chain {chain.id}, built on Chiron attested accounts. Every figure is a chain read at the block shown beside it.
+        Signet on {chain.name}, chain {chain.id}, built on attested AgentAccounts. Every figure is a chain read at the block shown beside it.
       </span>
       <a href={onAccount ? rhcExplorer.address(DEMO_ACCOUNT) : explorer.address(ASSAY)} target="_blank" rel="noreferrer">
         {onAccount ? 'The deployed account on the explorer' : 'Assay on the explorer'}

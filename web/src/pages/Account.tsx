@@ -166,7 +166,7 @@ export function Account() {
   const raw = params.get('account') ?? '';
   const account: Address = isAddress(raw) ? getAddress(raw) : DEMO_ACCOUNT;
   useEffect(() => {
-    document.title = 'Chiron: give an AI agent a mandate, not your keys';
+    document.title = 'Signet: give an AI agent a mandate, not your keys';
   }, []);
 
   // The tour is the first screen: the account's heavier reads (event scans, refusal probes) start once it has
@@ -190,7 +190,7 @@ export function Account() {
         <h1 className="hd">Give an AI agent a <em>mandate</em>, not your keys.</h1>
         <ProofPanel />
         <p className="lede">Caps bound every trade, big trades wait for the owner, and each trade records the model that made it.</p>
-        <p className="inno"><b>A Chiron account trades only from a key that an Intel TDX quote proves is running code its owner approved.</b> The quote check is a Stylus program on Robinhood Chain, so admission is a transaction anyone can replay, not a server&apos;s word.</p>
+        <p className="inno"><b>A Signet account trades only from a key that an Intel TDX quote proves is running code its owner approved.</b> The quote check is a Stylus program on Robinhood Chain, so admission is a transaction anyone can replay, not a server&apos;s word.</p>
         <div className="cta-row">
           <a className="btn" href="#tour">Walk the lifecycle <span aria-hidden="true">&darr;</span></a>
           <a className="btn line" href="#account">Open the account</a>

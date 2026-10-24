@@ -17,14 +17,14 @@ export function Compare() {
           </p>
         </div>
         <div>
-          <h3>Chiron</h3>
+          <h3>Signet</h3>
           <p className="prose">
             The account admits an agent key only after a Stylus verifier checks the agent&apos;s hardware attestation on chain against
             a measurement the owner approved. Every trade then carries a verified receipt naming the model the gateway served,
             inside the owner&apos;s caps.
           </p>
           <p className="small" style={{ marginTop: 8 }}>
-            Robinhood does not audit the agent. Chiron verifies its hardware attestation on chain before any trade.
+            Robinhood does not audit the agent. Signet verifies its hardware attestation on chain before any trade.
           </p>
         </div>
       </div>
