@@ -38,12 +38,12 @@ before(async () => {
 after(() => http?.close());
 
 describe('MCP over Streamable HTTP', () => {
-  it('lists the three tools', async () => {
+  it('lists the four tools', async () => {
     const client = new Client({ name: 'chiron-http-test', version: '0' });
     await client.connect(new StreamableHTTPClientTransport(new URL(url)));
     const { tools } = await client.listTools();
     await client.close();
-    assert.deepEqual(tools.map((t) => t.name).sort(), ['account_state', 'explain_refusal', 'verify_receipt']);
+    assert.deepEqual(tools.map((t) => t.name).sort(), ['account_state', 'explain_refusal', 'get_track_record', 'verify_receipt']);
   });
 
   it('verifies the real trade', async () => {
