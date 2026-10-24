@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- Layout probe for a built Signet app. Copy to dist/probe.html, serve dist, open /probe.html?w=375&path=/ and read #report.
+     It frames the app at width w (no device emulation, no window resize), waits for the chain reads to settle, and
+     writes horizontal overflow, clipped elements, two-line buttons and the text of chosen selectors into #report. -->
+<meta charset="utf-8" />
+<body style="margin:0;background:#111;color:#ddd;font:12px monospace">
+<pre id="report">waiting</pre>
+<iframe id="f" style="border:0;background:#121315"></iframe>
+<script>
+  const q = new URLSearchParams(location.search);
+  const w = Number(q.get('w') || 375);
+  const path = q.get('path') || '/';
+  const wait = Number(q.get('wait') || 14000);
+  const sels = (q.get('sel') || '').split('|').filter(Boolean);
+  const f = document.getElementById('f');
+  f.style.width = w + 'px';
+  f.style.height = '900px';
+  f.src = q.get('app') ? '/probe-app.html?go=' + encodeURIComponent(path) : path;
+  const clicks = (q.get('click') || '').split('|').filter(Boolean);
+  f.onload = () => setTimeout(() => {
+    clicks.forEach((s, i) => setTimeout(() => f.contentDocument.querySelector(s)?.click(), i * 800));
+    setTimeout(measure, clicks.length ? clicks.length * 800 + Number(q.get('after') || 6000) : 0);
+  }, wait);
+  function measure() {
+    const d = f.contentDocument;
+    const de = d.documentElement;
+    const out = [];
+    for (const el of d.body.querySelectorAll('*')) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      if (r.right > w + 1 && !el.closest('pre, .sr-only, .wallet-menu, .nav')) out.push({ tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 40), right: Math.round(r.right), text: (el.innerText || '').slice(0, 30) });
+    }
+    const twoLine = [...d.querySelectorAll('.btn, .ctl, .nav a, .textbtn')].filter((b) => b.getBoundingClientRect().height > 48).map((b) => (b.innerText || '').slice(0, 40));
+    const report = {
+      w, path, docScrollWidth: de.scrollWidth, docClientWidth: de.clientWidth, docHeight: de.scrollHeight,
+      overflowing: out.slice(0, 12), overflowCount: out.length, twoLineButtons: twoLine,
+      h1: [...d.querySelectorAll('h1')].map((h) => ({ text: h.innerText.slice(0, 120), box: [Math.round(h.getBoundingClientRect().width), Math.round(h.getBoundingClientRect().height)], fs: getComputedStyle(h).fontSize, lh: getComputedStyle(h).lineHeight })),
+      fonts: [...new Set([...d.querySelectorAll('h1,h2,h3,p,.hex,button')].map((e) => getComputedStyle(e).fontFamily.split(',')[0]))],
+      cs: (q.get('cs') || '').split('|').filter(Boolean).map((s) => { const e = d.querySelector(s); if (!e) return [s, null]; const c = getComputedStyle(e); const r = e.getBoundingClientRect(); return [s, { w: Math.round(r.width), x: Math.round(r.left), maxWidth: c.maxWidth, display: c.display, padding: c.padding, ml: c.marginLeft }]; }),
+      kids: (q.get('kids') || '').split('|').filter(Boolean).map((s) => [s, [...(d.querySelector(s)?.children || [])].map((k) => { const r = k.getBoundingClientRect(); return [String(k.className).slice(0, 14) || k.tagName, Math.round(r.left), Math.round(r.width), Math.round(r.height)]; })]),
+      sel: Object.fromEntries(sels.map((s) => [s, [...d.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').slice(0, 400))])),
+    };
+    document.getElementById('report').textContent = JSON.stringify(report);
+  }
+</script>

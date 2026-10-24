@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { getAddress, isAddress } from 'viem';
 import { BrowserRouter, NavLink, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
-import { ASSAY, assayChain, assayNet, chainForPath, explorer, NET_KEY, otherNet, rhcExplorer, wagmiConfig } from './chain';
+import { ASSAY, assayNet, chainForPath, explorer, NET_KEY, onRhcOnly, otherNet, rhcChain, rhcExplorer, wagmiConfig } from './chain';
 import { DEMO_ACCOUNT } from './lib/rhc.generated';
 import { Wallet } from './components/Wallet';
 import { TxStatusPanel } from './components/TxStatus';
@@ -10,16 +10,20 @@ import { Account } from './pages/Account';
 import { Overview } from './pages/Overview';
 import { Verify } from './pages/Verify';
 import { Channel } from './pages/Channel';
+import { Creator } from './pages/signet/Creator';
+import { Profile } from './pages/signet/Profile';
+import { Signet } from './pages/signet/Signet';
 
 const queryClient = new QueryClient();
 
 function Footer() {
-  const chain = chainForPath(useLocation().pathname);
-  const onAccount = chain !== assayChain;
+  const { pathname } = useLocation();
+  const chain = chainForPath(pathname);
+  const onAccount = onRhcOnly(pathname);
   return (
     <footer className="foot">
       <span>
-        Chiron on {chain.name}, chain {chain.id}. Every figure is a chain read at the block shown beside it.
+        Signet on {chain.name}, chain {chain.id}, built on Chiron attested accounts. Every figure is a chain read at the block shown beside it.
       </span>
       <a href={onAccount ? rhcExplorer.address(DEMO_ACCOUNT) : explorer.address(ASSAY)} target="_blank" rel="noreferrer">
         {onAccount ? 'The deployed account on the explorer' : 'Assay on the explorer'}
@@ -33,12 +37,17 @@ function Rail() {
   const [params] = useSearchParams();
   const raw = params.get('account') ?? '';
   const account = isAddress(raw) ? getAddress(raw) : DEMO_ACCOUNT;
+  const onAccountPage = useLocation().pathname === '/account';
   return (
     <aside className="rail">
-      <NavLink to="/" className="mark" aria-label="Chiron, the account" />
-      <a className="rail-acct" href={rhcExplorer.address(account)} target="_blank" rel="noreferrer" title={account}>
-        Account {account.slice(0, 6)}...{account.slice(-4)}
-      </a>
+      <NavLink to="/" className="mark" aria-label="Signet, the attested agents" />
+      {onAccountPage ? (
+        <a className="rail-acct" href={rhcExplorer.address(account)} target="_blank" rel="noreferrer" title={account}>
+          Account {account.slice(0, 6)}...{account.slice(-4)}
+        </a>
+      ) : (
+        <span className="rail-acct">Robinhood Chain testnet {rhcChain.id}</span>
+      )}
     </aside>
   );
 }
@@ -48,7 +57,10 @@ function Page() {
   return (
     <div className="route" key={loc.pathname}>
       <Routes>
-        <Route path="/" element={<Account />} />
+        <Route path="/" element={<Signet />} />
+        <Route path="/agent/:measurement" element={<Profile />} />
+        <Route path="/creator" element={<Creator />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/refusal" element={<Overview />} />
         <Route path="/verify" element={<Verify />} />
         <Route path="/channel" element={<Channel />} />
@@ -60,7 +72,7 @@ function Page() {
 /** Which chain this view reads. The account is always on Robinhood Chain; the Assay routes offer both networks. */
 function NetBar() {
   const { pathname } = useLocation();
-  if (pathname === '/') return null;
+  if (onRhcOnly(pathname)) return null;
   const link = (key: string) => `${pathname}?net=${key}`;
   return (
     <p className="netbar" role="group" aria-label="Assay network">
@@ -82,12 +94,14 @@ function Header() {
   return (
     <header className="top">
       <NavLink to="/" className="wordmark">
-        CHIRON
+        SIGNET
       </NavLink>
       <nav className="nav" aria-label="Primary">
         <NavLink to="/" end>
-          Account
+          Agents
         </NavLink>
+        <NavLink to="/creator">Publish</NavLink>
+        <NavLink to="/account">Account</NavLink>
         <NavLink to="/refusal">Refusal</NavLink>
         <NavLink to="/channel">Channels</NavLink>
         <NavLink to="/verify">Verify a gateway</NavLink>
