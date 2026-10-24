@@ -15,7 +15,7 @@ import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {IAssayVerifier} from "./IAssayVerifier.sol";
+import {IAssayVerifier, ICollateralVerifier} from "./IAssayVerifier.sol";
 import {IReceiptVerifier} from "./IReceiptVerifier.sol";
 
 /// The parts of Assay this account uses: the Ed25519 receipt-key registry, the channel
@@ -123,6 +123,13 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     mapping(bytes32 => bool) public approvedMeasurement;
     mapping(bytes32 => bool) public usedQuote;
 
+    // attestation policy: with `requireCollateral` an agent is admitted only through
+    // registerAgentWithCollateral, whose platform status must be at most `maxTcbStatus` (0 =
+    // UpToDate only) and whose Intel documents must be at least evaluation `minTcbEvaluation`.
+    bool public requireCollateral;
+    uint8 public maxTcbStatus;
+    uint32 public minTcbEvaluation;
+
     // model pin for per-trade receipts
     bytes32 public requestedModelHash;
     bytes32[4] public acceptedServedHashes;
@@ -144,6 +151,8 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     bool transient swapping;
 
     event AgentRegistered(address indexed agent, bytes32 indexed measurement, uint64 expiry, uint256 epoch);
+    event AgentTcbStatus(address indexed agent, uint8 status);
+    event AttestationPolicySet(bool requireCollateral, uint8 maxTcbStatus, uint32 minTcbEvaluation);
     event AgentRevoked(address indexed agent, uint256 epoch);
     event MeasurementSet(bytes32 indexed measurement, bool approved);
     event ModelSet(bytes32 requestedModelHash, bytes32[4] acceptedServedHashes, bytes32 gatewayMeasurement);
@@ -177,6 +186,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     event TradeRejected(uint256 indexed proposalId);
     event ProposalCancelled(uint256 indexed proposalId);
     event Paused(bool paused);
+    event ApprovalTtlSet(uint64 ttl);
     event Withdrawn(address indexed token, address indexed to, uint256 amount);
     event InferenceChannelOpened(uint256 indexed channelId, address indexed provider, uint128 amount);
 
@@ -185,6 +195,9 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     error IsPaused();
     error StaleRefBlock();
     error QuoteAlreadyUsed();
+    error CollateralRequired();
+    error TcbStatusTooHigh(uint8 status, uint8 maxStatus);
+    error BadTcbStatus(uint8 maxStatus);
     error MeasurementNotApproved(bytes32 measurement);
     error AgentIsOwner();
     error TokenNotAllowed(address token);
@@ -216,6 +229,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     error BadLimits();
     error NoCode(address target);
     error RenounceDisabled();
+    error ETHTransferFailed();
     error CorporateActionPending(address token, uint256 uiMultiplier, uint256 newUIMultiplier, uint256 effectiveAt);
 
     constructor(
@@ -257,15 +271,42 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
         return keccak256(abi.encode(block.chainid, address(this), agentEpoch, _refBlockHash(refBlock)));
     }
 
-    /// Anyone may submit; the key comes out of the quote. Replaces any current agent.
+    /// Anyone may submit; the key comes out of the quote. Replaces any current agent. Reverts
+    /// while the owner requires Intel collateral (see registerAgentWithCollateral).
     function registerAgent(bytes calldata quote, uint256 refBlock)
+        external
+        nonReentrant
+        returns (address signer, bytes32 measurement)
+    {
+        if (requireCollateral) revert CollateralRequired();
+        bytes32 quoteHash = keccak256(quote);
+        if (usedQuote[quoteHash]) revert QuoteAlreadyUsed();
+        (signer, measurement) = verifier.verify(quote, attestNonce(refBlock));
+        _admit(signer, measurement, quoteHash);
+    }
+
+    /// registerAgent plus Intel's collateral for the quote's platform: the Stylus verifier
+    /// authenticates the documents against Intel's root and reverts on a revoked platform, a
+    /// platform status above `maxTcbStatus`, or documents older than `minTcbEvaluation`. The
+    /// ceiling is checked here as well, so the policy holds even against a verifier build that
+    /// ignores its arguments.
+    function registerAgentWithCollateral(bytes calldata quote, uint256 refBlock, bytes calldata collateral)
         external
         nonReentrant
         returns (address signer, bytes32 measurement)
     {
         bytes32 quoteHash = keccak256(quote);
         if (usedQuote[quoteHash]) revert QuoteAlreadyUsed();
-        (signer, measurement) = verifier.verify(quote, attestNonce(refBlock));
+        uint8 status;
+        (signer, measurement, status) = ICollateralVerifier(address(verifier)).verifyWithCollateral(
+            quote, attestNonce(refBlock), collateral, maxTcbStatus, minTcbEvaluation
+        );
+        if (status > maxTcbStatus) revert TcbStatusTooHigh(status, maxTcbStatus);
+        _admit(signer, measurement, quoteHash);
+        emit AgentTcbStatus(signer, status);
+    }
+
+    function _admit(address signer, bytes32 measurement, bytes32 quoteHash) private {
         if (!approvedMeasurement[measurement]) revert MeasurementNotApproved(measurement);
         if (signer == owner()) revert AgentIsOwner();
         if (signer == address(0)) revert NotAgent();
@@ -529,6 +570,21 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
         if (!approved && agent != address(0) && agentMeasurement == measurement) _revokeAgent();
     }
 
+    /// Sets how the next agent is admitted. A new policy applies to the next admission, so the
+    /// current agent, admitted under the old one, is revoked at once: removing trust is instant.
+    /// Status 6 (Revoked) can never be accepted.
+    function setAttestationPolicy(bool requireCollateral_, uint8 maxTcbStatus_, uint32 minTcbEvaluation_)
+        external
+        onlyOwner
+    {
+        if (maxTcbStatus_ > 5) revert BadTcbStatus(maxTcbStatus_);
+        requireCollateral = requireCollateral_;
+        maxTcbStatus = maxTcbStatus_;
+        minTcbEvaluation = minTcbEvaluation_;
+        emit AttestationPolicySet(requireCollateral_, maxTcbStatus_, minTcbEvaluation_);
+        if (agent != address(0)) _revokeAgent();
+    }
+
     function setModel(bytes32 requestedModelHash_, bytes32[4] calldata acceptedServedHashes_, bytes32 gatewayMeasurement_)
         external
         onlyOwner
@@ -546,6 +602,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
 
     function setApprovalTtl(uint64 ttl) external onlyOwner {
         approvalTtl = ttl;
+        emit ApprovalTtlSet(ttl);
     }
 
     function pause() external onlyOwner {
@@ -580,7 +637,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
 
     function withdrawETH(address payable to, uint256 amount) external onlyOwner nonReentrant {
         (bool ok,) = to.call{value: amount}("");
-        require(ok);
+        if (!ok) revert ETHTransferFailed();
         emit Withdrawn(address(0), to, amount);
     }
 

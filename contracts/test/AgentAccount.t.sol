@@ -1090,6 +1090,14 @@ contract AgentAccountTest is AgentAccountTestBase {
         account.withdrawETH(payable(agentAddr), 1);
     }
 
+    function test_withdrawETH_revertsWithACustomErrorWhenTheRecipientRejects() public {
+        vm.deal(address(account), 1 ether);
+        vm.prank(owner);
+        vm.expectRevert(AgentAccount.ETHTransferFailed.selector);
+        account.withdrawETH(payable(address(usdg)), 1 ether); // TestUSDG has no receive()
+        assertEq(address(account).balance, 1 ether);
+    }
+
     function test_renounceOwnership_reverts() public {
         vm.prank(owner);
         vm.expectRevert(AgentAccount.RenounceDisabled.selector);
@@ -1137,7 +1145,11 @@ contract AgentAccountTest is AgentAccountTestBase {
         }
     }
 
+    event ApprovalTtlSet(uint64 ttl);
+
     function test_setApprovalTtl_bindsNewProposals() public {
+        vm.expectEmit(address(account));
+        emit ApprovalTtlSet(60);
         vm.prank(owner);
         account.setApprovalTtl(60);
         (,, uint64 expiry,,,,,) = account.proposals(_propose(_buy(60e6)));

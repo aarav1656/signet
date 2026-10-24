@@ -1,0 +1,281 @@
+'forge clean' running (wd: /Users/kamal/Desktop/arbitrium/online-openhouse/chiron/.claude/worktrees/agent-a6821281a7cc6a072/contracts)
+'forge config --json' running
+'forge build --build-info --skip ./test/** ./script/** --force' running (wd: /Users/kamal/Desktop/arbitrium/online-openhouse/chiron/.claude/worktrees/agent-a6821281a7cc6a072/contracts)
+
+Detector: weak-prng
+AgentAccount._spendWindow(address,uint128,uint128) (src/AgentAccount.sol#412-427) uses a weak PRNG: "slot = w[h % WINDOW_HOURS] (src/AgentAccount.sol#421)" 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#weak-PRNG
+
+Detector: reentrancy-balance
+Reentrancy in ChironGate._claimAndForward(IX402BatchSettlement.VoucherClaim,bytes32,address,address) (src/ChironGate.sol#176-199):
+	External call allowing reentrancy:
+	- x402.settle(address(this),token) (src/ChironGate.sol#193)
+	Balance read before the call:
+	- gateBefore = IERC20(token).balanceOf(address(this)) (src/ChironGate.sol#192)
+	Possible stale balance used after the call in a condition:
+	- IERC20(token).balanceOf(address(this)) - gateBefore != paid (src/ChironGate.sol#194)
+		- stale variable `gateBefore`
+Reentrancy in AgentAccount._swap(AgentAccount.Trade,address,address) (src/AgentAccount.sol#469-479):
+	External call allowing reentrancy:
+	- poolManager.unlock(abi.encode(t.key,t.zeroForOne,t.amountIn)) (src/AgentAccount.sol#473)
+	Balance read before the call:
+	- inBefore = IERC20(tokenIn).balanceOf(address(this)) (src/AgentAccount.sol#470)
+	Possible stale balance used after the call in a condition:
+	- spent > t.amountIn (src/AgentAccount.sol#476)
+		- stale variable `spent`
+Reentrancy in AgentAccount._swap(AgentAccount.Trade,address,address) (src/AgentAccount.sol#469-479):
+	External call allowing reentrancy:
+	- poolManager.unlock(abi.encode(t.key,t.zeroForOne,t.amountIn)) (src/AgentAccount.sol#473)
+	Balance read before the call:
+	- outBefore = IERC20(tokenOut).balanceOf(address(this)) (src/AgentAccount.sol#471)
+	Possible stale balance used after the call in a condition:
+	- got < t.minOut (src/AgentAccount.sol#478)
+		- stale variable `got`
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities
+
+Detector: uninitialized-state
+AgentAccount.window (src/AgentAccount.sol#142) is never initialized. It is used in:
+	- AgentAccount._spendWindow(address,uint128,uint128) (src/AgentAccount.sol#412-427)
+	- AgentAccount.windowUsed(address) (src/AgentAccount.sol#430-436)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#uninitialized-state-variables
+
+Detector: reentrancy-no-eth
+Reentrancy in Assay.redeemWithReceipt(uint256,uint256,bytes32,bytes32,bytes,bytes32,bytes,bytes) (src/Assay.sol#439-489):
+	External calls:
+	- (ok,requestedModelHash,servedModelHash,receiptRequestHash,receiptResponseHash) = receiptVerifier.verifyReceipt(pubkey,receiptBytes,signature) (src/Assay.sol#461-467)
+	State variables written after the call(s):
+	- c.paid = uint128(cumulativeAmount) (src/Assay.sol#481)
+	Assay.channels (src/Assay.sol#103) can be used in cross function reentrancies:
+	- Assay.channels (src/Assay.sol#103)
+	- c.lastActivityAt = uint64(block.timestamp) (src/Assay.sol#483)
+	Assay.channels (src/Assay.sol#103) can be used in cross function reentrancies:
+	- Assay.channels (src/Assay.sol#103)
+	- consumedReceipt[receiptKey] = true (src/Assay.sol#482)
+	Assay.consumedReceipt (src/Assay.sol#112) can be used in cross function reentrancies:
+	- Assay.consumedReceipt (src/Assay.sol#112)
+Reentrancy in Assay.register(bytes,uint256) (src/Assay.sol#252-263):
+	External calls:
+	- (signer,measurement) = verifier.verify(quote,nonce) (src/Assay.sol#256)
+	State variables written after the call(s):
+	- registerNonce[msg.sender] += 1 (src/Assay.sol#259)
+	Assay.registerNonce (src/Assay.sol#98) can be used in cross function reentrancies:
+	- Assay.nextRegisterNonce(address,uint256) (src/Assay.sol#236-240)
+	- Assay.registerNonce (src/Assay.sol#98)
+	- usedQuote[quoteHash] = true (src/Assay.sol#258)
+	Assay.usedQuote (src/Assay.sol#101) can be used in cross function reentrancies:
+	- Assay.usedQuote (src/Assay.sol#101)
+Reentrancy in AgentAccount.registerAgent(bytes,uint256) (src/AgentAccount.sol#276-286):
+	External calls:
+	- (signer,measurement) = verifier.verify(quote,attestNonce(refBlock)) (src/AgentAccount.sol#284)
+	State variables written after the call(s):
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#285)
+		- epoch = ++ agentEpoch (src/AgentAccount.sol#314)
+	AgentAccount.agentEpoch (src/AgentAccount.sol#122) can be used in cross function reentrancies:
+	- AgentAccount._revokeAgent() (src/AgentAccount.sol#622-629)
+	- AgentAccount.agentEpoch (src/AgentAccount.sol#122)
+	- AgentAccount.attestNonce(uint256) (src/AgentAccount.sol#270-272)
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#285)
+		- usedQuote[quoteHash] = true (src/AgentAccount.sol#313)
+	AgentAccount.usedQuote (src/AgentAccount.sol#124) can be used in cross function reentrancies:
+	- AgentAccount.usedQuote (src/AgentAccount.sol#124)
+Reentrancy in AgentAccount.registerAgentWithCollateral(bytes,uint256,bytes) (src/AgentAccount.sol#293-307):
+	External calls:
+	- (signer,measurement,status) = ICollateralVerifier(address(verifier)).verifyWithCollateral(quote,attestNonce(refBlock),collateral,maxTcbStatus,minTcbEvaluation) (src/AgentAccount.sol#301-303)
+	State variables written after the call(s):
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#305)
+		- epoch = ++ agentEpoch (src/AgentAccount.sol#314)
+	AgentAccount.agentEpoch (src/AgentAccount.sol#122) can be used in cross function reentrancies:
+	- AgentAccount._revokeAgent() (src/AgentAccount.sol#622-629)
+	- AgentAccount.agentEpoch (src/AgentAccount.sol#122)
+	- AgentAccount.attestNonce(uint256) (src/AgentAccount.sol#270-272)
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#305)
+		- usedQuote[quoteHash] = true (src/AgentAccount.sol#313)
+	AgentAccount.usedQuote (src/AgentAccount.sol#124) can be used in cross function reentrancies:
+	- AgentAccount.usedQuote (src/AgentAccount.sol#124)
+Reentrancy in Assay.registerReceiptKey(bytes,bytes,uint256,bytes32) (src/Assay.sol#277-292):
+	External calls:
+	- measurement = verifier.verifyKeyset(quote,keysetBytes,nonce,pubkey) (src/Assay.sol#285)
+	State variables written after the call(s):
+	- registerNonce[msg.sender] += 1 (src/Assay.sol#288)
+	Assay.registerNonce (src/Assay.sol#98) can be used in cross function reentrancies:
+	- Assay.nextRegisterNonce(address,uint256) (src/Assay.sol#236-240)
+	- Assay.registerNonce (src/Assay.sol#98)
+	- usedQuote[quoteHash] = true (src/Assay.sol#287)
+	Assay.usedQuote (src/Assay.sol#101) can be used in cross function reentrancies:
+	- Assay.usedQuote (src/Assay.sol#101)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+
+Detector: uninitialized-local
+AgentAccount._spendWindow(address,uint128,uint128).used (src/AgentAccount.sol#415) is a local variable never initialized
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#uninitialized-local-variables
+
+Detector: unused-return
+AgentAccount._swap(AgentAccount.Trade,address,address) (src/AgentAccount.sol#469-479) ignores return value by poolManager.unlock(abi.encode(t.key,t.zeroForOne,t.amountIn)) (src/AgentAccount.sol#473)
+AgentAccount.unlockCallback(bytes) (src/AgentAccount.sol#481-503) ignores return value by poolManager.settle() (src/AgentAccount.sol#499)
+AgentAccount.isValidSignature(bytes32,bytes) (src/AgentAccount.sol#677-692) ignores return value by (chAgent,None,None,None,None,None,None,closed,None,None) = assay.channels(channelId) (src/AgentAccount.sol#686)
+AgentAccount.isValidSignature(bytes32,bytes) (src/AgentAccount.sol#677-692) ignores return value by (recovered,err,None) = ECDSA.tryRecover(hash,agentSig) (src/AgentAccount.sol#688)
+Assay._payerSigValid(Assay.Channel,uint256,uint256,bytes32,bytes32,bytes) (src/Assay.sol#497-511) ignores return value by (recovered,err,None) = ECDSA.tryRecover(digest,payerSig) (src/Assay.sol#508)
+ChironGate._claimAndForward(IX402BatchSettlement.VoucherClaim,bytes32,address,address) (src/ChironGate.sol#176-199) ignores return value by (None,claimedBefore) = x402.channels(channelId) (src/ChironGate.sol#182)
+ChironGate._payerSigned(IX402BatchSettlement.ChannelConfig,bytes32,bytes) (src/ChironGate.sol#217-227) ignores return value by (recovered,None,None) = ECDSA.tryRecover(digest,sig) (src/ChironGate.sol#223)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+Detector: missing-zero-check
+AgentAccount.withdrawETH(address,uint256).to (src/AgentAccount.sol#638) lacks a zero-check on :
+		- (ok,None) = to.call{value: amount}() (src/AgentAccount.sol#639)
+AgentAccountFactory.constructor(address,address,address,address,address).verifier_ (src/AgentAccountFactory.sol#18) lacks a zero-check on :
+		- verifier = verifier_ (src/AgentAccountFactory.sol#19)
+AgentAccountFactory.constructor(address,address,address,address,address).receiptVerifier_ (src/AgentAccountFactory.sol#18) lacks a zero-check on :
+		- receiptVerifier = receiptVerifier_ (src/AgentAccountFactory.sol#20)
+AgentAccountFactory.constructor(address,address,address,address,address).assay_ (src/AgentAccountFactory.sol#18) lacks a zero-check on :
+		- assay = assay_ (src/AgentAccountFactory.sol#21)
+AgentAccountFactory.constructor(address,address,address,address,address).poolManager_ (src/AgentAccountFactory.sol#18) lacks a zero-check on :
+		- poolManager = poolManager_ (src/AgentAccountFactory.sol#22)
+AgentAccountFactory.constructor(address,address,address,address,address).usdg_ (src/AgentAccountFactory.sol#18) lacks a zero-check on :
+		- usdg = usdg_ (src/AgentAccountFactory.sol#23)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+
+Detector: reentrancy-benign
+Reentrancy in AgentAccount._consumeReceipt(AgentAccount.Receipt) (src/AgentAccount.sol#440-455):
+	External calls:
+	- (ok,requested,served,reqHash,respHash) = receiptVerifier.verifyReceipt(r.pubkey,r.receiptBytes,r.signature) (src/AgentAccount.sol#443)
+	State variables written after the call(s):
+	- usedReceipt[key] = true (src/AgentAccount.sol#454)
+Reentrancy in AgentAccount._swap(AgentAccount.Trade,address,address) (src/AgentAccount.sol#469-479):
+	External calls:
+	- poolManager.unlock(abi.encode(t.key,t.zeroForOne,t.amountIn)) (src/AgentAccount.sol#473)
+	State variables written after the call(s):
+	- swapping = false (src/AgentAccount.sol#474)
+Reentrancy in AgentAccount.approveTrade(uint256,AgentAccount.Trade) (src/AgentAccount.sol#507-534):
+	External calls:
+	- amountOut = _swap(t,tokenIn,tokenOut) (src/AgentAccount.sol#518)
+		- poolManager.unlock(abi.encode(t.key,t.zeroForOne,t.amountIn)) (src/AgentAccount.sol#473)
+	State variables written after the call(s):
+	- tradeId = ++ tradeCount (src/AgentAccount.sol#519)
+Reentrancy in ChironGate.claimWithReceipt(IX402BatchSettlement.VoucherClaim,ChironGate.Pin,bytes32,bytes32,bytes,bytes32,bytes,bytes) (src/ChironGate.sol#128-170):
+	External calls:
+	- (ok,requestedModel,servedModel,receiptRequest,receiptResponse) = receiptVerifier.verifyReceipt(pubkey,receiptBytes,receiptSig) (src/ChironGate.sol#148-149)
+	State variables written after the call(s):
+	- consumed[channelId][callKey] = true (src/ChironGate.sol#163)
+Reentrancy in AgentAccount.execute(AgentAccount.Trade,AgentAccount.Receipt) (src/AgentAccount.sol#324-343):
+	External calls:
+	- (served,reqHash,respHash) = _consumeReceipt(r) (src/AgentAccount.sol#337)
+		- (ok,requested,served,reqHash,respHash) = receiptVerifier.verifyReceipt(r.pubkey,r.receiptBytes,r.signature) (src/AgentAccount.sol#443)
+	- amountOut = _swap(t,tokenIn,tokenOut) (src/AgentAccount.sol#338)
+		- poolManager.unlock(abi.encode(t.key,t.zeroForOne,t.amountIn)) (src/AgentAccount.sol#473)
+	State variables written after the call(s):
+	- amountOut = _swap(t,tokenIn,tokenOut) (src/AgentAccount.sol#338)
+		- swapping = true (src/AgentAccount.sol#472)
+		- swapping = false (src/AgentAccount.sol#474)
+	- tradeId = ++ tradeCount (src/AgentAccount.sol#339)
+Reentrancy in Assay.openChannelWithPermit(address,uint128,bytes32,bytes32,uint256,uint8,bytes32,bytes32) (src/Assay.sol#315-331):
+	External calls:
+	- IERC20Permit(address(usdg)).permit(msg.sender,address(this),amount,deadline,v,r,s) (src/Assay.sol#325-328)
+	State variables written after the call(s):
+	- channelId = _openChannel(provider,amount,measurement,requestedModelHash) (src/Assay.sol#329)
+		- channelId = channelCount ++ (src/Assay.sol#339)
+	- channelId = _openChannel(provider,amount,measurement,requestedModelHash) (src/Assay.sol#329)
+		- channels[channelId] = Channel({agent:msg.sender,provider:provider,deposit:amount,paid:0,openedAt:uint64(block.timestamp),lastActivityAt:0,closeRequestedAt:0,closed:false,measurement:measurement,requestedModelHash:requestedModelHash}) (src/Assay.sol#340-351)
+Reentrancy in AgentAccount.propose(AgentAccount.Trade,AgentAccount.Receipt) (src/AgentAccount.sol#345-362):
+	External calls:
+	- (served,reqHash,respHash) = _consumeReceipt(r) (src/AgentAccount.sol#353)
+		- (ok,requested,served,reqHash,respHash) = receiptVerifier.verifyReceipt(r.pubkey,r.receiptBytes,r.signature) (src/AgentAccount.sol#443)
+	State variables written after the call(s):
+	- proposalId = ++ proposalCount (src/AgentAccount.sol#358)
+	- proposals[proposalId] = Proposal(tradeHash,msg.sender,expiry,Status.Pending,m,served,reqHash,respHash) (src/AgentAccount.sol#360)
+Reentrancy in Assay.register(bytes,uint256) (src/Assay.sol#252-263):
+	External calls:
+	- (signer,measurement) = verifier.verify(quote,nonce) (src/Assay.sol#256)
+	State variables written after the call(s):
+	- signers[signer] = Signer(measurement,expiry) (src/Assay.sol#261)
+Reentrancy in AgentAccount.registerAgent(bytes,uint256) (src/AgentAccount.sol#276-286):
+	External calls:
+	- (signer,measurement) = verifier.verify(quote,attestNonce(refBlock)) (src/AgentAccount.sol#284)
+	State variables written after the call(s):
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#285)
+		- agent = signer (src/AgentAccount.sol#316)
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#285)
+		- agentExpiry = expiry (src/AgentAccount.sol#318)
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#285)
+		- agentMeasurement = measurement (src/AgentAccount.sol#317)
+Reentrancy in AgentAccount.registerAgentWithCollateral(bytes,uint256,bytes) (src/AgentAccount.sol#293-307):
+	External calls:
+	- (signer,measurement,status) = ICollateralVerifier(address(verifier)).verifyWithCollateral(quote,attestNonce(refBlock),collateral,maxTcbStatus,minTcbEvaluation) (src/AgentAccount.sol#301-303)
+	State variables written after the call(s):
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#305)
+		- agent = signer (src/AgentAccount.sol#316)
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#305)
+		- agentExpiry = expiry (src/AgentAccount.sol#318)
+	- _admit(signer,measurement,quoteHash) (src/AgentAccount.sol#305)
+		- agentMeasurement = measurement (src/AgentAccount.sol#317)
+Reentrancy in Assay.registerReceiptKey(bytes,bytes,uint256,bytes32) (src/Assay.sol#277-292):
+	External calls:
+	- measurement = verifier.verifyKeyset(quote,keysetBytes,nonce,pubkey) (src/Assay.sol#285)
+	State variables written after the call(s):
+	- receiptSigners[pubkey] = Signer(measurement,expiry) (src/Assay.sol#290)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+
+Detector: timestamp
+AgentAccount.propose(AgentAccount.Trade,AgentAccount.Receipt) (src/AgentAccount.sol#345-362) uses timestamp for comparisons
+	Dangerous comparisons:
+	- t.deadline < ttlEnd (src/AgentAccount.sol#356)
+AgentAccount._requireAgent() (src/AgentAccount.sol#372-376) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > agentExpiry (src/AgentAccount.sol#374)
+AgentAccount._checkTrade(AgentAccount.Trade) (src/AgentAccount.sol#379-390) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > t.deadline (src/AgentAccount.sol#380)
+AgentAccount._requireNoCorporateAction(address) (src/AgentAccount.sol#397-408) uses timestamp for comparisons
+	Dangerous comparisons:
+	- m != n || (e != 0 && block.timestamp < e + CORPORATE_ACTION_COOLDOWN) (src/AgentAccount.sol#405)
+AgentAccount._spendWindow(address,uint128,uint128) (src/AgentAccount.sol#412-427) uses timestamp for comparisons
+	Dangerous comparisons:
+	- uint256(b.hour) + 24 >= h (src/AgentAccount.sol#418)
+	- slot.hour != h (src/AgentAccount.sol#422)
+AgentAccount.windowUsed(address) (src/AgentAccount.sol#430-436) uses timestamp for comparisons
+	Dangerous comparisons:
+	- uint256(w[i].hour) + 24 >= h (src/AgentAccount.sol#434)
+AgentAccount._consumeReceipt(AgentAccount.Receipt) (src/AgentAccount.sol#440-455) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > expiry (src/AgentAccount.sol#451)
+AgentAccount.approveTrade(uint256,AgentAccount.Trade) (src/AgentAccount.sol#507-534) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > p.expiry (src/AgentAccount.sol#510)
+AgentAccount.isValidSignature(bytes32,bytes) (src/AgentAccount.sol#677-692) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > agentExpiry || paused (src/AgentAccount.sol#690)
+Assay.redeem(uint256,uint256,bytes32,bytes32,bytes,bytes) (src/Assay.sol#380-419) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > s.expiry (src/Assay.sol#409)
+Assay.redeemWithReceipt(uint256,uint256,bytes32,bytes32,bytes,bytes32,bytes,bytes) (src/Assay.sol#439-489) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > rs.expiry (src/Assay.sol#477)
+Assay.requestClose(uint256) (src/Assay.sol#529-539) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < uint256(lastActivity) + channelTimeout (src/Assay.sol#536)
+Assay.finalizeClose(uint256) (src/Assay.sol#545-559) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < uint256(c.closeRequestedAt) + challengeWindow (src/Assay.sol#551)
+ChironGate.claimWithReceipt(IX402BatchSettlement.VoucherClaim,ChironGate.Pin,bytes32,bytes32,bytes,bytes32,bytes,bytes) (src/ChironGate.sol#128-170) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > expiry (src/ChironGate.sol#159)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+
+Detector: cyclomatic-complexity
+Assay.redeem(uint256,uint256,bytes32,bytes32,bytes,bytes) (src/Assay.sol#380-419) has a high cyclomatic complexity (12).
+Assay.redeemWithReceipt(uint256,uint256,bytes32,bytes32,bytes,bytes32,bytes,bytes) (src/Assay.sol#439-489) has a high cyclomatic complexity (16).
+ChironGate.claimWithReceipt(IX402BatchSettlement.VoucherClaim,ChironGate.Pin,bytes32,bytes32,bytes,bytes32,bytes,bytes) (src/ChironGate.sol#128-170) has a high cyclomatic complexity (15).
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
+
+Detector: low-level-calls
+Low level call in AgentAccount._refBlockHash(uint256) (src/AgentAccount.sol#262-267):
+	- (ok,data) = ARBSYS.staticcall(abi.encodeWithSelector(ARBSYS_ARBBLOCKHASH_SELECTOR,refBlock)) (src/AgentAccount.sol#263)
+Low level call in AgentAccount._requireNoCorporateAction(address) (src/AgentAccount.sol#397-408):
+	- (okCur,cur) = token.staticcall(abi.encodeWithSignature(uiMultiplier())) (src/AgentAccount.sol#398)
+	- (okNext,next) = token.staticcall(abi.encodeWithSignature(newUIMultiplier())) (src/AgentAccount.sol#399)
+	- (okAt,at) = token.staticcall(abi.encodeWithSignature(effectiveAt())) (src/AgentAccount.sol#400)
+Low level call in AgentAccount.withdrawETH(address,uint256) (src/AgentAccount.sol#638-642):
+	- (ok,None) = to.call{value: amount}() (src/AgentAccount.sol#639)
+Low level call in Assay._refBlockHash(uint256) (src/Assay.sol#225-230):
+	- (ok,data) = ARBSYS.staticcall(abi.encodeWithSelector(ARBSYS_ARBBLOCKHASH_SELECTOR,refBlock)) (src/Assay.sol#226)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+. analyzed (60 contracts with 101 detectors), 56 result(s) found

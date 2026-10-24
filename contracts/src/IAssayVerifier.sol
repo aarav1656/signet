@@ -43,3 +43,21 @@ interface IAssayVerifier {
         external
         returns (bytes32 measurement);
 }
+
+/// The Stylus verifier's collateral entry point (`verify_with_collateral` in verifier/src/lib.rs).
+/// It runs `verify` and then authenticates Intel's TCB Info, QE Identity, PCK CRL and root CRL
+/// for the quote's platform against the hardcoded Intel root. `collateral` is
+/// abi.encode(tcbInfo, tcbSignature, tcbChainPem, qeIdentity, qeSignature, qeChainPem, pckCrl,
+/// rootCrl). `status` is the worst severity rank of the platform, TDX module and quoting enclave:
+/// 0 UpToDate, 1 SWHardeningNeeded, 2 ConfigurationNeeded, 3 ConfigurationAndSWHardeningNeeded,
+/// 4 OutOfDate, 5 OutOfDateConfigurationNeeded. The call reverts on Revoked (6), on a status above
+/// `maxStatus`, and on a document whose tcbEvaluationDataNumber is below `minEvaluation`.
+interface ICollateralVerifier {
+    function verifyWithCollateral(
+        bytes calldata quote,
+        bytes32 nonce,
+        bytes calldata collateral,
+        uint8 maxStatus,
+        uint32 minEvaluation
+    ) external returns (address signer, bytes32 measurement, uint8 status);
+}
