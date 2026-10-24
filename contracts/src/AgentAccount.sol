@@ -200,6 +200,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     error BadTcbStatus(uint8 maxStatus);
     error MeasurementNotApproved(bytes32 measurement);
     error AgentIsOwner();
+    error OwnerMustReplaceLiveAgent();
     error TokenNotAllowed(address token);
     error PoolNotAllowed(PoolId poolId);
     error HookedPool();
@@ -310,6 +311,10 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
         if (!approvedMeasurement[measurement]) revert MeasurementNotApproved(measurement);
         if (signer == owner()) revert AgentIsOwner();
         if (signer == address(0)) revert NotAgent();
+        // A live agent is renewed by anyone but replaced by a different key only by the owner.
+        if (agent != address(0) && signer != agent && block.timestamp <= agentExpiry && msg.sender != owner()) {
+            revert OwnerMustReplaceLiveAgent();
+        }
         usedQuote[quoteHash] = true;
         uint256 epoch = ++agentEpoch;
         uint64 expiry = uint64(block.timestamp) + ATTESTATION_VALIDITY;
