@@ -1,0 +1,490 @@
+Warning: This is a nightly build of Foundry. It is recommended to use the latest stable version. To mute this warning set `FOUNDRY_DISABLE_NIGHTLY_WARNING` in your environment. 
+
+No files changed, compilation skipped
+
+Ran 84 tests for test/AgentAccount.t.sol:AgentAccountTest
+[PASS] test_1271_acceptsAssayVoucher_andAssayRedeemPays() (gas: 453849)
+[PASS] test_1271_rejectsExpiredAgent() (gas: 269560)
+[PASS] test_1271_rejectsForeignChannel() (gas: 448858)
+[PASS] test_1271_rejectsPausedRevokedWrongSignerClosed() (gas: 268684)
+[PASS] test_1271_rejectsPermit2Digest() (gas: 249524)
+[PASS] test_1271_rejectsUsdgPermitDigest() (gas: 265044)
+[PASS] test_1271_revokedAgentVoucherNotRedeemable() (gas: 396032)
+[PASS] test_approve_atExpirySecond_executes() (gas: 538278)
+[PASS] test_approve_enforcesMinOut() (gas: 508174)
+[PASS] test_approve_executesExactTrade_once() (gas: 610688)
+[PASS] test_approve_revertsAfterAgentRotated() (gas: 684113)
+[PASS] test_approve_revertsExpired() (gas: 413287)
+[PASS] test_approve_revertsNotOwner() (gas: 413341)
+[PASS] test_approve_revertsReplay() (gas: 539136)
+[PASS] test_approve_revertsTradeMismatch() (gas: 420301)
+[PASS] test_approve_revertsWhenPaused() (gas: 418755)
+[PASS] test_approve_revertsWhenPerTradeLowered() (gas: 427244)
+[PASS] test_approve_revertsWhenPoolOrTokenDelisted() (gas: 443949)
+[PASS] test_callback_revertsAfterSwapInSameTx() (gas: 4728602)
+[PASS] test_callback_revertsFromNonPoolManager() (gas: 23557)
+[PASS] test_callback_revertsWhenNotSwapping() (gas: 24628)
+[PASS] test_cancelProposal_onlyProposer_thenApproveReverts() (gas: 427233)
+[PASS] test_constructor_revertsNoCode() (gas: 4044490)
+[PASS] test_execute_band1Boundary_executes() (gas: 452261)
+[PASS] test_execute_buyAndSell_balanceDeltasAndEvent() (gas: 670241)
+[PASS] test_execute_capsApplyToTokenIn_sellBoundedInStockUnits() (gas: 554422)
+[PASS] test_execute_revertsAfterRevoke() (gas: 181223)
+[PASS] test_execute_revertsDailyCapExceeded() (gas: 1104136)
+[PASS] test_execute_revertsDeadline() (gas: 452689)
+[PASS] test_execute_revertsInsufficientOutput_realPool() (gas: 412590)
+[PASS] test_execute_revertsInsufficientOutput_whenPoolUnderpays() (gas: 4803163)
+[PASS] test_execute_revertsNeedsApproval_inBand2() (gas: 198508)
+[PASS] test_execute_revertsNotAgent() (gas: 172923)
+[PASS] test_execute_revertsOneSecondAfterExpiry() (gas: 460543)
+[PASS] test_execute_revertsOverPerTradeCap() (gas: 235703)
+[PASS] test_execute_revertsOverSpent_whenPoolOvercharges() (gas: 4717358)
+[PASS] test_execute_revertsPoolNotAllowed() (gas: 199035)
+[PASS] test_execute_revertsTokenNotAllowed_afterDelist() (gas: 211540)
+[PASS] test_execute_revertsWhenPaused() (gas: 475376)
+[PASS] test_execute_revertsZeroAmount() (gas: 170196)
+[PASS] test_execute_revertsZeroMinOut() (gas: 171164)
+[PASS] test_factory_createsWiredAccount_andEmits() (gas: 3587222)
+[PASS] test_inferenceClose_refundLandsInAccount() (gas: 223783)
+[PASS] test_newAccount_canDoNothingUntilConfigured() (gas: 3876677)
+[PASS] test_openInferenceChannel_resetsAllowanceToZero() (gas: 244774)
+[PASS] test_openInferenceChannel_revertsBeforeModelSet() (gas: 3609954)
+[PASS] test_ownerOnly_everyPolicyPower() (gas: 485150)
+[PASS] test_ownership_cannotPassToAgent() (gas: 48616)
+[PASS] test_propose_revertsApprovalNotNeeded_inBand1() (gas: 197644)
+[PASS] test_propose_storesProposalAndExpiry() (gas: 599002)
+[PASS] test_receipt_acceptsEverySlot() (gas: 498477)
+[PASS] test_receipt_revertsGatewayMeasurementMismatch() (gas: 315422)
+[PASS] test_receipt_revertsInvalid() (gas: 261429)
+[PASS] test_receipt_revertsKeyExpired() (gas: 354154)
+[PASS] test_receipt_revertsKeyNotRegistered() (gas: 293277)
+[PASS] test_receipt_revertsModelMismatch_requested() (gas: 282661)
+[PASS] test_receipt_revertsModelMismatch_served() (gas: 808718)
+[PASS] test_receipt_revertsModelNotSet() (gas: 4136055)
+[PASS] test_receipt_revertsReuse() (gas: 489505)
+[PASS] test_reentrancy_viaTokenHook_blocked() (gas: 1787151)
+[PASS] test_register_admitsApprovedMeasurement() (gas: 86694)
+[PASS] test_register_arbSysRevertIsFinal() (gas: 202257)
+[PASS] test_register_epochInvalidatesInflightQuote() (gas: 89824)
+[PASS] test_register_nonceBindsChainAndAccount() (gas: 3740700)
+[PASS] test_register_revertsAgentIsOwner() (gas: 33407)
+[PASS] test_register_revertsReplayedQuote() (gas: 71571)
+[PASS] test_register_revertsStaleRefBlock_outOfWindow() (gas: 244280)
+[PASS] test_register_revertsUnapprovedMeasurement() (gas: 36953)
+[PASS] test_register_revertsZeroHash() (gas: 211149)
+[PASS] test_register_revertsZeroHash_nativeFallback() (gas: 23983)
+[PASS] test_register_revertsZeroSigner() (gas: 30490)
+[PASS] test_reject_thenApproveReverts() (gas: 416818)
+[PASS] test_renounceOwnership_reverts() (gas: 15651)
+[PASS] test_revokeAgent_unapprovesTheMeasurementSoAReplayIsRefused() (gas: 49410)
+[PASS] test_setApprovalTtl_bindsNewProposals() (gas: 416863)
+[PASS] test_setLimits_revertsBadLimits() (gas: 35698)
+[PASS] test_setMeasurement_unapproveRevokesCurrentAgent() (gas: 190760)
+[PASS] test_setPool_revertsHookedPool() (gas: 23226)
+[PASS] test_setPool_revertsNativeCurrency() (gas: 24040)
+[PASS] test_setPool_revertsTokenNotAllowed() (gas: 258632)
+[PASS] test_withdrawETH_revertsWithACustomErrorWhenTheRecipientRejects() (gas: 24135)
+[PASS] test_withdraw_revertsNotOwner() (gas: 22866)
+[PASS] test_withdraw_worksAfterExpiry() (gas: 58143)
+[PASS] test_withdraw_worksWhilePausedAndRevoked() (gas: 143004)
+Suite result: ok. 84 passed; 0 failed; 0 skipped; finished in 37.02ms (21.20ms CPU time)
+
+Ran 18 tests for test/AgentAccountAttestation.t.sol:AgentAccountAttestationTest
+[PASS] test_collateral_aQuoteIsSingleUseAcrossBothPaths() (gas: 79968)
+[PASS] test_collateral_admitsAnUpToDatePlatform() (gas: 83722)
+[PASS] test_collateral_admittedAgentTradesUnderTheSameLimits() (gas: 565456)
+[PASS] test_collateral_defaultPolicyIsUpToDateOnlyAndOptional() (gas: 11176)
+[PASS] test_collateral_documentsOlderThanTheFloorAreRefused() (gas: 158176)
+[PASS] test_collateral_inauthenticDocumentsAdmitNobodyAndSpendNoQuote() (gas: 96317)
+[PASS] test_collateral_plainPathStaysOpenWhenNotRequired() (gas: 79495)
+[PASS] test_collateral_requiredPolicyClosesThePlainPath() (gas: 109011)
+[PASS] test_collateral_revokedPlatformNeverPasses() (gas: 172986)
+[PASS] test_collateral_statusAboveTheCeilingIsRefused() (gas: 147193)
+[PASS] test_collateral_stillNeedsAnApprovedMeasurement() (gas: 41666)
+[PASS] test_collateral_theAccountHoldsItsCeilingAgainstAVerifierThatIgnoresIt() (gas: 3896244)
+[PASS] test_collateral_theOwnerKeyCannotBeAdmitted() (gas: 37629)
+[PASS] test_collateral_theOwnersCeilingAndFloorReachTheVerifier() (gas: 124610)
+[PASS] test_collateral_theQuoteNonceBindingStillApplies() (gas: 3614839)
+[PASS] test_policy_changeRevokesTheCurrentAgentAtOnce() (gas: 211451)
+[PASS] test_policy_onlyTheOwnerSetsIt() (gas: 27099)
+[PASS] test_policy_withNoAgentItJustSets() (gas: 56904)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 2.46ms (953.08µs CPU time)
+
+Ran 1 test for test/AgentAccountAttestationInvariant.t.sol:AgentAccountAttestationInvariantTest
+[PASS] invariant_onlyAttestedCodeTradesAndTheLimitsHold() (runs: 256, calls: 25600, reverts: 0)
+
+╭--------------------+---------------------+-------+---------+----------╮
+| Contract           | Selector            | Calls | Reverts | Discards |
++=======================================================================+
+| AttestationHandler | burst               | 1988  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | execute             | 1931  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | jump                | 1961  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | ownerApprove        | 1948  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | ownerRevoke         | 2018  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | ownerSetLimits      | 1981  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | ownerSetMeasurement | 1999  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | ownerSetPolicy      | 1955  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | ownerTogglePause    | 1976  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | ownerWithdraw       | 1934  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | propose             | 2010  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | register            | 1999  | 0       | 0        |
+|--------------------+---------------------+-------+---------+----------|
+| AttestationHandler | tryOwnerPower       | 1900  | 0       | 0        |
+╰--------------------+---------------------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 6.98s (6.98s CPU time)
+
+Ran 8 tests for test/AgentAccountAttestationInvariant.t.sol:AttestationHandlerSmokeTest
+[PASS] test_agentTradesAndIsRecorded() (gas: 607093)
+[PASS] test_approvalPathIsAccounted() (gas: 749360)
+[PASS] test_burstStopsAtTheDailyCapAndIsRecorded() (gas: 1484407)
+[PASS] test_jumpLapsesTheAgentAttestation() (gas: 727956)
+[PASS] test_policyChangeRevokesAndCollateralIsAdmitted() (gas: 858722)
+[PASS] test_revokedMeasurementStopsTheAgentAndIsRecorded() (gas: 774406)
+[PASS] test_unattestedKeyIsDenied() (gas: 254927)
+[PASS] test_withdrawalAndOwnerPowersAreAccounted() (gas: 123532)
+Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 5.01ms (2.74ms CPU time)
+
+Ran 5 tests for test/AgentAccountCorporateAction.t.sol:AgentAccountCorporateActionTest
+[PASS] test_announcedSplit_blocksBuyAndSell() (gas: 248700)
+[PASS] test_cooldownAfterEffective_blocksThenClears() (gas: 539279)
+[PASS] test_noAction_tradesNormally() (gas: 440307)
+[PASS] test_ownerApproval_stillExecutesDuringPendingAction() (gas: 561160)
+[PASS] test_propose_blockedWhilePending() (gas: 220508)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 2.43ms (754.96µs CPU time)
+
+Ran 1 test for test/AgentAccountInvariant.t.sol:AgentAccountInvariantTest
+[PASS] invariant_agentCannotDrain() (runs: 48, calls: 1920, reverts: 0)
+
+╭--------------+-----------------------+-------+---------+----------╮
+| Contract     | Selector              | Calls | Reverts | Discards |
++===================================================================+
+| AgentHandler | agentExecute          | 329   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | agentPropose          | 298   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | agentSigns1271        | 326   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | agentTriesOwnerPowers | 317   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | ownerSetLimits        | 334   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | ownerTogglePause      | 316   | 0       | 0        |
+╰--------------+-----------------------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 368.46ms (366.21ms CPU time)
+
+Ran 1 test for test/AgentAccountInvariant.t.sol:AgentHandlerSmokeTest
+[PASS] test_handler_executeRecordsSpend() (gas: 4021188)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 3.04ms (718.83µs CPU time)
+
+Ran 4 tests for test/AgentAccountRHCFork.t.sol:AgentAccountRHCForkTest
+[PASS] test_fork_deployScript_readBack() (gas: 23141762)
+[PASS] test_fork_poolManagerIsCanonicalBuild() (gas: 23187361)
+[PASS] test_fork_stockPaused_revertsTrade_otherTokenWithdrawWorks() (gas: 23820021)
+[PASS] test_fork_swapTSLA_throughCanonicalPoolManager() (gas: 23704696)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 65.72s (65.72s CPU time)
+
+Ran 5 tests for test/AgentAccountWindow.t.sol:AgentAccountWindowTest
+[PASS] testFuzz_window_matchesReferenceModel(uint256) (runs: 256, μ: 3669691, ~: 3631614)
+[PASS] test_window_approvedTradesNotRecorded() (gas: 833061)
+[PASS] test_window_hour24Boundary() (gas: 884260)
+[PASS] test_window_readsAllTwentyFiveBuckets() (gas: 3601029)
+[PASS] test_window_slotReuseResets() (gas: 781460)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 1.16s (1.16s CPU time)
+
+Ran 6 tests for test/Assay.t.sol:AssayTest
+[PASS] test_closeChannel_refundsUnredeemedAfterTimeout() (gas: 562557)
+[PASS] test_enclaveDigest_matchesPhalaLegacyFormat_andRecovers() (gas: 229679)
+[PASS] test_openChannel_pullsDeposit() (gas: 206961)
+[PASS] test_reRegister_extendsExpiry() (gas: 200028)
+[PASS] test_redeem_paysDeltaToProvider() (gas: 748949)
+[PASS] test_register_storesApprovedSigner() (gas: 163627)
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 4.77ms (4.19ms CPU time)
+
+Ran 14 tests for test/AssayAttacks.t.sol:AssayAttacksTest
+[PASS] test_attack_channelDrain_cappedAtDeposit_reverts() (gas: 602747)
+[PASS] test_attack_closeBeforeTimeout_reverts() (gas: 204924)
+[PASS] test_attack_cumulativeGoingDown_reverts() (gas: 620706)
+[PASS] test_attack_enclaveSigFromUnregisteredKey_reverts() (gas: 356961)
+[PASS] test_attack_expiredAttestation_reverts() (gas: 504402)
+[PASS] test_attack_finalizeCloseBeforeChallengeWindow_reverts() (gas: 209992)
+[PASS] test_attack_measurementNotOnAllowlist_reverts() (gas: 85664)
+[PASS] test_attack_mismatchedResponseHashBetweenSignatures_reverts() (gas: 505577)
+[PASS] test_attack_nonProviderCannotRedeem_reverts() (gas: 428229)
+[PASS] test_attack_payerSigFromNonAgent_reverts() (gas: 437961)
+[PASS] test_attack_replayedVoucher_paysOnce() (gas: 557495)
+[PASS] test_attack_sameResponseHashReplayedWithHigherAmount_reverts() (gas: 558818)
+[PASS] test_redeemAfterFinalizeClose_reverts() (gas: 399942)
+[PASS] test_redeemDuringChallengeWindow_stillPays() (gas: 553884)
+Suite result: ok. 14 passed; 0 failed; 0 skipped; finished in 8.04ms (7.39ms CPU time)
+
+Ran 2 tests for test/AssayFuzz.t.sol:AssayFuzzTest
+[PASS] testFuzz_redeem_cumulativeNeverExceedsDeposit(uint128,uint8,uint256) (runs: 256, μ: 1153263, ~: 1063472)
+[PASS] testFuzz_redeem_singleVoucherCannotExceedDeposit(uint128,uint256) (runs: 256, μ: 431215, ~: 431189)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 827.83ms (827.30ms CPU time)
+
+Ran 11 tests for test/AssayHardening.t.sol:AssayHardeningTest
+[PASS] test_attack_finalizeClose_byNonAgent_reverts() (gas: 211864)
+[PASS] test_attack_requestClose_byNonAgent_reverts() (gas: 206683)
+[PASS] test_attack_requestClose_twice_reverts() (gas: 209789)
+[PASS] test_nextRegisterNonce_fallsBackToBlockhash_whenNoArbSysPrecompile() (gas: 17862)
+[PASS] test_nextRegisterNonce_usesArbSysWhenPresent_revertsOnArbSysRevert() (gas: 147465)
+[PASS] test_nextRegisterNonce_zeroBlockhash_reverts() (gas: 23434)
+[PASS] test_openChannel_measurementNotOnAllowlist_reverts() (gas: 51112)
+[PASS] test_redeem_measurementMatch_succeeds() (gas: 548962)
+[PASS] test_redeem_measurementMismatch_reverts() (gas: 505094)
+[PASS] test_redeem_resetsLastActivityAt_delaysRequestCloseEligibility() (gas: 559527)
+[PASS] test_register_succeedsWithArbSysPrecompilePresent() (gas: 289639)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 2.71ms (2.13ms CPU time)
+
+Ran 1 test for test/AssayInvariant.t.sol:AssayInvariantTest
+[PASS] invariant_escrowEqualsSumOfDepositMinusPaid() (runs: 256, calls: 128000, reverts: 3664)
+
+╭--------------+----------+-------+---------+----------╮
+| Contract     | Selector | Calls | Reverts | Discards |
++======================================================+
+| AssayHandler | close    | 42559 | 0       | 0        |
+|--------------+----------+-------+---------+----------|
+| AssayHandler | open     | 42604 | 0       | 0        |
+|--------------+----------+-------+---------+----------|
+| AssayHandler | redeem   | 42837 | 3664    | 0        |
+╰--------------+----------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 139.05s (139.05s CPU time)
+
+Ran 13 tests for test/AssayRealUSDGFork.t.sol:AssayRealUSDGForkTest
+[PASS] test_demo_L_providerDelaysCloseWithStaggeredRedeems() (gas: 818468)
+[PASS] test_demo_M1_unfreezeRestoresRefund() (gas: 310046)
+[PASS] test_demo_M2_wipeBurnsEscrow() (gas: 316773)
+[PASS] test_demo_frozenProvider_cannotRedeem_agentRefunded() (gas: 497851)
+[PASS] test_fact_permitDomain() (gas: 19928)
+[PASS] test_fork_openChannelWithPermit_realUSDG() (gas: 262406)
+[PASS] test_fork_permitFrontrun_stillOpens() (gas: 272324)
+[PASS] test_fork_permitValueMustEqualAmount() (gas: 81911)
+[PASS] test_fork_threeRedeems_payProviderExactDelta() (gas: 818958)
+[PASS] test_fork_wrongPermitDomain_surfacesAsBadParams() (gas: 80022)
+[PASS] test_issuerRisk_frozenAgentRefundStuck() (gas: 314541)
+[PASS] test_issuerRisk_frozenAssayStrandsAllChannels() (gas: 497313)
+[PASS] test_issuerRisk_pauseDuringChallengeWindowVoidsProviderVoucher() (gas: 467124)
+Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 482.81ms (7.86ms CPU time)
+
+Ran 11 tests for test/AssayReceipt.t.sol:AssayReceiptTest
+[PASS] test_legacyOnlyChannel_refusesReceipt() (gas: 472984)
+[PASS] test_modelPinnedChannel_refusesLegacyRedeem() (gas: 454484)
+[PASS] test_receiptRequestHashMismatch_reverts() (gas: 561970)
+[PASS] test_redeemWithReceipt_cumulativeDeltaInvariantHolds() (gas: 594935)
+[PASS] test_redeemWithReceipt_honestReceipt_pays() (gas: 545933)
+[PASS] test_redeemWithReceipt_modelSwap_revertsModelMismatch() (gas: 494962)
+[PASS] test_redeemWithReceipt_pubkeyRegisteredToDifferentMeasurement_reverts() (gas: 495597)
+[PASS] test_redeemWithReceipt_replay_reverts() (gas: 552045)
+[PASS] test_redeemWithReceipt_requestedHashMismatch_revertsModelMismatch() (gas: 493135)
+[PASS] test_redeemWithReceipt_tamperedResponseHash_reverts() (gas: 493137)
+[PASS] test_redeemWithReceipt_unregisteredPubkey_reverts() (gas: 367377)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 4.46ms (2.54ms CPU time)
+
+Ran 3 tests for test/AssaySmartAccount.t.sol:AssaySmartAccountTest
+[PASS] test_redeem_payerIsEOA_stillSucceeds() (gas: 549020)
+[PASS] test_redeem_payerIsERC1271Wallet_ownerSignature_succeeds() (gas: 554930)
+[PASS] test_redeem_payerIsERC1271Wallet_wrongSigner_reverts() (gas: 440658)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 1.93ms (1.44ms CPU time)
+
+Ran 5 tests for test/AttackReview.t.sol:AttackReviewTest
+[PASS] test_H1_challengeWindowPaysPendingVoucherBeforeClose() (gas: 554195)
+[PASS] test_H2_staleQuoteCannotReRegister() (gas: 169959)
+[PASS] test_L2_permitFrontrunFallsThrough() (gas: 246031)
+[PASS] test_M1_responseHashReplayABA_reverts() (gas: 792421)
+[PASS] test_M1b_sameReceiptPaidOnTwoChannels_reverts() (gas: 688372)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 3.19ms (2.68ms CPU time)
+
+Ran 43 tests for test/ChironGate.t.sol:ChironGateTest
+[PASS] test_ackBindsTotalClaimed() (gas: 251764)
+[PASS] test_ackByPayerInsteadOfAuthorizer_reverts() (gas: 253681)
+[PASS] test_ackByProvider_reverts() (gas: 253439)
+[PASS] test_allZeroAcceptedSet_reverts() (gas: 221540)
+[PASS] test_claimAfterFinalizedWithdraw_revertsAndKeepsReceipt() (gas: 282090)
+[PASS] test_claimDuringWithdrawWindow_capsWithdraw() (gas: 366360)
+[PASS] test_constructor_rejectsNonContracts() (gas: 133181)
+[PASS] test_crossChannelIsolation() (gas: 528351)
+[PASS] test_differentSets_isolated() (gas: 451858)
+[PASS] test_expiredKey_reverts() (gas: 263130)
+[PASS] test_foreignPendingClaim_notForwardedAndCannotGrief() (gas: 466612)
+[PASS] test_foreignReceiptWithPayerAck_reverts() (gas: 248960)
+[PASS] test_forwardShort_reverts() (gas: 975325)
+[PASS] test_gateDigestMatchesIndependentCallAck() (gas: 8291)
+[PASS] test_honestClaim_paysProviderExactDelta() (gas: 463548)
+[PASS] test_payerAuthorizerZero_payerSignsAckAndVoucher() (gas: 362554)
+[PASS] test_payerAuthorizerZero_wrongSigner_reverts() (gas: 250584)
+[PASS] test_payerWithdrawAfterDelay_stillWorks() (gas: 367565)
+[PASS] test_payoutIsGate_reverts() (gas: 357526)
+[PASS] test_pinPreimageMismatch_reverts() (gas: 243838)
+[PASS] test_pinSaltMatchesIndependentEncoding() (gas: 9957)
+[PASS] test_receiptForDifferentRequest_reverts() (gas: 251636)
+[PASS] test_receiptForDifferentResponse_reverts() (gas: 251592)
+[PASS] test_receiptNotOk_reverts() (gas: 231855)
+[PASS] test_receiptReplay_reverts() (gas: 394009)
+[PASS] test_receiverAuthorizerNotGate_rejected() (gas: 247044)
+[PASS] test_receiverNotGate_rejected() (gas: 245976)
+[PASS] test_reentrantToken_blocked() (gas: 1852658)
+[PASS] test_requestedIdNotPinned_reverts() (gas: 250994)
+[PASS] test_requestedModelSwap_reverts() (gas: 251836)
+[PASS] test_servedLabelInLastSlot_pays() (gas: 362100)
+[PASS] test_servedLabelNotInSet_reverts() (gas: 255322)
+[PASS] test_servedModelSwap_reverts() (gas: 255291)
+[PASS] test_settleShort_reverts() (gas: 968442)
+[PASS] test_staleVoucher_reverts() (gas: 419125)
+[PASS] test_tinfoilServedLabel_pays() (gas: 362888)
+[PASS] test_unregisteredKey_reverts() (gas: 259299)
+[PASS] test_voucherCeilingAboveClaim_paysClaimedTotal() (gas: 371720)
+[PASS] test_wrongMeasurement_reverts() (gas: 258726)
+[PASS] test_x402SignatureRoutesCannotBypassGate() (gas: 143623)
+[PASS] test_zeroEntryNeverMatches() (gas: 231399)
+[PASS] test_zeroModelPin_reverts() (gas: 221262)
+[PASS] test_zeroPayoutPin_reverts() (gas: 239669)
+Suite result: ok. 43 passed; 0 failed; 0 skipped; finished in 17.33ms (16.31ms CPU time)
+
+Ran 44 tests for test/ChironGateCrossChannel.t.sol:CrossChannelTest
+[PASS] test_X_oneReceiptCannotPayTwoChannelsOfSamePayer() (gas: 461394)
+[PASS] test_ackBindsTotalClaimed() (gas: 251786)
+[PASS] test_ackByPayerInsteadOfAuthorizer_reverts() (gas: 253703)
+[PASS] test_ackByProvider_reverts() (gas: 253439)
+[PASS] test_allZeroAcceptedSet_reverts() (gas: 221540)
+[PASS] test_claimAfterFinalizedWithdraw_revertsAndKeepsReceipt() (gas: 282050)
+[PASS] test_claimDuringWithdrawWindow_capsWithdraw() (gas: 366360)
+[PASS] test_constructor_rejectsNonContracts() (gas: 133203)
+[PASS] test_crossChannelIsolation() (gas: 528436)
+[PASS] test_differentSets_isolated() (gas: 451880)
+[PASS] test_expiredKey_reverts() (gas: 263130)
+[PASS] test_foreignPendingClaim_notForwardedAndCannotGrief() (gas: 466612)
+[PASS] test_foreignReceiptWithPayerAck_reverts() (gas: 248960)
+[PASS] test_forwardShort_reverts() (gas: 975325)
+[PASS] test_gateDigestMatchesIndependentCallAck() (gas: 8313)
+[PASS] test_honestClaim_paysProviderExactDelta() (gas: 463570)
+[PASS] test_payerAuthorizerZero_payerSignsAckAndVoucher() (gas: 362576)
+[PASS] test_payerAuthorizerZero_wrongSigner_reverts() (gas: 250606)
+[PASS] test_payerWithdrawAfterDelay_stillWorks() (gas: 367565)
+[PASS] test_payoutIsGate_reverts() (gas: 357548)
+[PASS] test_pinPreimageMismatch_reverts() (gas: 243838)
+[PASS] test_pinSaltMatchesIndependentEncoding() (gas: 9957)
+[PASS] test_receiptForDifferentRequest_reverts() (gas: 251636)
+[PASS] test_receiptForDifferentResponse_reverts() (gas: 251592)
+[PASS] test_receiptNotOk_reverts() (gas: 231877)
+[PASS] test_receiptReplay_reverts() (gas: 394009)
+[PASS] test_receiverAuthorizerNotGate_rejected() (gas: 247066)
+[PASS] test_receiverNotGate_rejected() (gas: 245976)
+[PASS] test_reentrantToken_blocked() (gas: 1852658)
+[PASS] test_requestedIdNotPinned_reverts() (gas: 250994)
+[PASS] test_requestedModelSwap_reverts() (gas: 251858)
+[PASS] test_servedLabelInLastSlot_pays() (gas: 362122)
+[PASS] test_servedLabelNotInSet_reverts() (gas: 255344)
+[PASS] test_servedModelSwap_reverts() (gas: 255313)
+[PASS] test_settleShort_reverts() (gas: 968464)
+[PASS] test_staleVoucher_reverts() (gas: 419147)
+[PASS] test_tinfoilServedLabel_pays() (gas: 362888)
+[PASS] test_unregisteredKey_reverts() (gas: 259299)
+[PASS] test_voucherCeilingAboveClaim_paysClaimedTotal() (gas: 371742)
+[PASS] test_wrongMeasurement_reverts() (gas: 258748)
+[PASS] test_x402SignatureRoutesCannotBypassGate() (gas: 143623)
+[PASS] test_zeroEntryNeverMatches() (gas: 231399)
+[PASS] test_zeroModelPin_reverts() (gas: 221284)
+[PASS] test_zeroPayoutPin_reverts() (gas: 239691)
+Suite result: ok. 44 passed; 0 failed; 0 skipped; finished in 17.40ms (16.36ms CPU time)
+
+Ran 7 tests for test/ChironGateFork.t.sol:ChironGateForkTest
+[PASS] test_forkClaim_afterLiveExpiry_reverts() (gas: 145429)
+[PASS] test_forkClaim_fixtureKeyNotRegisteredLive_reverts() (gas: 143710)
+[PASS] test_forkClaim_modelSwapVector_reverts() (gas: 135630)
+[PASS] test_forkClaim_paysAgainstLiveRegistry() (gas: 247989)
+[PASS] test_forkClaim_wrongMeasurement_reverts() (gas: 143523)
+[PASS] test_liveRegistry_holdsPhalaKey() (gas: 13913)
+[PASS] test_liveVerifier_fixtureVectors() (gas: 32390)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 7.68s (4.29s CPU time)
+
+Ran 47 tests for test/ChironGateReview.t.sol:ChironGateReviewTest
+[PASS] test_R1_payerCannotBurnSignedAckViaThrowawayChannel() (gas: 995140)
+[PASS] test_R1b_exposureIsOneCall() (gas: 1185821)
+[PASS] test_R3_control_payerExitsWhileGateFrozen() (gas: 655052)
+[PASS] test_ackBindsTotalClaimed() (gas: 251819)
+[PASS] test_ackByPayerInsteadOfAuthorizer_reverts() (gas: 253714)
+[PASS] test_ackByProvider_reverts() (gas: 253472)
+[PASS] test_allZeroAcceptedSet_reverts() (gas: 221573)
+[PASS] test_claimAfterFinalizedWithdraw_revertsAndKeepsReceipt() (gas: 282123)
+[PASS] test_claimDuringWithdrawWindow_capsWithdraw() (gas: 366393)
+[PASS] test_constructor_rejectsNonContracts() (gas: 133181)
+[PASS] test_crossChannelIsolation() (gas: 528439)
+[PASS] test_differentSets_isolated() (gas: 451957)
+[PASS] test_expiredKey_reverts() (gas: 263163)
+[PASS] test_fixKeepsSameChannelReplayBlocked() (gas: 395327)
+[PASS] test_foreignPendingClaim_notForwardedAndCannotGrief() (gas: 466645)
+[PASS] test_foreignReceiptWithPayerAck_reverts() (gas: 248993)
+[PASS] test_forwardShort_reverts() (gas: 975358)
+[PASS] test_gateDigestMatchesIndependentCallAck() (gas: 8313)
+[PASS] test_honestClaim_paysProviderExactDelta() (gas: 463613)
+[PASS] test_payerAuthorizerZero_payerSignsAckAndVoucher() (gas: 362609)
+[PASS] test_payerAuthorizerZero_wrongSigner_reverts() (gas: 250705)
+[PASS] test_payerWithdrawAfterDelay_stillWorks() (gas: 367598)
+[PASS] test_payoutIsGate_reverts() (gas: 357559)
+[PASS] test_pinPreimageMismatch_reverts() (gas: 243871)
+[PASS] test_pinSaltMatchesIndependentEncoding() (gas: 9957)
+[PASS] test_receiptForDifferentRequest_reverts() (gas: 251669)
+[PASS] test_receiptForDifferentResponse_reverts() (gas: 251625)
+[PASS] test_receiptNotOk_reverts() (gas: 231888)
+[PASS] test_receiptReplay_reverts() (gas: 394107)
+[PASS] test_receiverAuthorizerNotGate_rejected() (gas: 247165)
+[PASS] test_receiverNotGate_rejected() (gas: 246009)
+[PASS] test_reentrantToken_blocked() (gas: 1852691)
+[PASS] test_requestedIdNotPinned_reverts() (gas: 251027)
+[PASS] test_requestedModelSwap_reverts() (gas: 251891)
+[PASS] test_servedLabelInLastSlot_pays() (gas: 362155)
+[PASS] test_servedLabelNotInSet_reverts() (gas: 255355)
+[PASS] test_servedModelSwap_reverts() (gas: 255324)
+[PASS] test_settleShort_reverts() (gas: 968475)
+[PASS] test_staleVoucher_reverts() (gas: 419279)
+[PASS] test_tinfoilServedLabel_pays() (gas: 362921)
+[PASS] test_unregisteredKey_reverts() (gas: 259332)
+[PASS] test_voucherCeilingAboveClaim_paysClaimedTotal() (gas: 371841)
+[PASS] test_wrongMeasurement_reverts() (gas: 258759)
+[PASS] test_x402SignatureRoutesCannotBypassGate() (gas: 143623)
+[PASS] test_zeroEntryNeverMatches() (gas: 231432)
+[PASS] test_zeroModelPin_reverts() (gas: 221295)
+[PASS] test_zeroPayoutPin_reverts() (gas: 239702)
+Suite result: ok. 47 passed; 0 failed; 0 skipped; finished in 16.56ms (15.57ms CPU time)
+
+Ran 5 tests for test/ReReview.t.sol:ReReviewTest
+[PASS] test_RR1_modelPinnedChannel_legacyRedeemMustRevert() (gas: 447257)
+[PASS] test_RR2_zeroRefBlockHash_quoteStockpiledForAYear_mustNotRegister() (gas: 2402698)
+[PASS] test_RR3_sameReceiptPaysTwiceWithDifferentRequestHash_mustRevert() (gas: 554681)
+[PASS] test_RR4_erc1271AgentRotatesOwner_voidsUnredeemedVouchers() (gas: 645332)
+[PASS] test_RR4b_eoaAgentGainsCodeAfterSigning_providerMustStillBePaid() (gas: 749366)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 2.14ms (1.68ms CPU time)
+
+Ran 4 tests for test/ReReview2.t.sol:ReReview2Test
+[PASS] test_F1_delegatedAtOpen_delegateWithout1271_providerMustBePaid() (gas: 648194)
+[PASS] test_F1_delegatedAtOpen_revokesDelegation_providerMustStillBePaid() (gas: 697166)
+[PASS] test_F2_contractOpenedFromConstructor_providerMustBePaid() (gas: 741081)
+[PASS] test_fixGuard_contractAgent_strangerEcdsaStillRejected() (gas: 626494)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 2.37ms (1.96ms CPU time)
+
+Ran 8 tests for test/security/SecurityReview20261024.t.sol:SecurityReview20261024Test
+[PASS] test_F1_control_unapproveMeasurement_isDurable() (gas: 23069006)
+[PASS] test_F1_revokeAgent_isDurable() (gas: 23073823)
+[PASS] test_F2_control_withoutRenewal_expires() (gas: 23280603)
+[PASS] test_F2_expiry_isRenewedByAStranger() (gas: 23564144)
+[PASS] test_F3_control_noSwap_ownerApproves() (gas: 23555137)
+[PASS] test_F3_strangerSwapsAgent_strandsPendingProposal() (gas: 23520284)
+[PASS] test_F4_control_sameAccountReplay_refused() (gas: 23498062)
+[PASS] test_F4_oneReceipt_backsTradesOnTwoAccounts() (gas: 27729338)
+Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 130.93s (130.93s CPU time)
+
+Ran 25 test suites in 353.37s (353.34s CPU time): 351 tests passed, 0 failed, 0 skipped (351 total tests)
