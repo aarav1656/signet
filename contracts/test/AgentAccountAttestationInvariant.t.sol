@@ -264,6 +264,13 @@ contract AttestationHandler is Test {
         }
     }
 
+    /// Six trades back to back at the top of band 1 from the same instant: the shape that crosses a
+    /// daily cap, so a missing cap or a missing window write is reached on every run and not by chance.
+    function burst(bool buy) external {
+        (,,, uint128 above) = account.limits(buy ? usdg : tsla);
+        for (uint256 i; i < 6; ++i) this.execute(0, buy, above, 0);
+    }
+
     function _checkDaily(uint256 j) internal {
         Spend memory sj = spends[j];
         uint256 sum;
@@ -490,6 +497,13 @@ contract AttestationHandlerSmokeTest is AgentAccountTestBase {
         h.execute(7, true, 5e6, 0); // the owner
         assertEq(h.executes(), 0);
         assertEq(h.deniedTrades(), 3);
+    }
+
+    function test_burstStopsAtTheDailyCapAndIsRecorded() public {
+        h.burst(true); // 6 x 50 USDG against a 250 USDG daily cap
+        assertEq(h.executes(), 5);
+        assertEq(h.overDaily(), 0);
+        assertEq(h.spendCount(), 5);
     }
 
     function test_jumpLapsesTheAgentAttestation() public {

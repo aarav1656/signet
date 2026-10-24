@@ -189,7 +189,8 @@ MUTANTS = [
 
 
 def run(force=False):
-    shutil.rmtree("cache/invariant", ignore_errors=True)  # a persisted failing sequence must not decide the next mutant
+    for cache in ("cache", "cache-mut"):  # a persisted failing sequence must not decide the next mutant, in either profile
+        shutil.rmtree(f"{cache}/invariant", ignore_errors=True)
     p = subprocess.run(CMD + (["--force"] if force else []), capture_output=True, text=True, env=ENV)
     out = p.stdout + p.stderr
     if "Compiler run failed" in out or "Error (" in out:
