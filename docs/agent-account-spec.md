@@ -378,7 +378,7 @@ Issuer powers the owner cannot override: Stock Token `pause`, `Blocked` and `adm
 | ERC-1271 abuse (Permit2, permit, EIP-3009 signed by the agent) | Signature scope limited to recomputed Assay voucher digests (I7) | none |
 | Stock Token paused, account blocklisted, `adminBurn` | Trades involving that token revert atomically; other tokens unaffected; withdraw is per token | Frozen or burned Stock Tokens are the issuer's decision and cannot be recovered by the account |
 | Measurement drift (host TDX update, instance-id refresh) | The agent expires and trading halts; the owner approves the new measurement | Downtime until the owner acts |
-| No TCB, QE identity or CRL check in the Verifier | Inherited limit (README "What the attestation proves"); the owner decides per measurement | A quote from a platform later revoked by Intel stays valid until the certificate dates expire |
+| TCB, QE identity and CRL checks | `registerAgentWithCollateral` runs them behind the owner's `setAttestationPolicy`; the plain `registerAgent` path leaves the owner to decide per measurement | An account that has not opted in admits a quote from a platform later revoked by Intel until the certificate dates expire |
 | Malicious RPC feeding the agent false state | The agent's decisions only; the contract enforces caps regardless | Bad trades within caps |
 | Receipt misattribution | Receipt consumed per account; recorded, not claimed as causal | Section 6 limits |
 
@@ -468,5 +468,5 @@ The script fails if any step returns only a transaction hash without its log and
 - testUSDG is not USDG, and the pool is ours with a price we set (section 0.2).
 - The demo owner, the provider wallet and the agent operator are all us. Phala is paid through API credits off chain, and the Assay provider on RHC is our relay wallet, as on Arbitrum Sepolia.
 - A receipt records which model answered; it does not prove that the trade follows from the answer (section 6).
-- The attestation does not check Intel TCB status, QE identity or CRLs (inherited).
+- TCB status, QE identity and CRL checks run only on accounts that opt in through `setAttestationPolicy` and register with collateral.
 - If the fallback is used, the first-screen statement from section 0.3.

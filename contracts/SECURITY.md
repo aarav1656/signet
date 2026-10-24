@@ -19,9 +19,23 @@ Source: `contracts/src/AgentAccount.sol`. Static analysis: `STATIC-ANALYSIS.md` 
 1. **Only attested code trades.** `execute` and `propose` require `msg.sender == agent`, an unexpired admission and an unpaused account. `agent` is set only by `_admit`, which requires a quote the Stylus `Verifier` authenticated, a measurement in `approvedMeasurement`, a signer that is neither zero nor the owner, and a quote hash never used before.
 2. **A different workload is refused.** A genuine Intel TDX quote from another workload reverts `MeasurementNotApproved`. Live on Robinhood Chain testnet 46630: transaction `0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8`, block 127,632,496, status 0, 2,349,054 gas (`cast receipt`, read 2026-10-24). The verifier checks the whole quote first, then the allowlist refuses the key.
 3. **Receipts bind the model.** `_consumeReceipt` verifies an Ed25519 receipt through the Stylus `ReceiptVerifier`, then requires the requested model to equal the pinned one, the served label to be in the accepted set, the gateway key to be registered in Assay under the pinned gateway measurement and unexpired, and the (request, response) pair never to have been used. Live: attested trade `0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03`, block 127,188,951, status 1, 504,449 gas; its `TradeExecuted` log on `0x9c69A43F...Aa6D` carries `agentMeasurement 0xeb2d9462...6829`, `servedModelHash 0xc8536dbf...78df59`, `amountIn 1000000` and `amountOut 3910026278631909` (`cast receipt --json`, decoded 2026-10-24).
-4. **Funds move only through the PoolManager path or to the owner.** The agent's only fund-moving call is `execute`, which swaps through `poolManager.unlock`. Pools are allowlisted by the owner, hookless and non-native. The token pair is derived from the pool key, never from the caller. After the swap the account measures what left and what arrived by balance, and reverts `OverSpent` or `InsufficientOutput` whatever the pool reports. `withdraw` and `withdrawETH` are owner-only.
+4. **Funds move only through the PoolManager path, to the owner, or into the inference channel the owner opened.** The agent's trading call is `execute`, which swaps through `poolManager.unlock`. The agent also authorizes Assay vouchers through ERC-1271, only on this account's own open channel, paid to the provider the owner chose, capped by the deposit the owner escrowed, and redeemable only with the provider's enclave signature or receipt. Pools are allowlisted by the owner, hookless and non-native. The token pair is derived from the pool key, never from the caller. After the swap the account measures what left and what arrived by balance, and reverts `OverSpent` or `InsufficientOutput` whatever the pool reports. `withdraw` and `withdrawETH` are owner-only.
 5. **Caps hold.** Per-trade cap, a band above which the owner must approve, and a rolling 24-hour cap built from 25 hourly buckets, all per token in the token being sold.
 6. **Trust is withdrawn instantly.** Unapproving the live measurement, changing the attestation policy, or calling `revokeAgent` clears the agent at once and bumps `agentEpoch`, which invalidates every in-flight quote nonce.
+
+## Source and deployed code
+
+Read on chain 46630 with `cast code` and `cast receipt`, 2026-10-24. The three columns say where each guard runs today.
+
+| Guard | In source | On the deployed accounts `0x9c69...Aa6D` and `0xFaaAa4d1...3b55` | On the deployed Verifier `0x3c19...CAF8c` |
+|---|---|---|---|
+| Attested admission, `MeasurementNotApproved` refusal | yes | live (refusal tx `0xf98156ad...fcc8`, block 127,632,496) | live |
+| Per-trade cap, rolling 24-hour cap, approval threshold, pool allowlist | yes | live | not applicable |
+| ERC-8056 corporate-action guard | yes | live on `0xFaaAa4d1...3b55` | not applicable |
+| `revokeAgent` unapproves the live measurement (review F-1) | yes, with red and green tests | source only, a new account takes it | not applicable |
+| `registerAgentWithCollateral`, `setAttestationPolicy` (TCB, QE identity, CRL) | yes | source only: neither selector is in either account's runtime code | `verifyWithCollateral` is source only |
+
+A follower account created from the next factory deployment carries the F-1 fix and the collateral path.
 
 ## The attestation path
 

@@ -2,7 +2,7 @@
 
 Scope: the `main...signet-contracts` diff over `contracts/src`, `verifier` and `receipt-verifier` (AgentAccount collateral admission and attestation policy, `ICollateralVerifier`, `verifier/src/collateral.rs`, `verify_with_collateral` in `verifier/src/lib.rs`), plus the unchanged code those paths reach: admission, receipts, swap and unlock callback, owner funds, ERC-1271, and the CVM `/quote` endpoint that feeds admission (`agent/src/cvm.ts`). Source was read only; PoCs are in `contracts/test/security/SecurityReview20261024.t.sol`.
 
-## Verdict: FIX-FIRST (small)
+## Verdict: FIX-FIRST (small), fixes applied: see the status table below
 
 The collateral code is sound: every Intel document is authenticated against the hardcoded root before it is parsed, it is bound to the quote's own platform, and every failure reverts. No finding lets a non-owner widen the policy, admit an unapproved measurement, move funds outside the PoolManager path, or re-enter the swap.
 
@@ -21,6 +21,20 @@ Fix first: F-1 (one line in `revokeAgent`, shown drop-in below) and the two `con
 | F-9 | Info | `docs/agent-account-spec.md` lines 381 and 471 still say the Verifier has no TCB, QE or CRL check | code read |
 
 PoC run: `RHC_FORK_BLOCK=141774771 RHC_FORK_URL=https://rpc.testnet.chain.robinhood.com forge test --match-path test/security/SecurityReview20261024.t.sol -j 1`: 8 passed, 0 failed (4 attacks, 4 controls). An unpinned run hit `unsupported block number` on the public RPC for one test; pinning the fork block cleared it.
+
+## Status after the fixes, 2026-10-24
+
+| ID | Status | Evidence |
+|---|---|---|
+| F-1 | Fixed in source. `revokeAgent` unapproves the live measurement. Not yet on the deployed accounts, which predate the fix. | commit `d2d6522`; the F-1 PoC in `test/security/SecurityReview20261024.t.sol` is red without the line and green with it; `AgentAccount.t.sol` unit test; mutant in `test/mutation/agent_account_mutations.py` |
+| F-2 | Wording corrected in `SECURITY.md` (Design decisions, "Admission lasts 24 hours"): expiry shows the CVM is alive, revoking a key is `setMeasurement(m, false)` or `revokeAgent`. | `contracts/SECURITY.md` |
+| F-3 | Open in the contract. A follower account created through the follow flow has exactly one approved measurement, so no second measurement exists to switch to. | `agent/src/follow.ts` |
+| F-4 | Open by design. A receipt is recorded with the trade and not claimed as causal. Public copy says a trade names the measurement the agent was admitted under and the model of its verified inference receipt. | README, deck, canvases |
+| F-5 | Open. Collateral freshness is the submitter's. An owner who sets `requireCollateral` accepts that window. | `contracts/src/AgentAccount.sol` |
+| F-6 | Open until the next deployment. `SECURITY.md` now states which guards are live. | `contracts/SECURITY.md`, section "Source and deployed code" |
+| F-7 | Accepted. Both deviations are documented above. | this file |
+| F-8 | Fixed. Guarantee 4 names the ERC-1271 voucher path. | `contracts/SECURITY.md` |
+| F-9 | Fixed. The two spec lines state the collateral path. | `docs/agent-account-spec.md` |
 
 ## Findings
 
