@@ -23,6 +23,17 @@ contract TestStockToken is ERC20 {
         hook = h;
     }
 
+    // ERC-8056 corporate-action surface, as on the Robinhood Stock Tokens. Defaults read "no action".
+    uint256 public uiMultiplier = 1e18;
+    uint256 public newUIMultiplier = 1e18;
+    uint256 public effectiveAt;
+
+    function setMultipliers(uint256 current, uint256 next, uint256 at) external {
+        uiMultiplier = current;
+        newUIMultiplier = next;
+        effectiveAt = at;
+    }
+
     function _update(address from, address to, uint256 value) internal override {
         super._update(from, to, value);
         if (hook != address(0)) ITransferHook(hook).onTokenTransfer(from, to, value);

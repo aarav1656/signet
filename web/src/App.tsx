@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { getAddress, isAddress } from 'viem';
 import { BrowserRouter, NavLink, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
-import { ASSAY, assayChain, chainForPath, explorer, rhcExplorer, wagmiConfig } from './chain';
+import { ASSAY, assayChain, assayNet, chainForPath, explorer, NET_KEY, otherNet, rhcExplorer, wagmiConfig } from './chain';
 import { DEMO_ACCOUNT } from './lib/rhc.generated';
 import { Wallet } from './components/Wallet';
 import { TxStatusPanel } from './components/TxStatus';
@@ -57,8 +57,28 @@ function Page() {
   );
 }
 
+/** Which chain this view reads. The account is always on Robinhood Chain; the Assay routes offer both networks. */
+function NetBar() {
+  const { pathname } = useLocation();
+  if (pathname === '/') return null;
+  const link = (key: string) => `${pathname}?net=${key}`;
+  return (
+    <p className="netbar" role="group" aria-label="Assay network">
+      <span className="t-label">Assay on</span>
+      {(['rhc', 'arb'] as const).map((k) => {
+        const n = k === NET_KEY ? assayNet : otherNet;
+        return (
+          <a key={k} href={link(k)} aria-current={k === NET_KEY ? 'true' : undefined} className={k === NET_KEY ? 'on' : undefined}>
+            {n.chain.name} · {n.chain.id}
+          </a>
+        );
+      })}
+      <span className="small">{NET_KEY === 'rhc' ? 'Paxos USDG, next to the account' : 'the network with the paid inference calls'}</span>
+    </p>
+  );
+}
+
 function Header() {
-  const chain = chainForPath(useLocation().pathname);
   return (
     <header className="top">
       <NavLink to="/" className="wordmark">
@@ -72,9 +92,6 @@ function Header() {
         <NavLink to="/channel">Channels</NavLink>
         <NavLink to="/verify">Verify a gateway</NavLink>
       </nav>
-      <span className="net">
-        {chain.name} · {chain.id}
-      </span>
       <Wallet />
     </header>
   );
@@ -89,6 +106,7 @@ export function App() {
             <Rail />
             <main className="main">
               <Header />
+              <NetBar />
               <Page />
               <Footer />
             </main>

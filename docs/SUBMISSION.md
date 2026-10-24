@@ -59,13 +59,13 @@ The payer is the account owner: an agent operator running an attested agent for 
 
 ## Evidence
 
-- `make test` from a fresh clone: 296 passed, 0 failed, 1 skipped across 20 suites. The `AgentAccount` suites (unit, rolling-window fuzz against an exact reference, drain invariant) are 89 of them; 4 more run against live RHC testnet state, and the `ChironGate` fork suite reads the live Assay registry. The skipped suite is the real-USDG fork suite, which runs when `CHIRON_FUNDED_TEST_ACCOUNT` is set.
+- `make test` from a fresh clone of `bac4c37`: 314 passed, 0 failed, 0 skipped across 21 suites (log in `docs/test-logs/`). The `AgentAccount` suites (82 unit, 5 rolling-window fuzz against an exact reference, 1 drain invariant and 1 handler smoke test, 5 ERC-8056 corporate-action) are 94 of them; 4 more run against live RHC testnet state, the `ChironGate` fork suite reads the live Assay registry, and the 13-test real-USDG fork suite runs against Paxos USDG on Arbitrum Sepolia.
 - Revoke by measurement on Robinhood Chain testnet: the owner unapproves the agent's measurement (`0x0b34701e...8382`), the account de-admits the agent in that transaction, and the agent's next `execute` reverts `NotAgent` (`0xc0b2e5bc...1e08`); re-approval leaves `agent()` zero until a fresh quote admits the key (`0x4694b617...9a66`). `docs/e2e/robinhood-testnet-agent-account.md` lists every transaction.
 - Real USDG: the attested agent bought TSLA with 1 USDG of Paxos's testnet USDG `0x7E955252...802F` in a second TSLA/USDG pool the same account is allowed to trade (`0x0023f359...3b03`, `TradeExecuted` tradeId 3).
 - Mutation record: `docs/security/agent-account-mutations.md`, 109 of 110 mutants killed, the restored source green.
 - `agent` `npm test`: 27 passed, including the exact 64-byte `report_data` layout the quote must carry and the `Trade` encoding the owner's approval hashes.
 - `receipt-verifier` `cargo test`: 18 passed. `verifier` `cargo test`: 22 passed.
-- `docs/SECURITY.md`: four independent review rounds on Assay and the verifiers, two on `ChironGate`; every finding is resolved and ships with a test that fails without its fix.
+- `docs/SECURITY.md`: four internal review rounds on Assay and the verifiers, two on `ChironGate`, each by a separate session from the one that wrote the code; every finding is resolved and ships with a test that fails without its fix.
 
 ## Deployed on Robinhood Chain testnet (chain 46630)
 
@@ -73,12 +73,13 @@ Deployed 2026-10-01 from `0x2aD12a72362704367e99a344cFf5affDDF7f5DEF`, which own
 
 | Contract | Address | What it is |
 |---|---|---|
-| AgentAccount | [`0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D`](https://explorer.testnet.chain.robinhood.com/address/0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D) | The owner's account. Source verified on Blockscout. |
+| AgentAccount | [`0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D`](https://explorer.testnet.chain.robinhood.com/address/0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D) | The first account, on the TestUSDG venue, where the live cycle and the mined refusals ran. Source verified on Blockscout. |
+| AgentAccount (app default) | [`0xFaaAa4d1ee944d317b10233505D8c57425C53b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55) | Paxos USDG account from factory `0x14103f19...ed03`, with the ERC-8056 corporate-action guard and the operator agent. |
 | AgentAccountFactory | [`0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e`](https://explorer.testnet.chain.robinhood.com/address/0xA5b57CA7961A96E75E3Ed1915F5677382d44F24e) | Creates one account per owner. Source verified on Blockscout. |
 | Verifier | [`0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c`](https://explorer.testnet.chain.robinhood.com/address/0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c) | Stylus (Rust). Verifies an Intel TDX DCAP quote chain, returns the signer and the nine-field measurement. |
 | ReceiptVerifier | [`0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380`](https://explorer.testnet.chain.robinhood.com/address/0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380) | Stylus (Rust). Verifies one Ed25519-signed Phala inference receipt. |
 | Assay | [`0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D`](https://explorer.testnet.chain.robinhood.com/address/0x2176E7f20654C8747Fa37b3d96E1ACbf7Df55b5D) | The inference payment channel the account bills through. Source verified on Blockscout. |
-| TestUSDG | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://explorer.testnet.chain.robinhood.com/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | 6-decimal quote asset for the venue, minted by the deploy script. Source verified on Blockscout. |
+| TestUSDG | [`0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC`](https://explorer.testnet.chain.robinhood.com/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) | 6-decimal quote asset for the venue, minted by the deploy script, on Robinhood Chain testnet (46630). Source verified on Blockscout. Same address as the Arbitrum Sepolia Assay: same deployer, nonce 6, different chain and contract. |
 | TSLA Stock Token | [`0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E`](https://explorer.testnet.chain.robinhood.com/address/0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E) | Robinhood's official testnet Stock Token. |
 | Uniswap v4 PoolManager | [`0x8366a39CC670B4001A1121B8F6A443A643e40951`](https://explorer.testnet.chain.robinhood.com/address/0x8366a39CC670B4001A1121B8F6A443A643e40951) | Canonical deployment, code hash equal to mainnet. |
 
@@ -108,7 +109,7 @@ Assay is the inference channel an account bills through. It is live on Arbitrum 
 
 | Contract | Address |
 |---|---|
-| Assay | [0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC](https://sepolia.arbiscan.io/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) (Sourcify exact match) |
+| Assay | [0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC](https://sepolia.arbiscan.io/address/0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC) (Sourcify exact match), on Arbitrum Sepolia (421614); the same address on Robinhood Chain testnet is TestUSDG |
 | Verifier (Stylus) | [0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c](https://sepolia.arbiscan.io/address/0x3c19c10e5c9a82d01ed79e5c6026d73b9b2caf8c) |
 | ReceiptVerifier (Stylus) | [0x9af7d9c3b27c4a8a11fb879041b931c38b712380](https://sepolia.arbiscan.io/address/0x9af7d9c3b27c4a8a11fb879041b931c38b712380) |
 | USDG (Paxos) | [0xFFC95faa3d63Cde504a05B567C600B78C0b41892](https://sepolia.arbiscan.io/address/0xFFC95faa3d63Cde504a05B567C600B78C0b41892) |

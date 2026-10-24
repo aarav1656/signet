@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Address, Hex } from 'viem';
 import { buildGateRows, decodeRevertSelector, type AccountLog, type Refusal, type TokenInfo } from './gateRows';
-import { agentView } from './agent';
+import { agentView, NEAR_EXPIRY_SEC } from './agent';
 import { ZERO_ADDR } from './read';
 
 const USDG = '0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC' as Address;
@@ -76,7 +76,12 @@ describe('buildGateRows', () => {
 describe('agentView', () => {
   const expiry = 1_000n;
   it('counts down while the attestation is valid', () => {
-    expect(agentView(AGENT, expiry, 400)).toEqual({ state: 'live', left: 600 });
+    expect(agentView(AGENT, 100_000n, 400)).toEqual({ state: 'live', left: 99_600 });
+  });
+  it('is near once the renewal window opens', () => {
+    expect(agentView(AGENT, 100_000n, 100_000 - NEAR_EXPIRY_SEC - 1)).toEqual({ state: 'live', left: NEAR_EXPIRY_SEC + 1 });
+    expect(agentView(AGENT, 100_000n, 100_000 - NEAR_EXPIRY_SEC)).toEqual({ state: 'near', left: NEAR_EXPIRY_SEC });
+    expect(agentView(AGENT, expiry, 400)).toEqual({ state: 'near', left: 600 });
   });
   it('is expired, not an error, once the expiry passes', () => {
     expect(agentView(AGENT, expiry, 1_000)).toEqual({ state: 'expired', ago: 0 });

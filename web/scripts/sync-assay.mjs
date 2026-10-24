@@ -57,7 +57,11 @@ if (!registerStep || !rhc.gatewayMeasurement || !rhc.modelId || !rhc.block) {
   throw new Error('deployments/46630.json is missing the gateway register step, gatewayMeasurement, modelId or block');
 }
 // Calls the account refused (reverted): a revert emits no log, so the web reads these hashes from the explorer.
-const refusalTxs = [...(rhc.liveCycle ?? []), ...(rhc.revokeDemo ?? [])].filter((x) => /execute/.test(x.step) && /revert/i.test(x.step)).map((x) => x.hash);
+const u = rhc.usdgAssay;
+if (!u?.address || !u.usdg || !u.deployTx || !u.register) throw new Error('deployments/46630.json is missing usdgAssay address, usdg, deployTx or register');
+const refusalTxs = [...(rhc.liveCycle ?? []), ...(rhc.revokeDemo ?? []), ...(rhc.refusalDemo ?? [])]
+  .filter((x) => /execute|registerAgent/.test(x.step) && /revert/i.test(x.step))
+  .map((x) => x.hash);
 if (refusalTxs.length === 0) throw new Error('deployments/46630.json names no reverted execute transaction');
 const abiOf = (name) => {
   const j = JSON.parse(readFileSync(join(contractsRoot, 'out', `${name}.sol`, `${name}.json`), 'utf8'));
@@ -80,8 +84,12 @@ import type { Address } from 'viem';
 export const RHC_CHAIN_ID = ${rhc.chainId} as const;
 export const RHC_EXPLORER_URL = ${JSON.stringify(rhc.explorer)} as const;
 export const RHC_DEPLOY_BLOCK = ${rhc.block}n;
-export const DEMO_ACCOUNT = ${JSON.stringify(c.AgentAccount)} as Address;
-export const FACTORY = ${JSON.stringify(c.AgentAccountFactory)} as Address;
+/** The account the app opens on: Paxos USDG on both legs, ERC-8056 guarded, operator agent admitted. */
+export const DEMO_ACCOUNT = ${JSON.stringify(rhc.guardedAccount?.account ?? c.AgentAccount)} as Address;
+/** The first account, TestUSDG venue, where the live cycle and the mined refusals ran. */
+export const LEGACY_ACCOUNT = ${JSON.stringify(c.AgentAccount)} as Address;
+export const FACTORY = ${JSON.stringify(c.AgentAccountFactoryGuarded ?? c.AgentAccountFactoryUSDG ?? c.AgentAccountFactory)} as Address;
+export const FACTORIES = ${JSON.stringify([c.AgentAccountFactoryGuarded, c.AgentAccountFactoryUSDG, c.AgentAccountFactory].filter(Boolean))} as readonly Address[];
 export const RHC_ASSAY = ${JSON.stringify(c.Assay)} as Address;
 export const TEST_USDG = ${JSON.stringify(c.TestUSDG)} as Address;
 export const TSLA = ${JSON.stringify(c.TSLA)} as Address;
@@ -91,6 +99,11 @@ export const GATEWAY_MEASUREMENT = ${JSON.stringify(rhc.gatewayMeasurement)} as 
 export const MODEL_ID = ${JSON.stringify(rhc.modelId)} as const;
 export const GATEWAY_REGISTER_TX = ${JSON.stringify(registerStep.hash)} as const;
 export const RHC_REFUSAL_TXS = ${JSON.stringify(refusalTxs)} as readonly \`0x\${string}\`[];
+export const USDG_ASSAY = ${JSON.stringify(u.address)} as Address;
+export const OPERATOR_CVM_URL = ${JSON.stringify(rhc.operatorCvm?.url ?? '')} as const;
+export const PAXOS_USDG = ${JSON.stringify(u.usdg)} as Address;
+export const USDG_ASSAY_DEPLOY_TX = ${JSON.stringify(u.deployTx)} as \`0x\${string}\`;
+export const USDG_ASSAY_REGISTER_TX = ${JSON.stringify(u.register)} as \`0x\${string}\`;
 `,
 );
 console.log(`wrote src/abi/AgentAccount.generated.ts (${accountAbi.length} + ${factoryAbi.length} ABI entries)`);

@@ -16,27 +16,31 @@ import {
   type PublicClient,
 } from 'viem';
 import { usePublicClient } from 'wagmi';
-import { ASSAY, assayChain, explorer } from '../chain';
+import { ASSAY, ASSAY_DEPLOY_TX, assayChain, explorer, NET_KEY, REGISTER_TX, USDG_ADDRESS } from '../chain';
 import { assayAbi } from '../abi/Assay.generated';
 import {
   APPROVED_MEASUREMENTS,
-  ASSAY_DEPLOY_TX,
   ATTESTATION_VALIDITY,
   CHALLENGE_WINDOW,
   CHANNEL_TIMEOUT,
-  REGISTER_TX,
   SEED_SIGNER,
-  USDG_ADDRESS,
   VERIFIER_ADDRESS,
 } from '../lib/addresses.generated';
-import demo from '../lib/refusal-demo.json';
+import demoArb from '../lib/refusal-demo.json';
+import demoRhc from '../lib/refusal-demo-rhc.json';
 import { fmtCountdown, fmtStamp, fmtUsdg, short } from '../lib/format';
 import { Code, Fact, HexValue, Num, Stamp, TitleBlock } from '../components/Stamp';
 import { useAtBlock } from '../hooks/useAtBlock';
 
 const ZERO_HASH = `0x${'0'.repeat(64)}` as Hex;
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
-const PINNED_MODEL_ID = 'meta-llama/llama-3.3-70b-instruct';
+/// Robinhood Chain replays a mined refusal: the first agent trade's real Phala receipt on a channel
+/// pinned to Qwen. Arbitrum Sepolia replays the receipt verifier's model_swap test vector.
+const DEMO = NET_KEY === 'rhc'
+  ? { d: demoRhc, pinned: 'phala/qwen3.8-27b-uncensored', real: true, tx: demoRhc.tx as Hex }
+  : { d: demoArb, pinned: 'meta-llama/llama-3.3-70b-instruct', real: false, tx: undefined };
+const demo = DEMO.d;
+const PINNED_MODEL_ID = DEMO.pinned;
 const RECEIPT_KEY = '0x110f3824daeeef29dbeba9677a5794ffed257b1082d9fd4599b3c0819953aa0a' as Hex;
 
 const receiptVerifierAbi = [
@@ -338,8 +342,8 @@ function Refusal() {
           </div>
           <div className="doc sheet receipt">
             <div className="doc-head">
-              <span className="t-label">Test receipt</span>
-              <span className="small">signed with a test key, not by a registered gateway</span>
+              <span className="t-label">{DEMO.real ? 'Phala receipt' : 'Test receipt'}</span>
+              <span className="small">{DEMO.real ? 'signed by Phala\'s registered gateway key, spent on the first live trade' : 'signed with a test key, not by a registered gateway'}</span>
             </div>
             <div className="doc-key">
               <span className="t-label key-label">Says it served the model</span>
@@ -352,7 +356,11 @@ function Refusal() {
           <span>
             {!r ? 'Asking the contract.' : refused ? 'not paid. It stays in channel 0.' : 'The refusal did not happen; see the alert above.'}
             <span className="small">
-              {' '}A live, read-only demo call with a fixed test receipt{q.data ? <> at block <a href={explorer.block(q.data.block)} target="_blank" rel="noreferrer">{q.data.block.toLocaleString('en-US')}</a>, re-read every 15 s</> : ''}: nothing was sent, and no real llama call was swapped.
+              {DEMO.tx ? (
+                <>{' '}A live, read-only replay of a call that was sent and <a href={explorer.tx(DEMO.tx)} target="_blank" rel="noreferrer">reverted on chain</a>{q.data ? <>, re-read at block <a href={explorer.block(q.data.block)} target="_blank" rel="noreferrer">{q.data.block.toLocaleString('en-US')}</a> every 15 s</> : ''}.</>
+              ) : (
+                <>{' '}A live, read-only demo call with a fixed test receipt{q.data ? <> at block <a href={explorer.block(q.data.block)} target="_blank" rel="noreferrer">{q.data.block.toLocaleString('en-US')}</a>, re-read every 15 s</> : ''}: nothing was sent, and no real llama call was swapped.</>
+              )}
             </span>
           </span>
         </div>
@@ -392,8 +400,8 @@ function Refusal() {
 
           <div className="doc receipt">
             <div className="doc-head">
-              <span className="t-label">Receipt, test vector</span>
-              <span className="small">signed by a test key, not by a registered gateway key</span>
+              <span className="t-label">{DEMO.real ? 'Receipt, Phala gateway' : 'Receipt, test vector'}</span>
+              <span className="small">{DEMO.real ? 'signed by the registered gateway key' : 'signed by a test key, not by a registered gateway key'}</span>
             </div>
             <div className="doc-key">
               <span className="t-label">{nums(7)} Served, per upstream.verified</span>
@@ -458,11 +466,19 @@ function Refusal() {
       </ol>
 
       <p className="honesty">
-        <strong>What this is, exactly.</strong> The receipt is the <Code>model_swap</Code> test vector from the receipt
-        verifier&apos;s fixtures, signed by a test key (<HexValue value={demo.pubkey} />). Its served model is the
-        string &quot;served-model&quot;. It is offered to live channel 0, which pins {PINNED_MODEL_ID}, with a real
-        voucher signed by the channel&apos;s agent. No real llama call was swapped; this shows what the contract does
-        when the served model differs from the pinned one.
+        <strong>What this is, exactly.</strong>{' '}
+        {DEMO.real ? (
+          <>The receipt is the one Phala&apos;s gateway signed for the account&apos;s first live trade, under the registered
+          key <HexValue value={demo.pubkey} />, and it says the gateway served llama3-3-70b. The provider offered it to channel 0,
+          which pins {PINNED_MODEL_ID}, with a real voucher signed by the channel&apos;s agent. The signature verifies and the key is
+          registered; the model is not the one the channel paid for, so the transaction <a href={explorer.tx(DEMO.tx as Hex)} target="_blank" rel="noreferrer">reverted</a> and paid nothing.</>
+        ) : (
+          <>The receipt is the <Code>model_swap</Code> test vector from the receipt
+          verifier&apos;s fixtures, signed by a test key (<HexValue value={demo.pubkey} />). Its served model is the
+          string &quot;served-model&quot;. It is offered to live channel 0, which pins {PINNED_MODEL_ID}, with a real
+          voucher signed by the channel&apos;s agent. No real llama call was swapped; this shows what the contract does
+          when the served model differs from the pinned one.</>
+        )}
       </p>
       {r?.upstream && (
         <details className="bytes">

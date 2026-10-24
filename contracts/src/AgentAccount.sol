@@ -105,6 +105,8 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     }
 
     uint64 public constant ATTESTATION_VALIDITY = 86400;
+    /// How long after an ERC-8056 multiplier change takes effect the agent stays out of that token.
+    uint256 public constant CORPORATE_ACTION_COOLDOWN = 1 days;
     uint256 private constant WINDOW_HOURS = 25;
 
     IAssayVerifier public immutable verifier;
@@ -214,6 +216,7 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     error BadLimits();
     error NoCode(address target);
     error RenounceDisabled();
+    error CorporateActionPending(address token, uint256 uiMultiplier, uint256 newUIMultiplier, uint256 effectiveAt);
 
     constructor(
         address owner_,
@@ -284,6 +287,8 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
     {
         _requireAgent();
         (address tokenIn, address tokenOut, PoolId poolId) = _checkTrade(t);
+        _requireNoCorporateAction(tokenIn);
+        _requireNoCorporateAction(tokenOut);
         Limits memory l = limits[tokenIn];
         if (t.amountIn > l.perTrade) revert ExceedsPerTradeCap(t.amountIn, l.perTrade);
         if (t.amountIn > l.approvalAbove) revert NeedsApproval(t.amountIn, l.approvalAbove);
@@ -298,7 +303,9 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
 
     function propose(Trade calldata t, Receipt calldata r) external nonReentrant returns (uint256 proposalId) {
         _requireAgent();
-        (address tokenIn,,) = _checkTrade(t);
+        (address tokenIn, address tokenOut,) = _checkTrade(t);
+        _requireNoCorporateAction(tokenIn);
+        _requireNoCorporateAction(tokenOut);
         Limits memory l = limits[tokenIn];
         if (t.amountIn > l.perTrade) revert ExceedsPerTradeCap(t.amountIn, l.perTrade);
         if (t.amountIn <= l.approvalAbove) revert ApprovalNotNeeded();
@@ -339,6 +346,24 @@ contract AgentAccount is Ownable2Step, ReentrancyGuardTransient, IUnlockCallback
         (tokenIn, tokenOut) = t.zeroForOne ? (c0, c1) : (c1, c0);
         if (!limits[tokenIn].allowed) revert TokenNotAllowed(tokenIn);
         if (!limits[tokenOut].allowed) revert TokenNotAllowed(tokenOut);
+    }
+
+    /// ERC-8056 Stock Tokens announce splits and other corporate actions through uiMultiplier(),
+    /// newUIMultiplier() and effectiveAt(). A pool's price does not move with the multiplier, so
+    /// the agent may not trade a token while a change is pending or within CORPORATE_ACTION_COOLDOWN
+    /// after it took effect. The owner can still approve a proposal. A token without the interface
+    /// (USDG) passes.
+    function _requireNoCorporateAction(address token) private view {
+        (bool okCur, bytes memory cur) = token.staticcall(abi.encodeWithSignature("uiMultiplier()"));
+        (bool okNext, bytes memory next) = token.staticcall(abi.encodeWithSignature("newUIMultiplier()"));
+        (bool okAt, bytes memory at) = token.staticcall(abi.encodeWithSignature("effectiveAt()"));
+        if (!okCur || !okNext || !okAt || cur.length < 32 || next.length < 32 || at.length < 32) return;
+        uint256 m = abi.decode(cur, (uint256));
+        uint256 n = abi.decode(next, (uint256));
+        uint256 e = abi.decode(at, (uint256));
+        if (m != n || (e != 0 && block.timestamp < e + CORPORATE_ACTION_COOLDOWN)) {
+            revert CorporateActionPending(token, m, n, e);
+        }
     }
 
     /// Rolling window: 25 hourly buckets per token. Sums every bucket whose hour is within

@@ -35,10 +35,12 @@ interface IPaxos {
 /// stablecoin, not fixable in Assay.sol, so the suite is green while still documenting
 /// the risk for anyone reading the tests.
 ///
-/// FUNDED must hold real USDG on the forked block for setUp to succeed; there is no
-/// safe way to fabricate that balance for an address nobody has funded. Set
-/// CHIRON_FUNDED_TEST_ACCOUNT to a funded address before running this file, or it skips.
-/// ponytail: single skip guard here, not per-test, since every test in this file shares setUp.
+/// FUNDED must hold real USDG on the forked block; there is no safe way to fabricate that
+/// balance. The default is the deployer that paid the live Arbitrum Sepolia calls, which holds
+/// 92 USDG at block 315013000 (`cast call 0xFFC9...1892 "balanceOf(address)" 0x2aD1...5DEF
+/// --block 315013000`). The public sequencer RPC keeps no historical state, so the fork reads an
+/// archive endpoint; override with ARB_SEPOLIA_FORK_URL, CHIRON_FORK_BLOCK and
+/// CHIRON_FUNDED_TEST_ACCOUNT.
 /// Forge cannot run Arbitrum precompiles on a fork (0x64 has placeholder code), so
 /// register()'s ArbSys.arbBlockHash call gets this stand-in. The nonce's block-hash
 /// binding is tested in AssayHardening.t.sol; this suite is about real USDG.
@@ -64,12 +66,11 @@ contract AssayRealUSDGForkTest is Test {
     address provider = makeAddr("provider");
 
     function setUp() public {
-        FUNDED = vm.envOr("CHIRON_FUNDED_TEST_ACCOUNT", address(0));
-        if (FUNDED == address(0)) {
-            vm.skip(true);
-            return;
-        }
-        vm.createSelectFork("https://sepolia-rollup.arbitrum.io/rpc", vm.envOr("CHIRON_FORK_BLOCK", uint256(313045372)));
+        FUNDED = vm.envOr("CHIRON_FUNDED_TEST_ACCOUNT", address(0x2aD12a72362704367e99a344cFf5affDDF7f5DEF));
+        vm.createSelectFork(
+            vm.envOr("ARB_SEPOLIA_FORK_URL", string("https://arbitrum-sepolia.drpc.org")),
+            vm.envOr("CHIRON_FORK_BLOCK", uint256(315013000))
+        );
         agent = vm.addr(agentPk);
         verifier = new MockVerifier();
         receiptVerifier = new MockReceiptVerifier();

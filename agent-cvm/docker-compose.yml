@@ -4,7 +4,7 @@
 # the CVM.
 services:
   agent:
-    image: ttl.sh/chiron-agent-a47640e12d38@sha256:a3a879b15202376a24e30e2b593ab9a5b271d2046413f62f39b043614ab3212e
+    image: ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f1867126d58ee3e99cf1fef4fc8d253c68dbe5bed41db6eb3f33aa5a201463
     restart: unless-stopped
     ports:
       - "8080:8080"

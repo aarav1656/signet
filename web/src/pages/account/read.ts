@@ -9,10 +9,17 @@ export const ZERO_HASH = `0x${'0'.repeat(64)}` as Hex;
 export const PAXOS_USDG = '0x7E955252E15c84f5768B83c41a71F9eba181802F' as Address;
 
 /** The tokens the account's pools pair: testUSDG, Paxos USDG and the TSLA Stock Token. */
-export const TOKENS = [TEST_USDG, PAXOS_USDG, TSLA] as const;
+/** Paxos USDG and the Stock Token lead; testUSDG is the first venue's test quote token and reads last. */
+export const TOKENS = [PAXOS_USDG, TSLA, TEST_USDG] as const;
 
 export type Limits = { allowed: boolean; perTrade: bigint; daily: bigint; approvalAbove: bigint };
-export type TokenRow = { address: Address; symbol: string; decimals: number; balance: bigint; limits: Limits; used: bigint };
+/** ERC-8056 corporate-action state, read from the token; absent for tokens without the interface. */
+const erc8056Abi = (['uiMultiplier', 'newUIMultiplier', 'effectiveAt'] as const).map((name) => ({
+  type: 'function', name, inputs: [], outputs: [{ name: '', type: 'uint256' }], stateMutability: 'view',
+} as const));
+
+export type CorporateAction = { current: bigint; next: bigint; effectiveAt: bigint };
+export type TokenRow = { address: Address; symbol: string; note?: string; decimals: number; balance: bigint; limits: Limits; used: bigint; corp?: CorporateAction };
 
 export type TradeStruct = {
   key: { currency0: Address; currency1: Address; fee: number; tickSpacing: number; hooks: Address };
@@ -88,7 +95,7 @@ export async function readAccount(c: PublicClient, account: Address, block: bigi
       ],
     });
 
-  const tokens: TokenRow[] = await Promise.all(
+  const rows: TokenRow[] = await Promise.all(
     TOKENS.map(async (t) => {
       const [symbol, decimals, balance, lim, used] = await c.multicall({
         ...at,
@@ -100,9 +107,18 @@ export async function readAccount(c: PublicClient, account: Address, block: bigi
           { ...base, functionName: 'windowUsed', args: [t] },
         ],
       });
-      return { address: t, symbol, decimals, balance, limits: { allowed: lim[0], perTrade: lim[1], daily: lim[2], approvalAbove: lim[3] }, used };
+      const ca = await c.multicall({
+        blockNumber: block,
+        contracts: (['uiMultiplier', 'newUIMultiplier', 'effectiveAt'] as const).map((functionName) => ({ address: t, abi: erc8056Abi, functionName })),
+      });
+      const corp = ca.every((x) => x.status === 'success')
+        ? { current: ca[0].result as bigint, next: ca[1].result as bigint, effectiveAt: ca[2].result as bigint }
+        : undefined;
+      return { address: t, symbol, corp, note: t === TEST_USDG ? 'first venue test token' : undefined, decimals, balance, limits: { allowed: lim[0], perTrade: lim[1], daily: lim[2], approvalAbove: lim[3] }, used };
     }),
   );
+  // The first venue's test token shows only on accounts that hold it or allow it.
+  const tokens = rows.filter((r) => r.address !== TEST_USDG || r.balance > 0n || r.limits.allowed);
 
   const range = { fromBlock: RHC_DEPLOY_BLOCK, toBlock: block } as const;
   const [measurementLogs, executedLogs, proposedLogs] = await Promise.all([

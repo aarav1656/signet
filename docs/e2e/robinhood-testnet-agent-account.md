@@ -86,3 +86,67 @@ Paxos's testnet USDG on Robinhood Chain, `0x7E955252E15c84f5768B83c41a71F9eba181
 | The attested agent buys TSLA with 1 USDG (`QUOTE_TOKEN=0x7E95...802F npm run acct-trade`) | [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03) | 127188951 | success; `TradeExecuted` tradeId 3, `tokenIn` the real USDG, `amountIn` 1000000, `amountOut` 3910026278631909 TSLA (minOut 3870926015845589), `agentMeasurement` `0xeb2d...6829`, served model hash `0xc8536dbf...78df59`; account USDG 5000000 to 4000000 and TSLA 812028318830261712 to 815938345108893621 across that block |
 
 At most 55 USDG is in play: about 49.995 USDG in the pool position and 5 USDG in the account. The Assay deployment on this chain takes its token at construction, as does the account's inference-channel token, so the inference channel on this account bills in TestUSDG; Assay on Arbitrum Sepolia bills in Paxos USDG (README, "Inference billing").
+
+## Third boot and two replayable refusals (2026-10-02)
+
+The CVM was restarted at 14:03:15 UTC: agent `0x00e052627F691ca075BCd0dbc7220B5708551579`, measurement `0x0793ff52158fe39bc866db8fbf1f828906fd5f7ab628007586b5fea5ef9431b0`. Every hash below was re-read with `cast receipt <hash> status`; revert reasons were decoded by replaying the mined calldata as `eth_call` at the parent block.
+
+| Step | Transaction | Block | Result |
+|---|---|---|---|
+| Owner `setMeasurement(0x0793...31b0, true)` | [`0x2186a1c6...93f7`](https://explorer.testnet.chain.robinhood.com/tx/0x2186a1c6fe7e3b2257a991e4e6ad6c59a24ecc4b03786b26d7309b79942f93f7) | 127631365 | success |
+| `registerAgent` with the CVM quote | [`0x470b7b86...029e`](https://explorer.testnet.chain.robinhood.com/tx/0x470b7b86b5b55b1fc29c0369acdbc2cdc0bb0bf21d34b5a982e3ffd03867029e) | 127631393 | success, `AgentRegistered`, `agentExpiry()` 1791036260 |
+| Keeper `registerAgent` (`agent-cvm/keeper.sh` under launchd) | [`0xbb5b3f02...f119`](https://explorer.testnet.chain.robinhood.com/tx/0xbb5b3f0236640f4fca532fe793e1dd205281def2ee19c39b4c6bef842e74f119) | 127631689 | success, `agentExpiry()` 1791036260 to 1791036303 |
+| Stolen signer: Phala gateway TDX quote over this account's `attestNonce(127632376)` to `registerAgent` | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8) | 127632496 | status 0, 2,349,054 gas, `MeasurementNotApproved(0xfd34caab...0149)` (signer `0x79a5061e...6b79`), `agent()` unchanged |
+| Assay (`0x2176E7f2...5b5D`) `openChannel` pinned to `phala/qwen3.8-27b-uncensored` | [`0x7770a689...a9f2`](https://explorer.testnet.chain.robinhood.com/tx/0x7770a689e6c7445d43b64cbcabb665e4924b62412562bf6b9274fed61818a9f2) | 127634074 | channel 1, 1 testUSDG |
+| `redeemWithReceipt` on channel 1 with the first trade's Phala receipt (key `0x110f3824...aa0a`, served `llama3-3-70b`) | [`0xfe0f13f0...8eab`](https://explorer.testnet.chain.robinhood.com/tx/0xfe0f13f09e8dc00f99ad8d94024352a127f21150a9340497d3288aec96818eab) | 127634120 | status 0, `ModelMismatch()` `0xa407e5f7`, channel 1 paid 0 |
+| Assay `register` / `registerReceiptKey` (gateway key renewal on this chain) | [`0x58bd59e2...56ea`](https://explorer.testnet.chain.robinhood.com/tx/0x58bd59e26b1919af33d4b55e9788914c32955c59394022c7d426ad22755356ea), [`0x59ce051f...041b`](https://explorer.testnet.chain.robinhood.com/tx/0x59ce051f7533270c77080cb878d08c780a5ecb16cb2f2de7ff85581942af041b) | 127634677, 127634712 | receipt key expiry 1791036744 |
+
+## Fourth boot: control token in the sealed env (2026-10-02)
+
+`phala deploy --cvm-id 7f2efb7f-bd87-4d25-9002-870df3018009 -c agent-cvm/docker-compose.yml -e <env file>` replaced the sealed `CONTROL_TOKEN` (same compose file and image digest; update took 63 s). `/tx` answers 401 to a wrong bearer and accepts the operator's. The boot minted agent `0xc662FFE967a845dCB96b75333b6C5853355f93E6` under measurement `0xe1a2b8938825d678136ad8a4841e6f0f97a3e2c91c330cb85364de26c40ab6d0`.
+
+| Step | Transaction | Block | Result |
+|---|---|---|---|
+| Owner `setMeasurement(0xe1a2...b6d0, true)` | [`0x3ef0c655...7450`](https://explorer.testnet.chain.robinhood.com/tx/0x3ef0c65562fb503b68b72fc226fb89fa49c1ebfc207d69368a174fd630807450) | 127642863 | success |
+| `registerAgent` with the CVM quote | [`0xa45b46c6...9798`](https://explorer.testnet.chain.robinhood.com/tx/0xa45b46c61c579c083eea5a5b044f343ad847b64ddfdae356758b6e9ac1b89798) | 127642898 | success, `agentExpiry()` 1791037950 |
+| Owner sends the agent key 0.0005 ETH for gas | [`0x3abc88a8...8bfe`](https://explorer.testnet.chain.robinhood.com/tx/0x3abc88a8feacc42e0daeb108c16301648830f2a8a2d2adeacf830503419a8bfe) | | success |
+
+`agent-cvm/register-keys.sh` re-registers the gateway signer and receipt key on all three Assays (Arbitrum Sepolia, Robinhood Chain testUSDG `0x2176...5b5D`, Robinhood Chain Paxos USDG `0xcF4a...3f9d`); each pass runs whether or not an earlier one failed.
+
+## Operator agent serving two client accounts (2026-10-02)
+
+`agent/src/cvm.ts` takes `?account=` on `/quote` and `account` on `/tx`, and answers `/info` and `/quote` cross-origin. Image `ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f18671...1463` (built by `agent-cvm/build-image.sh` with crane 0.22.1, release checksum verified), deployed to the same CVM with `phala deploy --cvm-id`. Agent `0x71f15e33d967F9b0d573Cb03CfE3e7fdBDFd3461`, measurement `0x993bd67c8e9de5d37d9af6ef41c5c5fdb53b113b8a2b666827e0e619f4978e9a`.
+
+| Step | Transaction | Block | Result |
+|---|---|---|---|
+| Account 1 owner `setMeasurement(0x993b...8e9a, true)` | `0x04ec2e370aa393624ed55c0b0b6679f5a4b8c69063af5af62676536ea242396a` | 127666588 | success |
+| Account 1 `registerAgent` | `0x2889f10bf20edff1fa512f52b99d3eb76ac903becdc9410c70a13e11abded196` | 127666613 | agent `0x71f1...3461`, expiry 1791041598 |
+| `AgentAccountFactory.createAccount(owner)` | `0xbb77ffc9a2e5f5cda88e9176a0417758da30c9b8dd8e918dee15cb3d5824dae5` | | account 2 `0xE1d7939105cF8B3670d6b4a0E15546C036e6c34c` |
+| Account 2 `setMeasurement`, `registerAgent` | `0x12b819825766c94efb8f78c7637f56e535c5d68244df1b6c5a9294f51071003f`, `0xdb52757ab39240be57a4aebd3980a57d4bb8c4d8601722e2774f32ab8f87f04e` | 127666678, 127666698 | same agent, expiry 1791041611 |
+| Account 2 `setMeasurement(0x993b...8e9a, false)` | `0x1d34d37a52a7e099a9741ffa2ff04fbd0e09e9dabefb5731a0f93cee635b8008` | 127666780 | at 127666780: account 2 `agent()` zero; account 1 `agent()` `0x71f1...3461`, measurement still approved there |
+| Account 2 re-approve, re-admit | `0x47eb49a788edcd1ec319fb5dd0457809c7dae3ac492262669527205ac9acc17e`, `0x8737f5cb2d091b154af0a722ebd1dc2bea1c891cbdeb9730ae1afffbd9487806` | 127666840, 127666867 | admitted again |
+| Keeper (launchd, window forced) renews both | `0x20209f03a0232b7db7406b69ab68c265340e0d316688ad71aea29089768f5555`, `0xb6e4dc44288956d22d443ff137326932b1093e484a7e6bc8bc57f59dbc90aa4e` | 127667386, 127667473 | both `agentExpiry()` moved forward |
+
+## Factory v2 and a real-USDG account (2026-10-02)
+
+`AgentAccountFactory` `0xB9F7eB234C2F562475668c1Dc9b6850f235373c3` (deploy `0x156a77dd47ce853f566b680eb9a62e7cf73a330916013c738d20cc2e6c2302bd`) with `assay` = `0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d` and `usdg` = Paxos `0x7E955252E15c84f5768B83c41a71F9eba181802F`; verifier, receipt verifier and PoolManager as before.
+
+| Step | Transaction | Result |
+|---|---|---|
+| `createAccount(owner)` | `0x3e84210cd9afd753028a35e8d84aa2330c12e7e8b3e5808e07dd5ca99071d82d` | account `0x06AAadCc83873775D8A72F42B912f57ab3dc2506`; `assay()` `0xcF4a...3f9d`, `usdg()` `0x7E95...802F` |
+| `setLimits(USDG)`, `setLimits(TSLA)`, `setPool(USDG/TSLA 0.3%)` | `0x3a3afc9c...`, `0x141e4dd7...`, `0x2f712b9d...` | per trade 10 USDG, daily 5, approval above 2; TSLA as account 1 |
+| `setModel(qwen, [qwen], gateway)` | `0xdfd4c7e3e3f4fb9f2e60fb7587fb6e3a66c41ed0b5636f4a0cf4de626f389440` | pin `0x7725844c...77b2` |
+| `setMeasurement(0x993b...8e9a, true)`, `registerAgent` | `0x98559ec5...`, `0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d` | agent `0x71f1...3461`, expiry 1791043621 |
+| Owner sends 4 USDG | `0x31f90cd2d83ff5112a80a785bc2e68d7821f7dc64e8a16d54a2db39dbcd3c720` | |
+| `openInferenceChannel(provider, 1 USDG)` | `0xed6e42b7840a47e76e548980b8e62026b3e75c6622443069bdf055a3829a1d32` | Assay channel 1: agent = the account, 1000000, pin qwen; account USDG 3000000 after |
+
+## Factory v3: ERC-8056 corporate-action guard (2026-10-02)
+
+`AgentAccountFactory` `0x14103f1928AB34b45Cc376fF56fb59d798Deed03` (deploy `0xd958d6434a4c1aa23ff0370f65a5d55b5a10707ba5c79774a955bdf854ccc681`, Blockscout verified), same constructor arguments as v2, with the guarded `AgentAccount` (16,032 runtime bytes). Live TSLA on testnet reads `uiMultiplier` 1e18, `newUIMultiplier` 1e18, `effectiveAt` 0, so the guard is open for it.
+
+| Step | Transaction | Result |
+|---|---|---|
+| `createAccount(owner)` | `0x47076397ffb90ba98bbbb34248c1b3aa91241aa69ba23017ce05b1e62d380e62` | account `0xFaaAa4d1ee944d317b10233505D8c57425C53b55`, `CORPORATE_ACTION_COOLDOWN()` 86400 |
+| `setModel(qwen)`, `setLimits(USDG)`, `setLimits(TSLA)`, `setPool` | `0x90f97f85...`, `0x094fa172...`, `0x0b10068f...`, `0xe392657e...` | as account 3 |
+| `setMeasurement(0x993b...8e9a, true)`, `registerAgent` | `0x2ed88066...`, `0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a` | agent `0x71f1...3461` |
+| Owner sends 4 USDG | `0xa1787366d080b3223cf59d329f6bff2b2d519f741c61aec82979029f1bae3e58` | account USDG 4000000 |

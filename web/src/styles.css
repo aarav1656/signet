@@ -86,6 +86,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .nav a:hover { color: var(--ink); }
 .nav a.active { color: var(--ink); border-bottom-color: var(--amber); }
 .net { margin-left: auto; font-size: 13px; color: var(--mute); white-space: nowrap; }
+.wallet { margin-left: auto; }
+.netbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin: 0; padding: 10px 0 12px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--mute); }
+.netbar b { color: var(--ink); font-weight: 500; }
+.netbar a { color: var(--soft); text-decoration: none; border-bottom: 1px solid transparent; padding-bottom: 1px; }
+.netbar a:hover { color: var(--ink); }
+.netbar a.on { color: var(--ink); border-bottom-color: var(--amber); }
+.netbar .small { flex-basis: 100%; }
 .wallet { display: flex; align-items: center; gap: 12px; position: relative; font-size: 13px; }
 .addr { font: 500 12px/1 var(--mono); color: var(--ink); }
 .wallet-menu {
@@ -130,10 +137,35 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ---------- the home stage: headline, gate log, glosses ---------- */
 .stage {
   display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 64px; align-items: start;
-  grid-template-areas: 'hd log' 'lede log' 'cta log' 'gloss log'; grid-template-rows: auto auto auto 1fr;
+  grid-template-areas: 'prob log' 'hd log' 'inno log' 'lede log' 'cta log' 'gloss log'; grid-template-rows: auto auto auto auto auto 1fr;
 }
 .hd { grid-area: hd; font: 600 56px/1.02 var(--body); font-stretch: 96%; letter-spacing: -0.035em; }
 .hd em { font-style: normal; color: var(--amber); }
+.prob { grid-area: prob; margin: 0 0 20px; max-width: 34ch; font-size: 20px; line-height: 1.4; color: var(--soft); letter-spacing: -0.01em; }
+.inno { grid-area: inno; margin: 24px 0 0; max-width: 44ch; padding-left: 14px; border-left: 2px solid var(--amber); font-size: 17px; line-height: 1.5; color: var(--soft); }
+.inno b { color: var(--ink); font-weight: 600; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.r p .inl { font: 500 12px/1 var(--mono); color: var(--ink); white-space: nowrap; }
+.r p b.tick { color: var(--ink); font: 500 13px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.proof .r { align-items: start; }
+.proof .r .d { margin-top: 6px; }
+.tour .log { animation: none; }
+.tour .r { align-items: start; }
+.tour .r .d { margin-top: 6px; }
+.loghost .log { animation: none; }
+.proof-num { display: grid; gap: 4px; padding: 18px 20px 16px; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+.proof-num b { font: 500 36px/1.05 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink); animation: row-in 560ms var(--ease) 200ms backwards; }
+.proof-num span { font-size: 13px; line-height: 1.45; color: var(--mute); max-width: 52ch; }
+.proof-num:hover b { color: var(--amber); }
+.stepper { display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+.step-count { margin-right: auto; font: 500 11px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); font-variant-numeric: tabular-nums; }
+.steps-list button.r { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.steps-list button.r.ref { background: linear-gradient(90deg, rgba(239, 90, 76, 0.09), transparent 60%); }
+.steps-list li:not(.step-open) button.r h3 { color: var(--soft); font-weight: 500; }
+.steps-list .step-open { background: rgba(255, 255, 255, 0.02); }
+.step-body { padding: 0 20px 16px 54px; animation: row-in 360ms var(--ease) backwards; }
+.step-body p { font-size: 14px; line-height: 1.55; color: var(--soft); max-width: 70ch; overflow-wrap: anywhere; }
+.step-body .step-proof { margin-top: 8px; font: 500 12px/1.6 var(--mono); color: var(--mute); }
 .lede { grid-area: lede; margin: 24px 0 32px; color: var(--soft); max-width: 44ch; font-size: 17px; line-height: 1.5; }
 .cta-row { grid-area: cta; }
 .glosses { grid-area: gloss; margin-top: 44px; display: grid; gap: 14px; max-width: 46ch; font-size: 13px; color: var(--mute); }
@@ -190,7 +222,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 @keyframes row-in { from { opacity: 0; transform: translateY(6px); } }
 @keyframes dot-in { from { transform: scale(0.3); opacity: 0; } }
 /* one orchestrated load: headline, subline, action, glosses, then the panel, then its rows in order */
-.hd { animation: row-in 560ms var(--ease) backwards; }
+.prob { animation: row-in 560ms var(--ease) backwards; }
+.hd { animation: row-in 560ms var(--ease) 40ms backwards; }
+.inno { animation: row-in 560ms var(--ease) 130ms backwards; }
 .lede { animation: row-in 560ms var(--ease) 90ms backwards; }
 .cta-row { animation: row-in 560ms var(--ease) 160ms backwards; }
 .glosses { animation: row-in 560ms var(--ease) 230ms backwards; }
@@ -471,7 +505,7 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line
   .tb-cell:nth-child(n + 4) { border-top: 1px solid var(--line); }
 }
 @media (max-width: 900px) {
-  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'hd' 'log' 'lede' 'cta' 'gloss'; grid-template-rows: none; }
+  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'prob' 'hd' 'inno' 'log' 'lede' 'cta' 'gloss'; grid-template-rows: none; }
   .hd { margin-bottom: 28px; }
   .lede { margin-top: 28px; }
   .sheet-cols { grid-template-columns: minmax(0, 1fr); }
@@ -539,6 +573,9 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line
   .sheet-sec { padding-left: 14px; padding-right: 14px; }
 }
 @media (max-width: 600px) {
+  .section-head .stamp { white-space: normal; margin-left: 0; }
+  .step-body { padding-left: 20px; }
+  .proof-num b { font-size: 30px; }
   .shell { grid-template-columns: 1fr; }
   .rail { display: none; }
   .main { padding: 18px 20px 0; }
@@ -554,3 +591,7 @@ table.ledger td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+.gate-ask { border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 4px; }
+.gate-q { margin: 0 0 12px; font-size: 13px; line-height: 1.55; color: var(--soft); max-width: 68ch; }
+.gate-ask .actions .btn { white-space: normal; text-align: left; }
+.gate-note { max-width: 68ch; }

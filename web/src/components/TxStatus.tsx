@@ -69,6 +69,7 @@ export function TxStatusPanel() {
         )}
       </div>
       <p className="tx-title">{title}</p>
+      {tx.phase === 'confirmed' && tx.reason && <p className="tx-hash">{tx.reason}</p>}
       {tx.hash && tx.phase !== 'confirm' && (
         <a className="tx-hash mono" href={txUrl(tx.chainId, tx.hash)} target="_blank" rel="noreferrer">
           {shortAddr(tx.hash)} on {chainName(tx.chainId)}

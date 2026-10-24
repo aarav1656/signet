@@ -65,3 +65,34 @@ test('/tx refuses a missing or wrong bearer and any non-agent function', async (
   const owner = await fetch(`${base}/tx`, { method: 'POST', body: JSON.stringify({ functionName: 'withdraw', args: [] }), headers: { authorization: `Bearer ${TOKEN}` } });
   assert.equal(owner.status, 400);
 });
+
+// A second client account from the same factory: one CVM key, a quote bound to each account's nonce.
+const ACCOUNT2 = '0xe1d7939105cf8b3670d6b4a0e15546c036e6c34c';
+
+test('/quote?account= binds the second account nonce, not the default one', async () => {
+  const chain = defineChain({ id: 46630, name: 'rhc', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [RPC] } } });
+  const c = createPublicClient({ chain, transport: http(RPC) });
+  const res = await fetch(`${base}/quote?account=${ACCOUNT2}`, { method: 'POST' });
+  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  const q = fromWire<{ agent: Hex; account: Hex; refBlock: bigint; nonce: Hex }>(await res.text());
+  const [n2, n1] = await Promise.all([
+    c.readContract({ address: ACCOUNT2, abi: agentAccountAbi, functionName: 'attestNonce', args: [q.refBlock] }),
+    c.readContract({ address: ACCOUNT, abi: agentAccountAbi, functionName: 'attestNonce', args: [q.refBlock] }),
+  ]);
+  assert.equal(q.account.toLowerCase(), ACCOUNT2);
+  assert.equal(q.nonce, n2);
+  assert.notEqual(q.nonce, n1);
+  assert.equal(seen.at(-1), q.agent.slice(2).toLowerCase() + '0'.repeat(24) + (n2 as string).slice(2));
+});
+
+test('/quote refuses a malformed account; /info answers cross-origin, /tx does not', async () => {
+  const bad = await fetch(`${base}/quote?account=0x1234`, { method: 'POST' });
+  assert.equal(bad.status, 400);
+  const info = await fetch(`${base}/info`);
+  assert.equal(info.headers.get('access-control-allow-origin'), '*');
+  const tx = await fetch(`${base}/tx`, { method: 'POST', body: '{}' });
+  assert.equal(tx.status, 401);
+  assert.equal(tx.headers.get('access-control-allow-origin'), null);
+  const badTx = await fetch(`${base}/tx`, { method: 'POST', body: JSON.stringify({ functionName: 'execute', args: [], account: 'nope' }), headers: { authorization: `Bearer ${TOKEN}` } });
+  assert.equal(badTx.status, 400);
+});

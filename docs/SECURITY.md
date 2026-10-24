@@ -1,6 +1,6 @@
 # Security
 
-Chiron's contracts went through independent adversarial review by a reviewer who did not write the code: four rounds on Assay, the Stylus `Verifier` and the Stylus `ReceiptVerifier`, and two on `ChironGate`. `AgentAccount` is covered by a mutation runner that removes or weakens one guard at a time. Every review finding was resolved in code, and each one ships with a test that fails without its fix.
+Chiron's contracts went through internal adversarial review rounds, each run by a separate session from the one that wrote the code: four rounds on Assay, the Stylus `Verifier` and the Stylus `ReceiptVerifier`, and two on `ChironGate`. `AgentAccount` is covered by a mutation runner that removes or weakens one guard at a time. Every review finding was resolved in code, and each one ships with a test that fails without its fix.
 
 ## Run it
 
@@ -10,7 +10,7 @@ make test
 
 One command from a clean clone. It fetches the pinned OpenZeppelin (`v5.7.0`) and forge-std (`v1.16.2`), builds the default, `v4` (canonical Uniswap v4 PoolManager) and `x402` (canonical x402 BatchSettlement) Foundry profiles, and runs the whole suite, including the fork tests against Robinhood Chain testnet and Arbitrum Sepolia through their public RPCs.
 
-Result from a fresh `git clone` into an empty directory: `forge test` 296 passed, 0 failed, 1 skipped across 20 suites. The skip is `AssayRealUSDGFork`, which runs when `CHIRON_FUNDED_TEST_ACCOUNT` names a funded Arbitrum Sepolia USDG holder. Alongside it: `agent` `npm test` 27 passed, `receipt-verifier` `cargo test` 18 passed, `verifier` `cargo test` 22 passed.
+Result from a fresh `git clone` into an empty directory (commit `bac4c37`, log in `docs/test-logs/make-test-clean-clone-2026-10-02-bac4c37.log`): `make test` exits 0, `forge test` 314 passed, 0 failed, 0 skipped across 21 suites. No file under `contracts/`, the Makefile or the Foundry config has changed since `bac4c37`. That includes all 13 `AssayRealUSDGFork` tests, which fork Arbitrum Sepolia at block 315013000 against real Paxos USDG, funded by the deployer that paid the live calls (92 USDG at that block); `ARB_SEPOLIA_FORK_URL`, `CHIRON_FORK_BLOCK` and `CHIRON_FUNDED_TEST_ACCOUNT` override the defaults. Alongside it: `agent` `npm test` 27 passed, `receipt-verifier` `cargo test` 18 passed, `verifier` `cargo test` 22 passed.
 
 The `ChironGate` fork tests read the live Assay receipt-key registry. A registration lasts 24 hours and the public RPC keeps no historical state, so the fork's clock is set to the last second of the registration the registry records. The suite is green on any day, and it turns red if the registered key, its measurement or the verifier address changes.
 
@@ -18,7 +18,7 @@ The `ChironGate` fork tests read the live Assay receipt-key registry. A registra
 
 - **Adversarial review.** Each round starts from a hostile read of the source and ends with a verdict, a severity-ranked finding list and a resolution pass that re-reviews the fixes.
 - **Proof-of-concept tests in the suite.** Each exploit is written as a Foundry test, shown red on the original source, then kept as a regression test that is green on the fixed source.
-- **Mutation testing.** The `AgentAccount` runner (`contracts/test/mutation/agent_account_mutations.py`) kills 109 of 110 mutants, and the one survivor is documented as behavior-equivalent (`docs/security/agent-account-mutations.md`). `ChironGate` has its own runner (`chiron_gate_mutations.py`): 31 of 31 guards fail the tests when removed. Assay's guards were each cut out in a scratch copy, the named test went red, and the restored source went green.
+- **Mutation testing.** The `AgentAccount` runner (`contracts/test/mutation/agent_account_mutations.py`) kills 109 of 110 mutants, and the one survivor is documented as behavior-equivalent (`docs/security/agent-account-mutations.md`). `ChironGate` has its own runner (`chiron_gate_mutations.py`): 31 of 31 guards fail the tests when removed. Assay's guards were each cut out in a scratch copy, the named test went red, and the restored source went green. The ERC-8056 corporate-action guard was cut out of `execute`: the pending-split and cooldown tests in `AgentAccountCorporateAction.t.sol` went red, and the restored source went green (5 of 5). The guard treats a token whose `uiMultiplier`, `newUIMultiplier` or `effectiveAt` call reverts or returns fewer than 32 bytes as having no corporate-action surface and lets the trade through (it fails open). That is deliberate: USDG has no multiplier and must stay tradable, and every trade already touches only tokens and pools the owner allowlisted, so a token without ERC-8056 reaches the guard only because the owner chose it.
 - **Invariant suites.** `AssayInvariant` holds `usdg.balanceOf(assay) == sum(deposit - paid)` over every channel across 256 runs and 128,000 calls. `AgentAccountInvariant` holds the account's drain bound.
 - **Live reads.** The Stylus verifiers run on Arbitrum Sepolia and Robinhood Chain testnet against real Phala TDX quotes and receipts; the transactions are in the README.
 

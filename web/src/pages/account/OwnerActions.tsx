@@ -1,18 +1,16 @@
 import { useState } from 'react';
 import { erc20Abi, formatUnits, isHex, parseUnits, type Address, type Hex } from 'viem';
-import { useConnection, useReadContract, useWriteContract } from 'wagmi';
+import { useConnection, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
 import { rhcChain, rhcExplorer } from '../../chain';
 import { accountAbi } from '../../abi/AgentAccount.generated';
 import { Code, HexValue, Num, Spec, Fact } from '../../components/Stamp';
 import { useOnChain } from '../../components/Wallet';
 import { useTx } from '../../hooks/useTx';
+import { EligibilityGate } from '../../components/Eligibility';
 import { fmtCountdown, fmtToken, short } from '../../lib/format';
-import { GATEWAY_MEASUREMENT, TEST_USDG } from '../../lib/rhc.generated';
+import { GATEWAY_MEASUREMENT, OPERATOR_CVM_URL } from '../../lib/rhc.generated';
+import { readOperatorQuote, type OperatorQuote } from './operator';
 import type { Snapshot, TokenRow } from './read';
-
-const testUsdgMintAbi = [
-  { type: 'function', name: 'mint', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [] },
-] as const;
 
 const parse = (v: string, decimals: number): bigint | null => {
   try {
@@ -89,11 +87,10 @@ function FundsStep({ snap, refetch }: Ctx) {
             onClick={() => tx.run(`Withdraw ${t.symbol}`, () => writeContractAsync({ address: snap.account, abi: accountAbi, functionName: 'withdraw', args: [t.address, to, wei as bigint], chainId: rhcChain.id }))}>
             Withdraw to owner
           </button>
-          {t.address === TEST_USDG && (
-            <button className="textbtn" type="button" disabled={!!anyReason || tx.busy}
-              onClick={() => tx.run('Mint testUSDG', () => writeContractAsync({ address: TEST_USDG, abi: testUsdgMintAbi, functionName: 'mint', args: [to, 100_000_000n], chainId: rhcChain.id }))}>
-              Mint 100 testUSDG to this wallet
-            </button>
+          {/USDG/.test(t.symbol) && (
+            <a className="textbtn" href="https://faucet.paxos.com/" target="_blank" rel="noreferrer">
+              Get Paxos USDG on Robinhood Chain testnet
+            </a>
           )}
         </div>
       </div>
@@ -212,6 +209,81 @@ function MeasurementStep({ snap, refetch }: Ctx) {
   );
 }
 
+function OperatorStep({ snap, refetch }: Ctx) {
+  const { ownerReason, anyReason } = useGate(snap);
+  const client = usePublicClient({ chainId: rhcChain.id });
+  const [url, setUrl] = useState<string>(OPERATOR_CVM_URL);
+  const [read, setRead] = useState<OperatorQuote | null>(null);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const tx = useTx(refetch);
+  const { writeContractAsync } = useWriteContract();
+  const approved = !!read && snap.approved.some((x) => x.toLowerCase() === read.measurement.toLowerCase());
+  const admitted = !!read && snap.agent.toLowerCase() === read.agent.toLowerCase();
+  const check = async () => {
+    if (!client) return;
+    setBusy(true);
+    setErr('');
+    try {
+      setRead(await readOperatorQuote(client as never, url, snap.account));
+    } catch (e) {
+      setRead(null);
+      setErr(e instanceof Error ? e.message.split('\n')[0] : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  // A quote names a block hash the chain answers for only 256 blocks, so admission fetches a fresh one.
+  const admit = () =>
+    tx.run('Admit the operator agent', async () => {
+      const fresh = await readOperatorQuote(client as never, url, snap.account);
+      return writeContractAsync({ address: snap.account, abi: accountAbi, functionName: 'registerAgent', args: [fresh.quote, fresh.refBlock], chainId: rhcChain.id });
+    });
+  return (
+    <li className="step" aria-labelledby="o-op">
+      <Num n={4} mark="plain" />
+      <div className="step-body">
+        <h3 id="o-op" className="t-section">Admit an operator&apos;s agent</h3>
+        <p className="prose">
+          One operator runs one attested agent for many accounts. Its CVM signs a quote over this account&apos;s own nonce, the Stylus
+          Verifier reads the key and the measurement out of it, you approve the measurement, and anyone can submit the admission. The
+          agent then trades this account only inside this account&apos;s caps, and withdrawing the approval here touches no other account.
+        </p>
+        <div className="fields">
+          <div className="field">
+            <label className="label" htmlFor="op-url">Operator CVM</label>
+            <input id="op-url" value={url} onChange={(e) => { setUrl(e.target.value); setRead(null); }} spellCheck={false} />
+            <span className="hint">Prefilled with the Chiron operator CVM on Phala Cloud.</span>
+          </div>
+        </div>
+        <div className="actions">
+          <button className="btn line" type="button" disabled={busy || !url.trim()} onClick={check}>{busy ? 'Reading the quote' : 'Read its quote'}</button>
+        </div>
+        {err && <p className="note warn">{err}</p>}
+        {read && (
+          <>
+            <Spec subject={<span className="t-subject">Operator agent</span>}>
+              <Fact label="Agent key"><HexValue value={read.agent} href={rhcExplorer.address(read.agent)} /></Fact>
+              <Fact label="Measurement"><HexValue value={read.measurement} head={8} tail={4} /></Fact>
+              <Fact label="On this account" wide>{admitted ? 'admitted now' : approved ? 'measurement approved, agent not admitted' : 'measurement not approved'}</Fact>
+            </Spec>
+            {ownerReason && !approved && <p className="note">{ownerReason}</p>}
+            <div className="actions">
+              <button className="btn" type="button" disabled={!!ownerReason || approved || tx.busy}
+                onClick={() => tx.run('Approve the operator measurement', () => writeContractAsync({ address: snap.account, abi: accountAbi, functionName: 'setMeasurement', args: [read.measurement, true], chainId: rhcChain.id }))}>
+                {approved ? 'Measurement approved' : 'Approve this measurement'}
+              </button>
+              <button className="btn" type="button" disabled={!!anyReason || !approved || tx.busy} onClick={admit}>
+                {admitted ? 'Renew the admission' : 'Admit the agent'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </li>
+  );
+}
+
 function PendingStep({ snap, refetch, now }: Ctx & { now: bigint }) {
   const { ownerReason } = useGate(snap);
   const tx = useTx(refetch);
@@ -220,7 +292,7 @@ function PendingStep({ snap, refetch, now }: Ctx & { now: bigint }) {
   const tok = (a: Address) => snap.tokens.find((t) => t.address.toLowerCase() === a.toLowerCase());
   return (
     <li className="step" aria-labelledby="o-pend">
-      <Num n={4} mark="plain" />
+      <Num n={5} mark="plain" />
       <div className="step-body">
         <h3 id="o-pend" className="t-section">Approve or reject a pending trade</h3>
         <p className="prose">
@@ -281,12 +353,15 @@ export function OwnerActions({ snap, refetch, now }: Ctx & { now: bigint }) {
         Each action is a transaction from the connected wallet to <HexValue value={snap.account} head={6} tail={4} href={rhcExplorer.address(snap.account)} />.
         It reads as done only once the receipt says <Code>success</Code>, and the sheet above re-reads the chain afterwards.
       </p>
+      <EligibilityGate>
       <ol className="steps">
         <FundsStep snap={snap} refetch={refetch} />
         <CapsStep snap={snap} refetch={refetch} />
         <MeasurementStep snap={snap} refetch={refetch} />
+        <OperatorStep snap={snap} refetch={refetch} />
         <PendingStep snap={snap} refetch={refetch} now={now} />
       </ol>
+      </EligibilityGate>
     </section>
   );
 }

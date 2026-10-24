@@ -6,11 +6,14 @@ import { useConnection, usePublicClient, useSwitchChain, useWriteContract } from
 import { rhcChain, rhcExplorer } from '../chain';
 import { factoryAbi } from '../abi/AgentAccount.generated';
 import { Fact, HexValue, Num, Spec } from '../components/Stamp';
+import { EligibilityGate } from '../components/Eligibility';
+import { Lifecycle, ProofPanel, useTour } from './tour/Tour';
+import { corporateActionLabel } from './account/corp';
 import { Wallet } from '../components/Wallet';
 import { useAtBlock } from '../hooks/useAtBlock';
 import { useTx } from '../hooks/useTx';
 import { fmtToken, short } from '../lib/format';
-import { DEMO_ACCOUNT, FACTORY, GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK } from '../lib/rhc.generated';
+import { DEMO_ACCOUNT, LEGACY_ACCOUNT, FACTORIES, FACTORY, GATEWAY_MEASUREMENT, RHC_DEPLOY_BLOCK } from '../lib/rhc.generated';
 import { Compare } from './account/Compare';
 import { OwnerActions } from './account/OwnerActions';
 import { Refusals, useRefusals } from './account/Refusals';
@@ -40,7 +43,7 @@ function CreateAction({ onCreated }: { onCreated: (a: Address) => void }) {
   }
 
   return (
-    <>
+    <EligibilityGate>
       <div className="actions">
         {conn.isConnected ? (
           <button className="btn line" type="button" disabled={tx.busy} onClick={click}>
@@ -49,30 +52,30 @@ function CreateAction({ onCreated }: { onCreated: (a: Address) => void }) {
         ) : (
           <Wallet />
         )}
-        <span className="small">The factory deploys an account that only your wallet controls.</span>
+        <span className="small">The factory deploys an account that only your wallet controls. It holds Paxos USDG and pays for inference in Paxos USDG.</span>
       </div>
       {made && (
         <p className="note">
           Created <HexValue value={made} head={6} tail={4} href={rhcExplorer.address(made)} />. It is selected above.
         </p>
       )}
-    </>
+    </EligibilityGate>
   );
 }
 
 function TokenSpec({ t, now }: { t: TokenRow; now: bigint }) {
-  void now;
   const ratio = t.limits.daily === 0n ? 0 : Math.min(100, Number((t.used * 10_000n) / t.limits.daily) / 100);
   return (
     <Spec
       subject={
         <>
           <span className="t-subject">{t.symbol}</span>
-          <span className="small">{t.limits.allowed ? 'trading allowed' : 'trading not allowed'}</span>
+          <span className="small">{t.note ? `${t.note}, ` : ''}{t.limits.allowed ? 'trading allowed' : 'trading not allowed'}</span>
         </>
       }
     >
       <Fact label="Per trade">{t.limits.allowed ? fmtToken(t.limits.perTrade, t.decimals) : 'none'}</Fact>
+      {t.corp && <Fact label="Corporate action, ERC-8056" wide>{corporateActionLabel(t.corp, now).text}</Fact>}
       <Fact label="Approval threshold">{t.limits.allowed ? fmtToken(t.limits.approvalAbove, t.decimals) : 'none'}</Fact>
       <Fact label="Daily window, used of cap">
         <span className="tnum">{fmtToken(t.used, t.decimals)} of {t.limits.allowed ? fmtToken(t.limits.daily, t.decimals) : '0.00'}</span>
@@ -86,7 +89,7 @@ function TokenSpec({ t, now }: { t: TokenRow; now: bigint }) {
 function Mandate({ snap, block, now, mine, onPick }: { snap: Snapshot; block: bigint; now: bigint; mine: Address[]; onPick: (a: Address) => void }) {
   const conn = useConnection();
   const you = !!conn.address && conn.address.toLowerCase() === snap.owner.toLowerCase();
-  const choices = [DEMO_ACCOUNT, ...mine.filter((a) => a.toLowerCase() !== DEMO_ACCOUNT.toLowerCase())];
+  const choices = [DEMO_ACCOUNT, LEGACY_ACCOUNT, ...mine.filter((a) => a.toLowerCase() !== DEMO_ACCOUNT.toLowerCase() && a.toLowerCase() !== LEGACY_ACCOUNT.toLowerCase())];
 
   return (
     <div className="doc sheet-doc">
@@ -96,7 +99,7 @@ function Mandate({ snap, block, now, mine, onPick }: { snap: Snapshot; block: bi
           <span className="switch" role="group" aria-label="Choose an account">
             {choices.map((a) => (
               <button key={a} type="button" aria-pressed={a.toLowerCase() === snap.account.toLowerCase()} onClick={() => onPick(a)}>
-                {a === DEMO_ACCOUNT ? 'deployed account' : `yours ${short(a)}`}
+                {a === DEMO_ACCOUNT ? 'Paxos USDG account' : a === LEGACY_ACCOUNT ? 'first venue account' : `yours ${short(a)}`}
               </button>
             ))}
           </span>
@@ -113,7 +116,7 @@ function Mandate({ snap, block, now, mine, onPick }: { snap: Snapshot; block: bi
           <div className="doc-rows">
             <div className="drow"><span className="t-label">Owner</span><span className="v"><HexValue value={snap.owner} head={6} tail={4} href={rhcExplorer.address(snap.owner)} />{you && <span className="small"> you</span>}</span></div>
             {snap.tokens.map((t) => (
-              <div className="drow" key={t.address}><span className="t-label">{t.symbol}</span><span className="v tnum">{fmtToken(t.balance, t.decimals)}</span></div>
+              <div className="drow" key={t.address}><span className="t-label">{t.symbol}{t.note && <span className="small"> {t.note}</span>}</span><span className="v tnum">{fmtToken(t.balance, t.decimals)}</span></div>
             ))}
             <div className="drow"><span className="t-label">Paused</span><span className="v">{snap.paused ? 'yes, the agent cannot trade' : 'no'}</span></div>
           </div>
@@ -169,17 +172,21 @@ export function Account() {
     document.title = 'Chiron: give an AI agent a mandate, not your keys';
   }, []);
 
-  const snapQ = useAtBlock(['account', account], (c, b) => readAccount(c, account, b), true, rhcChain.id);
-  const refusals = useRefusals();
+  // The tour is the first screen: the account's heavier reads (event scans, refusal probes) start once it has
+  // answered, so they never queue ahead of it on the browser's connections. Any other account starts at once.
+  const tour = useTour();
+  const ready = account !== DEMO_ACCOUNT || !!tour.data || tour.isError;
+  const snapQ = useAtBlock(['account', account], (c, b) => readAccount(c, account, b), ready, rhcChain.id);
+  const refusals = useRefusals(ready);
   const mineQ = useQuery({
     queryKey: ['mine', conn.address],
     enabled: !!conn.address && !!client,
     refetchInterval: 15_000,
     queryFn: async () => {
-      const logs = await client!.getContractEvents({
-        address: FACTORY, abi: factoryAbi, eventName: 'AccountCreated', args: { owner: conn.address }, fromBlock: RHC_DEPLOY_BLOCK, toBlock: 'latest',
-      });
-      return logs.map((l) => l.args.account as Address);
+      const logs = await Promise.all(FACTORIES.map((address) => client!.getContractEvents({
+        address, abi: factoryAbi, eventName: 'AccountCreated', args: { owner: conn.address }, fromBlock: RHC_DEPLOY_BLOCK, toBlock: 'latest',
+      })));
+      return logs.flat().map((l) => l.args.account as Address);
     },
   });
   const mine = mineQ.data ?? [];
@@ -192,16 +199,31 @@ export function Account() {
   return (
     <>
       <div className="stage">
+        <p className="prob">An AI agent that holds a wallet can drain it, and nobody can prove which code or which model was running when it traded.</p>
         <h1 className="hd">Give an AI agent a <em>mandate</em>, not your keys.</h1>
-        <GateLog account={account} snap={snap} snapBlock={snapQ.data?.block} probe={account === DEMO_ACCOUNT ? probe : undefined} />
-        <p className="lede">Caps per token. Big trades wait for you. Every trade records the model that made it, and every refusal is on the record too.</p>
-        <div className="cta-row"><a className="btn" href="#account">Open the account <span aria-hidden="true">&rarr;</span></a></div>
+        <ProofPanel />
+        <p className="lede">Caps bound every trade, big trades wait for the owner, and each trade records the model that made it.</p>
+        <p className="inno"><b>A Chiron account trades only from a key that an Intel TDX quote proves is running code its owner approved.</b> The quote check is a Stylus program on Robinhood Chain, so admission is a transaction anyone can replay, not a server&apos;s word.</p>
+        <div className="cta-row">
+          <a className="btn" href="#tour">Walk the lifecycle <span aria-hidden="true">&darr;</span></a>
+          <a className="btn line" href="#account">Open the account</a>
+        </div>
         <div className="glosses">
           <p><b>Mandate.</b> The caps, approval line and approved measurements the owner sets. The account enforces them whatever the agent does.</p>
           <p><b>Attestation.</b> A signed report from the agent&apos;s Intel TDX chip, checked on chain by a Stylus contract.</p>
           <p><b>Measurement.</b> The fingerprint, a 32-byte hash, of the exact code the chip is running. The owner approves it in advance.</p>
         </div>
       </div>
+
+      <div id="tour"><Lifecycle /></div>
+
+      <section className="section" aria-labelledby="live-h">
+        <div className="section-head">
+          <h2 id="live-h" className="t-section">This account&apos;s gate log</h2>
+          {account === DEMO_ACCOUNT && <span className="stamp">the Paxos USDG account; the first venue account is under Account</span>}
+        </div>
+        <div className="loghost">{ready && <GateLog account={account} snap={snap} snapBlock={snapQ.data?.block} probe={account === DEMO_ACCOUNT ? probe : undefined} />}</div>
+      </section>
 
       {snapQ.isError && (
         <div className="alarm" role="alert">

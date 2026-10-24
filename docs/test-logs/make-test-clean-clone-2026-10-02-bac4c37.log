@@ -1,0 +1,3181 @@
+# make test from a fresh clone
+# commit bac4c37f194240fd1037e8f988ab6954162f9f38
+# date 2026-10-02T17:48:37Z
+# forge forge Version: 1.6.0-nightly
+
+Note: switching to 'cab19933c33c2ad1d4c7a84864a3601dddfd16f3'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+Note: switching to 'bf647bd6046f2f7da30d0c2bf435e5c76a780c1b'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+cd contracts && forge build
+Compiling 184 files with Solc 0.8.28
+Solc 0.8.28 finished in 66.77s
+Compiler run successful with warnings:
+Warning (2018): Function state mutability can be restricted to view
+   --> script/rhc/DeployAgentAccountRHC.s.sol:123:5:
+    |
+123 |     function _readBack(
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+   --> test/AssayTestBase.sol:168:5:
+    |
+168 |     function _signEnclave(uint256 pk, bytes32 requestHash, bytes32 responseHash) internal returns (bytes memory) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+   --> test/AssayInvariant.t.sol:133:5:
+    |
+133 |     function _signEnclave(bytes32 requestHash, bytes32 responseHash) internal returns (bytes memory) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/ChironGate.sol:159:13
+    │
+159 │         if (block.timestamp > expiry) revert AttestationExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:117:24
+    │
+117 │                 return uint160(sqrtPX96 - quotient);
+    │                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint160' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/AgentAccountInvariant.t.sol:99:63
+   │
+99 │         t = AgentAccount.Trade(key, buy ? usdgIs0 : !usdgIs0, uint128(amt), 1, uint64(vm.getBlockTimestamp() + 600));
+   │                                                               ━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/vendor/x402/test/mocks/MockBatchDepositCollectors.sol:14:9
+   │
+14 │         IERC20(token).transferFrom(payer, to, amount);
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/vendor/x402/test/mocks/MockBatchDepositCollectors.sol:21:9
+   │
+21 │         IERC20(token).transferFrom(payer, msg.sender, amount / 2);
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/AgentAccount.sol:333:13
+    │
+333 │         if (block.timestamp > agentExpiry) revert AgentExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SignedMath.sol:49:28
+   │
+49 │         return x + (int256(uint256(x) >> 255) & (a ^ b));
+   │                            ━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SignedMath.sol:65:20
+   │
+65 │             return uint256((n + mask) ^ mask);
+   │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/AgentAccount.sol:339:13
+    │
+339 │         if (block.timestamp > t.deadline) revert DeadlinePassed();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/AssayRealUSDGFork.t.sol:81:9
+   │
+81 │         USDG.transfer(agent, 1_000_000); // 1.000000 USDG
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AgentAccountRHCFork.t.sol:133:38
+    │
+133 │         uint256 sold = _trade(false, uint128(bought), 0.99e6);
+    │                                      ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AgentAccountRHCFork.t.sol:151:96
+    │
+151 │         receiptVerifier.setNext(true, keccak256(bytes(MODEL_ID)), keccak256(bytes(SERVED_ID)), bytes32("q"), bytes32("r"));
+    │                                                                                                ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AgentAccountRHCFork.t.sol:151:110
+    │
+151 │         receiptVerifier.setNext(true, keccak256(bytes(MODEL_ID)), keccak256(bytes(SERVED_ID)), bytes32("q"), bytes32("r"));
+    │                                                                                                              ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol:113:48
+    │
+113 │             return isValidSignatureNow(address(bytes20(signer)), hash, signature);
+    │                                                ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes20' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol:115:59
+    │
+115 │             (bool success, bytes memory result) = address(bytes20(signer)).staticcall(
+    │                                                           ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes20' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:246:65
+    │
+246 │         (bytes memory ps, bytes memory es) = _sigs(id, 400_000, bytes32("rq"), bytes32("rs"));
+    │                                                                 ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:246:80
+    │
+246 │         (bytes memory ps, bytes memory es) = _sigs(id, 400_000, bytes32("rq"), bytes32("rs"));
+    │                                                                                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:254:35
+    │
+254 │         assay.redeem(id, 400_000, bytes32("rq"), bytes32("rs"), ps, es);
+    │                                   ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:254:50
+    │
+254 │         assay.redeem(id, 400_000, bytes32("rq"), bytes32("rs"), ps, es);
+    │                                                  ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:261:35
+    │
+261 │         assay.redeem(id, 400_000, bytes32("rq"), bytes32("rs"), ps, es);
+    │                                   ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/AgentAccount.sol:364:34
+    │
+364 │         if (m != n || (e != 0 && block.timestamp < e + CORPORATE_ACTION_COOLDOWN)) {
+    │                                  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/mocks/ShortPoolManager.sol:34:59
+   │
+34 │         int128 inDelta = int128(params.amountSpecified) - int128(extraIn);
+   │                                                           ━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:268:65
+    │
+268 │                 ? getAmount0Delta(sqrtPriceAX96, sqrtPriceBX96, uint128(-liquidity), false).toInt256()
+    │                                                                 ━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/vendor/v4-core/test/utils/CurrencySettler.sol:29:17
+   │
+29 │                 IERC20Minimal(Currency.unwrap(currency)).transferFrom(payer, address(manager), amount);
+   │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/vendor/v4-core/test/utils/CurrencySettler.sol:31:17
+   │
+31 │                 IERC20Minimal(Currency.unwrap(currency)).transfer(address(manager), amount);
+   │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AgentAccountInvariant.t.sol:172:60
+    │
+172 │         account.setLimits(token, AgentAccount.Limits(true, uint128(perTrade), uint128(daily), uint128(above)));
+    │                                                            ━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:261:50
+    │
+261 │         assay.redeem(id, 400_000, bytes32("rq"), bytes32("rs"), ps, es);
+    │                                                  ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+   ╭▸ test/AssayInvariant.t.sol:85:17
+   │
+85 │             if (block.timestamp < uint256(lastActivity) + timeout) {
+   │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/AgentAccount.sol:410:13
+    │
+410 │         if (block.timestamp > expiry) revert ReceiptKeyExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AgentAccountInvariant.t.sol:172:79
+    │
+172 │         account.setLimits(token, AgentAccount.Limits(true, uint128(perTrade), uint128(daily), uint128(above)));
+    │                                                                               ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AgentAccountInvariant.t.sol:172:95
+    │
+172 │         account.setLimits(token, AgentAccount.Limits(true, uint128(perTrade), uint128(daily), uint128(above)));
+    │                                                                                               ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:269:66
+    │
+269 │                 : -getAmount0Delta(sqrtPriceAX96, sqrtPriceBX96, uint128(liquidity), true).toInt256();
+    │                                                                  ━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/mocks/ShortPoolManager.sol:35:27
+   │
+35 │         int128 outDelta = int128(reportedOut);
+   │                           ━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[incorrect-shift]: the order of args in a shift operation is incorrect
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/Math.sol:290:25
+    │
+290 │             if (high >= 1 << n) {
+    │                         ━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#incorrect-shift
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/types/Currency.sol:117:38
+    │
+117 │         return Currency.wrap(address(uint160(id)));
+    │                                      ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint160' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:285:65
+    │
+285 │                 ? getAmount1Delta(sqrtPriceAX96, sqrtPriceBX96, uint128(-liquidity), false).toInt256()
+    │                                                                 ━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:286:66
+    │
+286 │                 : -getAmount1Delta(sqrtPriceAX96, sqrtPriceBX96, uint128(liquidity), true).toInt256();
+    │                                                                  ━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[incorrect-shift]: the order of args in a shift operation is incorrect
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/Math.sol:301:93
+    │
+301 │         return mulShr(x, y, n) + SafeCast.toUint(unsignedRoundsUp(rounding) && mulmod(x, y, 1 << n) > 0);
+    │                                                                                             ━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#incorrect-shift
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:326:65
+    │
+326 │         (bytes memory ps, bytes memory es) = _sigs(id, 400_000, bytes32("rq"), bytes32("rs"));
+    │                                                                 ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:17:13
+   │
+17 │         y = uint160(x);
+   │             ━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint160' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+   ╭▸ test/AssayInvariant.t.sol:92:17
+   │
+92 │             if (block.timestamp < uint256(closeRequestedAt) + window) {
+   │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:326:80
+    │
+326 │         (bytes memory ps, bytes memory es) = _sigs(id, 400_000, bytes32("rq"), bytes32("rs"));
+    │                                                                                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:329:35
+    │
+329 │         assay.redeem(id, 400_000, bytes32("rq"), bytes32("rs"), ps, es);
+    │                                   ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AssayRealUSDGFork.t.sol:329:50
+    │
+329 │         assay.redeem(id, 400_000, bytes32("rq"), bytes32("rs"), ps, es);
+    │                                                  ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[incorrect-shift]: the order of args in a shift operation is incorrect
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/Math.sol:660:75
+    │
+660 │             return result + SafeCast.toUint(unsignedRoundsUp(rounding) && 1 << result < value);
+    │                                                                           ━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#incorrect-shift
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SwapMath.sol:65:37
+   │
+65 │                     FullMath.mulDiv(uint256(-amountRemaining), MAX_SWAP_FEE - _feePips, MAX_SWAP_FEE);
+   │                                     ━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:25:13
+   │
+25 │         y = uint128(x);
+   │             ━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:34:13
+   │
+34 │         y = uint128(x);
+   │             ━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:41:13
+   │
+41 │         y = int128(x);
+   │             ━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+   ╭▸ test/ChironGateFork.t.sol:62:28
+   │
+62 │         if (expiry != 0 && expiry <= block.timestamp) vm.warp(uint256(expiry) - 1);
+   │                            ━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[incorrect-shift]: the order of args in a shift operation is incorrect
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/Math.sol:739:75
+    │
+739 │             return result + SafeCast.toUint(unsignedRoundsUp(rounding) && 1 << (result << 3) < value);
+    │                                                                           ━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#incorrect-shift
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/AgentAccount.sol:469:13
+    │
+469 │         if (block.timestamp > p.expiry) revert ProposalExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:49:13
+   │
+49 │         y = int256(x);
+   │             ━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:58:16
+   │
+58 │         return int128(int256(x));
+   │                ━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:58:23
+   │
+58 │         return int128(int256(x));
+   │                       ━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/AgentAccount.sol:633:13
+    │
+633 │         if (block.timestamp > agentExpiry || paused) return 0xffffffff;
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:77:13
+   │
+77 │             int128(liquidityBefore) + data.params.liquidityDelta == int128(liquidityAfter), "liquidity change incorrect"
+   │             ━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SwapMath.sol:82:33
+   │
+82 │                     feeAmount = uint256(-amountRemaining) - amountIn;
+   │                                 ━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/mocks/ShortPoolManager.sol:46:9
+   │
+46 │         IERC20(Currency.unwrap(currency)).transfer(to, amount - short);
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[incorrect-shift]: the order of args in a shift operation is incorrect
+    ╭▸ test/vendor/v4-core/src/libraries/TickBitmap.sol:110:35
+    │
+110 │                 uint256 mask = ~((1 << bitPos) - 1);
+    │                                   ━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#incorrect-shift
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/Math.sol:354:29
+    │
+354 │                     x - y * int256(quotient)
+    │                             ━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/Math.sol:359:39
+    │
+359 │             return ternary(x < 0, n - uint256(-x), uint256(x)); // Wrap the result if it's negative.
+    │                                       ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/Math.sol:359:52
+    │
+359 │             return ternary(x < 0, n - uint256(-x), uint256(x)); // Wrap the result if it's negative.
+    │                                                    ━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/ProtocolFeeLibrary.sol:18:16
+   │
+18 │         return uint16(self & 0xfff);
+   │                ━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint16' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/ProtocolFeeLibrary.sol:22:16
+   │
+22 │         return uint16(self >> 12);
+   │                ━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint16' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SwapMath.sol:91:21
+   │
+91 │                 if (uint256(amountRemaining) >= amountOut) {
+   │                     ━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SwapMath.sol:96:33
+   │
+96 │                     amountOut = uint256(amountRemaining);
+   │                                 ━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:77:69
+   │
+77 │             int128(liquidityBefore) + data.params.liquidityDelta == int128(liquidityAfter), "liquidity change incorrect"
+   │                                                                     ━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ src/AgentAccount.sol:382:25
+    │
+382 │             slot.hour = uint32(h);
+    │                         ━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/AgentAccount.t.sol:236:40
+    │
+236 │         (, uint256 back) = _exec(_sell(uint128(out)));
+    │                                        ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[divide-before-multiply]: multiplication should occur before division to avoid loss of precision
+    ╭▸ test/AgentAccountTestBase.sol:109:25
+    │
+109 │         int24 maxTick = (TickMath.MAX_TICK / SPACING) * SPACING;
+    │                         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#divide-before-multiply
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/Hooks.sol:136:73
+    │
+136 │         if (!success) CustomRevert.bubbleUpAndRevertWith(address(self), bytes4(data), HookCallFailed.selector);
+    │                                                                         ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes4' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ src/AgentAccount.sol:457:77
+    │
+457 │             IERC20(Currency.unwrap(cIn)).safeTransfer(address(poolManager), uint256(uint128(-dIn)));
+    │                                                                             ━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/ShortStrings.sol:57:33
+   │
+57 │         return ShortString.wrap(bytes32(uint256(bytes32(bstr)) | bstr.length));
+   │                                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'bytes32' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/ShortStrings.sol:57:49
+   │
+57 │         return ShortString.wrap(bytes32(uint256(bytes32(bstr)) | bstr.length));
+   │                                                 ━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'bytes32' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/AgentAccountWindow.t.sol:68:26
+   │
+68 │                 assertEq(bytes4(err), AgentAccount.DailyCapExceeded.selector);
+   │                          ━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'bytes4' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/Pool.sol:307:50
+    │
+307 │             swapFee = protocolFee == 0 ? lpFee : uint16(protocolFee).calculateSwapFee(lpFee);
+    │                                                  ━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint16' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:88:73
+   │
+88 │         if (delta0 < 0) data.key.currency0.settle(manager, data.sender, uint256(-delta0), data.settleUsingBurn);
+   │                                                                         ━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[incorrect-shift]: the order of args in a shift operation is incorrect
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/Strings.sol:471:43
+    │
+471 │             if (((SPECIAL_CHARS_LOOKUP & (1 << uint8(char))) != 0)) {
+    │                                           ━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#incorrect-shift
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:54:16
+   │
+54 │         return uint248(value);
+   │                ━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint248' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ src/AgentAccount.sol:457:85
+    │
+457 │             IERC20(Currency.unwrap(cIn)).safeTransfer(address(poolManager), uint256(uint128(-dIn)));
+    │                                                                                     ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ src/AgentAccount.sol:460:61
+    │
+460 │         if (dOut > 0) poolManager.take(cOut, address(this), uint256(uint128(dOut)));
+    │                                                             ━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:89:73
+   │
+89 │         if (delta1 < 0) data.key.currency1.settle(manager, data.sender, uint256(-delta1), data.settleUsingBurn);
+   │                                                                         ━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:90:71
+   │
+90 │         if (delta0 > 0) data.key.currency0.take(manager, data.sender, uint256(delta0), data.takeClaims);
+   │                                                                       ━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[divide-before-multiply]: multiplication should occur before division to avoid loss of precision
+   ╭▸ script/rhc/RHCVenue.sol:56:17
+   │
+56 │         upper = (TickMath.MAX_TICK / TICK_SPACING) * TICK_SPACING;
+   │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#divide-before-multiply
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:71:16
+   │
+71 │         return uint240(value);
+   │                ━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint240' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:88:16
+   │
+88 │         return uint232(value);
+   │                ━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint232' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:105:16
+    │
+105 │         return uint224(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint224' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:122:16
+    │
+122 │         return uint216(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint216' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:91:71
+   │
+91 │         if (delta1 > 0) data.key.currency1.take(manager, data.sender, uint256(delta1), data.takeClaims);
+   │                                                                       ━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ src/AgentAccount.sol:460:69
+    │
+460 │         if (dOut > 0) poolManager.take(cOut, address(this), uint256(uint128(dOut)));
+    │                                                                     ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ script/rhc/AddUSDGVenue.s.sol:78:39
+   │
+78 │         if (deposited < accountQuote) IERC20(quote).transfer(address(account), accountQuote - deposited);
+   │                                       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[divide-before-multiply]: multiplication should occur before division to avoid loss of precision
+   ╭▸ test/vendor/v4-core/src/libraries/TickMath.sol:41:20
+   │
+41 │             return (MAX_TICK / tickSpacing) * tickSpacing;
+   │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#divide-before-multiply
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+    ╭▸ script/rhc/DeployAgentAccountRHC.s.sol:107:9
+    │
+107 │         usdg.transfer(address(account), accountUsdg);
+    │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+    ╭▸ script/rhc/DeployAgentAccountRHC.s.sol:108:31
+    │
+108 │         if (accountTsla != 0) IERC20(RHCVenue.TSLA).transfer(address(account), accountTsla);
+    │                               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ test/vendor/x402/src/x402BatchSettlement.sol:365:13
+    │
+365 │         if (block.timestamp < uint256(ws.initiatedAt) + uint256(config.withdrawDelay)) {
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/Strings.sol:291:37
+    │
+291 │         bool positiveSign = sign == bytes1("+");
+    │                                     ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes1' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ script/rhc/RHCVenue.sol:70:16
+   │
+70 │         return uint128(l);
+   │                ━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:139:16
+    │
+139 │         return uint208(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint208' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/Strings.sol:292:37
+    │
+292 │         bool negativeSign = sign == bytes1("-");
+    │                                     ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes1' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[divide-before-multiply]: multiplication should occur before division to avoid loss of precision
+   ╭▸ test/vendor/v4-core/src/libraries/TickMath.sol:48:20
+   │
+48 │             return (MIN_TICK / tickSpacing) * tickSpacing;
+   │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#divide-before-multiply
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ script/rhc/RHCVenue.sol:83:64
+   │
+83 │         IPermit2Approve(PERMIT2).approve(c0, POSITION_MANAGER, uint160(amount0Max), expiration);
+   │                                                                ━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint160' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ script/rhc/RHCVenue.sol:84:64
+   │
+84 │         IPermit2Approve(PERMIT2).approve(c1, POSITION_MANAGER, uint160(amount1Max), expiration);
+   │                                                                ━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint160' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/Strings.sol:298:43
+    │
+298 │             return (true, negativeSign ? -int256(absValue) : int256(absValue));
+    │                                           ━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/Strings.sol:298:62
+    │
+298 │             return (true, negativeSign ? -int256(absValue) : int256(absValue));
+    │                                                              ━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:156:16
+    │
+156 │         return uint200(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint200' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:173:16
+    │
+173 │         return uint192(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint192' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/Assay.sol:409:13
+    │
+409 │         if (block.timestamp > s.expiry) revert AttestationExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/Strings.sol:365:96
+    │
+365 │ …     bool hasPrefix = (end > begin + 1) && bytes2(_unsafeReadBytesOffset(buffer, begin)) == bytes2("0x"); // don't do out-of-bound (…
+    │                                                                                              ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes2' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/TickMath.sol:70:27
+   │
+70 │             if (absTick > uint256(int256(MAX_TICK))) InvalidTick.selector.revertWith(tick);
+   │                           ━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ script/rhc/RHCVenue.sol:88:69
+   │
+88 │         params[0] = abi.encode(k, lower, upper, uint256(liquidity), uint128(amount0Max), uint128(amount1Max), owner, bytes(""));
+   │                                                                     ━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ script/rhc/RHCVenue.sol:88:90
+   │
+88 │         params[0] = abi.encode(k, lower, upper, uint256(liquidity), uint128(amount0Max), uint128(amount1Max), owner, bytes(""));
+   │                                                                                          ━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/TickMath.sol:139:29
+    │
+139 │             int256 log_2 = (int256(msb) - 128) << 64;
+    │                             ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/Strings.sol:424:102
+    │
+424 │ …     bool hasPrefix = (end > begin + 1) && bytes2(_unsafeReadBytesOffset(bytes(input), begin)) == bytes2("0x"); // don't do out-of-b…
+    │                                                                                                    ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes2' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/Assay.sol:477:13
+    │
+477 │         if (block.timestamp > rs.expiry) revert AttestationExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:190:16
+    │
+190 │         return uint184(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint184' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/Strings.sol:431:32
+    │
+431 │             return (s, address(uint160(v)));
+    │                                ━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint160' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:207:16
+    │
+207 │         return uint176(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint176' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:224:16
+    │
+224 │         return uint168(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint168' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:241:16
+    │
+241 │         return uint160(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint160' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:258:16
+    │
+258 │         return uint152(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint152' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/Assay.sol:536:13
+    │
+536 │         if (block.timestamp < uint256(lastActivity) + channelTimeout) revert TimeoutNotElapsed();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:275:16
+    │
+275 │         return uint144(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint144' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:292:16
+    │
+292 │         return uint136(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint136' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:309:16
+    │
+309 │         return uint128(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/Assay.sol:551:13
+    │
+551 │         if (block.timestamp < uint256(c.closeRequestedAt) + challengeWindow) revert ChallengeWindowActive();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:326:16
+    │
+326 │         return uint120(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint120' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:343:16
+    │
+343 │         return uint112(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint112' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:360:16
+    │
+360 │         return uint104(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint104' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:377:16
+    │
+377 │         return uint96(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint96' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:394:16
+    │
+394 │         return uint88(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint88' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:411:16
+    │
+411 │         return uint80(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint80' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:428:16
+    │
+428 │         return uint72(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint72' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:445:16
+    │
+445 │         return uint64(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint64' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:462:16
+    │
+462 │         return uint56(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint56' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:479:16
+    │
+479 │         return uint48(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint48' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:496:16
+    │
+496 │         return uint40(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint40' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:513:16
+    │
+513 │         return uint32(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:530:16
+    │
+530 │         return uint24(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint24' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:547:16
+    │
+547 │         return uint16(value);
+    │                ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint16' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:564:16
+    │
+564 │         return uint8(value);
+    │                ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint8' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:578:16
+    │
+578 │         return uint256(value);
+    │                ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:593:22
+    │
+593 │         downcasted = int248(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int248' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:611:22
+    │
+611 │         downcasted = int240(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int240' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:629:22
+    │
+629 │         downcasted = int232(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int232' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:647:22
+    │
+647 │         downcasted = int224(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int224' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:665:22
+    │
+665 │         downcasted = int216(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int216' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:683:22
+    │
+683 │         downcasted = int208(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int208' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:701:22
+    │
+701 │         downcasted = int200(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int200' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:719:22
+    │
+719 │         downcasted = int192(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int192' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:737:22
+    │
+737 │         downcasted = int184(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int184' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:755:22
+    │
+755 │         downcasted = int176(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int176' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:773:22
+    │
+773 │         downcasted = int168(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int168' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:791:22
+    │
+791 │         downcasted = int160(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int160' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:809:22
+    │
+809 │         downcasted = int152(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int152' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:827:22
+    │
+827 │         downcasted = int144(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int144' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:845:22
+    │
+845 │         downcasted = int136(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int136' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:863:22
+    │
+863 │         downcasted = int128(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:881:22
+    │
+881 │         downcasted = int120(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int120' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:899:22
+    │
+899 │         downcasted = int112(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int112' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:917:22
+    │
+917 │         downcasted = int104(value);
+    │                      ━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int104' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:935:22
+    │
+935 │         downcasted = int96(value);
+    │                      ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int96' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:953:22
+    │
+953 │         downcasted = int88(value);
+    │                      ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int88' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:971:22
+    │
+971 │         downcasted = int80(value);
+    │                      ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int80' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:989:22
+    │
+989 │         downcasted = int72(value);
+    │                      ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int72' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1007:22
+     │
+1007 │         downcasted = int64(value);
+     │                      ━━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int64' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1025:22
+     │
+1025 │         downcasted = int56(value);
+     │                      ━━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int56' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1043:22
+     │
+1043 │         downcasted = int48(value);
+     │                      ━━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int48' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1061:22
+     │
+1061 │         downcasted = int40(value);
+     │                      ━━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int40' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1079:22
+     │
+1079 │         downcasted = int32(value);
+     │                      ━━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int32' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1097:22
+     │
+1097 │         downcasted = int24(value);
+     │                      ━━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int24' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1115:22
+     │
+1115 │         downcasted = int16(value);
+     │                      ━━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int16' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1133:22
+     │
+1133 │         downcasted = int8(value);
+     │                      ━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int8' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+     ╭▸ test/vendor/x402/lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol:1151:16
+     │
+1151 │         return int256(value);
+     │                ━━━━━━━━━━━━━
+     │
+     ├ note: consider disabling this lint if you're certain the cast is safe
+     │       
+     │       // casting to 'int256' is safe because [explain why]
+     │       // forge-lint: disable-next-line(unsafe-typecast)
+     │       
+     │       
+     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+cd contracts && FOUNDRY_PROFILE=v4 forge build
+Compiling 49 files with Solc 0.8.26
+Solc 0.8.26 finished in 2.30s
+Compiler run successful!
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/vendor/v4-core/test/utils/CurrencySettler.sol:29:17
+   │
+29 │                 IERC20Minimal(Currency.unwrap(currency)).transferFrom(payer, address(manager), amount);
+   │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[incorrect-shift]: the order of args in a shift operation is incorrect
+    ╭▸ test/vendor/v4-core/src/libraries/TickBitmap.sol:110:35
+    │
+110 │                 uint256 mask = ~((1 << bitPos) - 1);
+    │                                   ━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#incorrect-shift
+
+warning[divide-before-multiply]: multiplication should occur before division to avoid loss of precision
+   ╭▸ test/vendor/v4-core/src/libraries/TickMath.sol:41:20
+   │
+41 │             return (MAX_TICK / tickSpacing) * tickSpacing;
+   │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#divide-before-multiply
+
+warning[divide-before-multiply]: multiplication should occur before division to avoid loss of precision
+   ╭▸ test/vendor/v4-core/src/libraries/TickMath.sol:48:20
+   │
+48 │             return (MIN_TICK / tickSpacing) * tickSpacing;
+   │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#divide-before-multiply
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/TickMath.sol:70:27
+   │
+70 │             if (absTick > uint256(int256(MAX_TICK))) InvalidTick.selector.revertWith(tick);
+   │                           ━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/TickMath.sol:139:29
+    │
+139 │             int256 log_2 = (int256(msb) - 128) << 64;
+    │                             ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'int256' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:117:24
+    │
+117 │                 return uint160(sqrtPX96 - quotient);
+    │                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint160' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:268:65
+    │
+268 │                 ? getAmount0Delta(sqrtPriceAX96, sqrtPriceBX96, uint128(-liquidity), false).toInt256()
+    │                                                                 ━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:269:66
+    │
+269 │                 : -getAmount0Delta(sqrtPriceAX96, sqrtPriceBX96, uint128(liquidity), true).toInt256();
+    │                                                                  ━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:285:65
+    │
+285 │                 ? getAmount1Delta(sqrtPriceAX96, sqrtPriceBX96, uint128(-liquidity), false).toInt256()
+    │                                                                 ━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/SqrtPriceMath.sol:286:66
+    │
+286 │                 : -getAmount1Delta(sqrtPriceAX96, sqrtPriceBX96, uint128(liquidity), true).toInt256();
+    │                                                                  ━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint128' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/ProtocolFeeLibrary.sol:18:16
+   │
+18 │         return uint16(self & 0xfff);
+   │                ━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint16' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/ProtocolFeeLibrary.sol:22:16
+   │
+22 │         return uint16(self >> 12);
+   │                ━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint16' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:17:13
+   │
+17 │         y = uint160(x);
+   │             ━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint160' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:25:13
+   │
+25 │         y = uint128(x);
+   │             ━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/types/Currency.sol:117:38
+    │
+117 │         return Currency.wrap(address(uint160(id)));
+    │                                      ━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint160' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/Hooks.sol:136:73
+    │
+136 │         if (!success) CustomRevert.bubbleUpAndRevertWith(address(self), bytes4(data), HookCallFailed.selector);
+    │                                                                         ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes4' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:77:13
+   │
+77 │             int128(liquidityBefore) + data.params.liquidityDelta == int128(liquidityAfter), "liquidity change incorrect"
+   │             ━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:34:13
+   │
+34 │         y = uint128(x);
+   │             ━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:41:13
+   │
+41 │         y = int128(x);
+   │             ━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:49:13
+   │
+49 │         y = int256(x);
+   │             ━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/vendor/v4-core/test/utils/CurrencySettler.sol:31:17
+   │
+31 │                 IERC20Minimal(Currency.unwrap(currency)).transfer(address(manager), amount);
+   │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:58:16
+   │
+58 │         return int128(int256(x));
+   │                ━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SafeCast.sol:58:23
+   │
+58 │         return int128(int256(x));
+   │                       ━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/vendor/v4-core/src/libraries/Pool.sol:307:50
+    │
+307 │             swapFee = protocolFee == 0 ? lpFee : uint16(protocolFee).calculateSwapFee(lpFee);
+    │                                                  ━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'uint16' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SwapMath.sol:65:37
+   │
+65 │                     FullMath.mulDiv(uint256(-amountRemaining), MAX_SWAP_FEE - _feePips, MAX_SWAP_FEE);
+   │                                     ━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SwapMath.sol:82:33
+   │
+82 │                     feeAmount = uint256(-amountRemaining) - amountIn;
+   │                                 ━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SwapMath.sol:91:21
+   │
+91 │                 if (uint256(amountRemaining) >= amountOut) {
+   │                     ━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/libraries/SwapMath.sol:96:33
+   │
+96 │                     amountOut = uint256(amountRemaining);
+   │                                 ━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:77:69
+   │
+77 │             int128(liquidityBefore) + data.params.liquidityDelta == int128(liquidityAfter), "liquidity change incorrect"
+   │                                                                     ━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'int128' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:88:73
+   │
+88 │         if (delta0 < 0) data.key.currency0.settle(manager, data.sender, uint256(-delta0), data.settleUsingBurn);
+   │                                                                         ━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:89:73
+   │
+89 │         if (delta1 < 0) data.key.currency1.settle(manager, data.sender, uint256(-delta1), data.settleUsingBurn);
+   │                                                                         ━━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:90:71
+   │
+90 │         if (delta0 > 0) data.key.currency0.take(manager, data.sender, uint256(delta0), data.takeClaims);
+   │                                                                       ━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/vendor/v4-core/src/test/PoolModifyLiquidityTest.sol:91:71
+   │
+91 │         if (delta1 > 0) data.key.currency1.take(manager, data.sender, uint256(delta1), data.takeClaims);
+   │                                                                       ━━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'uint256' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+cd contracts && FOUNDRY_PROFILE=x402 forge build
+Compiling 51 files with Solc 0.8.28
+Solc 0.8.28 finished in 1.17s
+Compiler run successful!
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/vendor/x402/test/mocks/MockBatchDepositCollectors.sol:14:9
+   │
+14 │         IERC20(token).transferFrom(payer, to, amount);
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ test/vendor/x402/src/x402BatchSettlement.sol:365:13
+    │
+365 │         if (block.timestamp < uint256(ws.initiatedAt) + uint256(config.withdrawDelay)) {
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[erc20-unchecked-transfer]: ERC20 'transfer' and 'transferFrom' calls should check the return value
+   ╭▸ test/vendor/x402/test/mocks/MockBatchDepositCollectors.sol:21:9
+   │
+21 │         IERC20(token).transferFrom(payer, msg.sender, amount / 2);
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#erc20-unchecked-transfer
+
+cd contracts && RHC_FORK_URL=https://rpc.testnet.chain.robinhood.com forge test
+No files changed, compilation skipped
+
+Ran 6 tests for test/Assay.t.sol:AssayTest
+[PASS] test_closeChannel_refundsUnredeemedAfterTimeout() (gas: 562557)
+[PASS] test_enclaveDigest_matchesPhalaLegacyFormat_andRecovers() (gas: 229679)
+[PASS] test_openChannel_pullsDeposit() (gas: 206961)
+[PASS] test_reRegister_extendsExpiry() (gas: 200028)
+[PASS] test_redeem_paysDeltaToProvider() (gas: 748949)
+[PASS] test_register_storesApprovedSigner() (gas: 163627)
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 7.19ms (3.90ms CPU time)
+
+Ran 5 tests for test/AgentAccountCorporateAction.t.sol:AgentAccountCorporateActionTest
+[PASS] test_announcedSplit_blocksBuyAndSell() (gas: 248612)
+[PASS] test_cooldownAfterEffective_blocksThenClears() (gas: 538883)
+[PASS] test_noAction_tradesNormally() (gas: 440219)
+[PASS] test_ownerApproval_stillExecutesDuringPendingAction() (gas: 561006)
+[PASS] test_propose_blockedWhilePending() (gas: 220442)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 14.15ms (1.43ms CPU time)
+
+Ran 14 tests for test/AssayAttacks.t.sol:AssayAttacksTest
+[PASS] test_attack_channelDrain_cappedAtDeposit_reverts() (gas: 602747)
+[PASS] test_attack_closeBeforeTimeout_reverts() (gas: 204924)
+[PASS] test_attack_cumulativeGoingDown_reverts() (gas: 620706)
+[PASS] test_attack_enclaveSigFromUnregisteredKey_reverts() (gas: 356961)
+[PASS] test_attack_expiredAttestation_reverts() (gas: 504402)
+[PASS] test_attack_finalizeCloseBeforeChallengeWindow_reverts() (gas: 209992)
+[PASS] test_attack_measurementNotOnAllowlist_reverts() (gas: 85664)
+[PASS] test_attack_mismatchedResponseHashBetweenSignatures_reverts() (gas: 505577)
+[PASS] test_attack_nonProviderCannotRedeem_reverts() (gas: 428229)
+[PASS] test_attack_payerSigFromNonAgent_reverts() (gas: 437961)
+[PASS] test_attack_replayedVoucher_paysOnce() (gas: 557495)
+[PASS] test_attack_sameResponseHashReplayedWithHigherAmount_reverts() (gas: 558818)
+[PASS] test_redeemAfterFinalizeClose_reverts() (gas: 399942)
+[PASS] test_redeemDuringChallengeWindow_stillPays() (gas: 553884)
+Suite result: ok. 14 passed; 0 failed; 0 skipped; finished in 19.09ms (15.48ms CPU time)
+
+Ran 11 tests for test/AssayHardening.t.sol:AssayHardeningTest
+[PASS] test_attack_finalizeClose_byNonAgent_reverts() (gas: 211864)
+[PASS] test_attack_requestClose_byNonAgent_reverts() (gas: 206683)
+[PASS] test_attack_requestClose_twice_reverts() (gas: 209789)
+[PASS] test_nextRegisterNonce_fallsBackToBlockhash_whenNoArbSysPrecompile() (gas: 17862)
+[PASS] test_nextRegisterNonce_usesArbSysWhenPresent_revertsOnArbSysRevert() (gas: 147465)
+[PASS] test_nextRegisterNonce_zeroBlockhash_reverts() (gas: 23434)
+[PASS] test_openChannel_measurementNotOnAllowlist_reverts() (gas: 51112)
+[PASS] test_redeem_measurementMatch_succeeds() (gas: 548962)
+[PASS] test_redeem_measurementMismatch_reverts() (gas: 505094)
+[PASS] test_redeem_resetsLastActivityAt_delaysRequestCloseEligibility() (gas: 559527)
+[PASS] test_register_succeedsWithArbSysPrecompilePresent() (gas: 289639)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 7.71ms (6.87ms CPU time)
+
+Ran 82 tests for test/AgentAccount.t.sol:AgentAccountTest
+[PASS] test_1271_acceptsAssayVoucher_andAssayRedeemPays() (gas: 453761)
+[PASS] test_1271_rejectsExpiredAgent() (gas: 269406)
+[PASS] test_1271_rejectsForeignChannel() (gas: 448792)
+[PASS] test_1271_rejectsPausedRevokedWrongSignerClosed() (gas: 268491)
+[PASS] test_1271_rejectsPermit2Digest() (gas: 249436)
+[PASS] test_1271_rejectsUsdgPermitDigest() (gas: 264956)
+[PASS] test_1271_revokedAgentVoucherNotRedeemable() (gas: 394081)
+[PASS] test_approve_atExpirySecond_executes() (gas: 538102)
+[PASS] test_approve_enforcesMinOut() (gas: 508020)
+[PASS] test_approve_executesExactTrade_once() (gas: 610512)
+[PASS] test_approve_revertsAfterAgentRotated() (gas: 681110)
+[PASS] test_approve_revertsExpired() (gas: 413155)
+[PASS] test_approve_revertsNotOwner() (gas: 413209)
+[PASS] test_approve_revertsReplay() (gas: 538916)
+[PASS] test_approve_revertsTradeMismatch() (gas: 420125)
+[PASS] test_approve_revertsWhenPaused() (gas: 418557)
+[PASS] test_approve_revertsWhenPerTradeLowered() (gas: 427046)
+[PASS] test_approve_revertsWhenPoolOrTokenDelisted() (gas: 443509)
+[PASS] test_callback_revertsAfterSwapInSameTx() (gas: 4492089)
+[PASS] test_callback_revertsFromNonPoolManager() (gas: 23491)
+[PASS] test_callback_revertsWhenNotSwapping() (gas: 24562)
+[PASS] test_cancelProposal_onlyProposer_thenApproveReverts() (gas: 426837)
+[PASS] test_constructor_revertsNoCode() (gas: 3809882)
+[PASS] test_execute_band1Boundary_executes() (gas: 452151)
+[PASS] test_execute_buyAndSell_balanceDeltasAndEvent() (gas: 669977)
+[PASS] test_execute_capsApplyToTokenIn_sellBoundedInStockUnits() (gas: 554268)
+[PASS] test_execute_revertsAfterRevoke() (gas: 179162)
+[PASS] test_execute_revertsDailyCapExceeded() (gas: 1101068)
+[PASS] test_execute_revertsDeadline() (gas: 452513)
+[PASS] test_execute_revertsInsufficientOutput_realPool() (gas: 412480)
+[PASS] test_execute_revertsInsufficientOutput_whenPoolUnderpays() (gas: 4566584)
+[PASS] test_execute_revertsNeedsApproval_inBand2() (gas: 198442)
+[PASS] test_execute_revertsNotAgent() (gas: 172813)
+[PASS] test_execute_revertsOneSecondAfterExpiry() (gas: 460235)
+[PASS] test_execute_revertsOverPerTradeCap() (gas: 235593)
+[PASS] test_execute_revertsOverSpent_whenPoolOvercharges() (gas: 4480889)
+[PASS] test_execute_revertsPoolNotAllowed() (gas: 198815)
+[PASS] test_execute_revertsTokenNotAllowed_afterDelist() (gas: 211364)
+[PASS] test_execute_revertsWhenPaused() (gas: 475112)
+[PASS] test_execute_revertsZeroAmount() (gas: 170130)
+[PASS] test_execute_revertsZeroMinOut() (gas: 171076)
+[PASS] test_factory_createsWiredAccount_andEmits() (gas: 3353124)
+[PASS] test_inferenceClose_refundLandsInAccount() (gas: 223624)
+[PASS] test_newAccount_canDoNothingUntilConfigured() (gas: 3640488)
+[PASS] test_openInferenceChannel_resetsAllowanceToZero() (gas: 244686)
+[PASS] test_openInferenceChannel_revertsBeforeModelSet() (gas: 3376164)
+[PASS] test_ownerOnly_everyPolicyPower() (gas: 484415)
+[PASS] test_ownership_cannotPassToAgent() (gas: 48246)
+[PASS] test_propose_revertsApprovalNotNeeded_inBand1() (gas: 197556)
+[PASS] test_propose_storesProposalAndExpiry() (gas: 598848)
+[PASS] test_receipt_acceptsEverySlot() (gas: 498323)
+[PASS] test_receipt_revertsGatewayMeasurementMismatch() (gas: 315312)
+[PASS] test_receipt_revertsInvalid() (gas: 261385)
+[PASS] test_receipt_revertsKeyExpired() (gas: 351689)
+[PASS] test_receipt_revertsKeyNotRegistered() (gas: 293211)
+[PASS] test_receipt_revertsModelMismatch_requested() (gas: 282595)
+[PASS] test_receipt_revertsModelMismatch_served() (gas: 808454)
+[PASS] test_receipt_revertsModelNotSet() (gas: 3899514)
+[PASS] test_receipt_revertsReuse() (gas: 489285)
+[PASS] test_reentrancy_viaTokenHook_blocked() (gas: 1784334)
+[PASS] test_register_admitsApprovedMeasurement() (gas: 83877)
+[PASS] test_register_arbSysRevertIsFinal() (gas: 200047)
+[PASS] test_register_epochInvalidatesInflightQuote() (gas: 86663)
+[PASS] test_register_nonceBindsChainAndAccount() (gas: 3503870)
+[PASS] test_register_revertsAgentIsOwner() (gas: 31016)
+[PASS] test_register_revertsReplayedQuote() (gas: 69028)
+[PASS] test_register_revertsStaleRefBlock_outOfWindow() (gas: 241518)
+[PASS] test_register_revertsUnapprovedMeasurement() (gas: 34474)
+[PASS] test_register_revertsZeroHash() (gas: 208829)
+[PASS] test_register_revertsZeroHash_nativeFallback() (gas: 21773)
+[PASS] test_register_revertsZeroSigner() (gas: 28121)
+[PASS] test_reject_thenApproveReverts() (gas: 416664)
+[PASS] test_renounceOwnership_reverts() (gas: 15541)
+[PASS] test_setApprovalTtl_bindsNewProposals() (gas: 414078)
+[PASS] test_setLimits_revertsBadLimits() (gas: 35544)
+[PASS] test_setMeasurement_unapproveRevokesCurrentAgent() (gas: 190320)
+[PASS] test_setPool_revertsHookedPool() (gas: 23094)
+[PASS] test_setPool_revertsNativeCurrency() (gas: 23798)
+[PASS] test_setPool_revertsTokenNotAllowed() (gas: 155384)
+[PASS] test_withdraw_revertsNotOwner() (gas: 22778)
+[PASS] test_withdraw_worksAfterExpiry() (gas: 57989)
+[PASS] test_withdraw_worksWhilePausedAndRevoked() (gas: 140921)
+Suite result: ok. 82 passed; 0 failed; 0 skipped; finished in 56.12ms (71.13ms CPU time)
+
+Ran 43 tests for test/ChironGate.t.sol:ChironGateTest
+[PASS] test_ackBindsTotalClaimed() (gas: 251764)
+[PASS] test_ackByPayerInsteadOfAuthorizer_reverts() (gas: 253681)
+[PASS] test_ackByProvider_reverts() (gas: 253439)
+[PASS] test_allZeroAcceptedSet_reverts() (gas: 221540)
+[PASS] test_claimAfterFinalizedWithdraw_revertsAndKeepsReceipt() (gas: 282090)
+[PASS] test_claimDuringWithdrawWindow_capsWithdraw() (gas: 366360)
+[PASS] test_constructor_rejectsNonContracts() (gas: 133181)
+[PASS] test_crossChannelIsolation() (gas: 528351)
+[PASS] test_differentSets_isolated() (gas: 451858)
+[PASS] test_expiredKey_reverts() (gas: 263130)
+[PASS] test_foreignPendingClaim_notForwardedAndCannotGrief() (gas: 466612)
+[PASS] test_foreignReceiptWithPayerAck_reverts() (gas: 248960)
+[PASS] test_forwardShort_reverts() (gas: 975325)
+[PASS] test_gateDigestMatchesIndependentCallAck() (gas: 8291)
+[PASS] test_honestClaim_paysProviderExactDelta() (gas: 463548)
+[PASS] test_payerAuthorizerZero_payerSignsAckAndVoucher() (gas: 362554)
+[PASS] test_payerAuthorizerZero_wrongSigner_reverts() (gas: 250584)
+[PASS] test_payerWithdrawAfterDelay_stillWorks() (gas: 367565)
+[PASS] test_payoutIsGate_reverts() (gas: 357526)
+[PASS] test_pinPreimageMismatch_reverts() (gas: 243838)
+[PASS] test_pinSaltMatchesIndependentEncoding() (gas: 9957)
+[PASS] test_receiptForDifferentRequest_reverts() (gas: 251636)
+[PASS] test_receiptForDifferentResponse_reverts() (gas: 251592)
+[PASS] test_receiptNotOk_reverts() (gas: 231855)
+[PASS] test_receiptReplay_reverts() (gas: 394009)
+[PASS] test_receiverAuthorizerNotGate_rejected() (gas: 247044)
+[PASS] test_receiverNotGate_rejected() (gas: 245976)
+[PASS] test_reentrantToken_blocked() (gas: 1852658)
+[PASS] test_requestedIdNotPinned_reverts() (gas: 250994)
+[PASS] test_requestedModelSwap_reverts() (gas: 251836)
+[PASS] test_servedLabelInLastSlot_pays() (gas: 362100)
+[PASS] test_servedLabelNotInSet_reverts() (gas: 255322)
+[PASS] test_servedModelSwap_reverts() (gas: 255291)
+[PASS] test_settleShort_reverts() (gas: 968442)
+[PASS] test_staleVoucher_reverts() (gas: 419125)
+[PASS] test_tinfoilServedLabel_pays() (gas: 362888)
+[PASS] test_unregisteredKey_reverts() (gas: 259299)
+[PASS] test_voucherCeilingAboveClaim_paysClaimedTotal() (gas: 371720)
+[PASS] test_wrongMeasurement_reverts() (gas: 258726)
+[PASS] test_x402SignatureRoutesCannotBypassGate() (gas: 143623)
+[PASS] test_zeroEntryNeverMatches() (gas: 231399)
+[PASS] test_zeroModelPin_reverts() (gas: 221262)
+[PASS] test_zeroPayoutPin_reverts() (gas: 239669)
+Suite result: ok. 43 passed; 0 failed; 0 skipped; finished in 58.85ms (56.81ms CPU time)
+
+Ran 11 tests for test/AssayReceipt.t.sol:AssayReceiptTest
+[PASS] test_legacyOnlyChannel_refusesReceipt() (gas: 472984)
+[PASS] test_modelPinnedChannel_refusesLegacyRedeem() (gas: 454484)
+[PASS] test_receiptRequestHashMismatch_reverts() (gas: 561970)
+[PASS] test_redeemWithReceipt_cumulativeDeltaInvariantHolds() (gas: 594935)
+[PASS] test_redeemWithReceipt_honestReceipt_pays() (gas: 545933)
+[PASS] test_redeemWithReceipt_modelSwap_revertsModelMismatch() (gas: 494962)
+[PASS] test_redeemWithReceipt_pubkeyRegisteredToDifferentMeasurement_reverts() (gas: 495597)
+[PASS] test_redeemWithReceipt_replay_reverts() (gas: 552045)
+[PASS] test_redeemWithReceipt_requestedHashMismatch_revertsModelMismatch() (gas: 493135)
+[PASS] test_redeemWithReceipt_tamperedResponseHash_reverts() (gas: 493137)
+[PASS] test_redeemWithReceipt_unregisteredPubkey_reverts() (gas: 367377)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 7.95ms (3.74ms CPU time)
+
+Ran 3 tests for test/AssaySmartAccount.t.sol:AssaySmartAccountTest
+[PASS] test_redeem_payerIsEOA_stillSucceeds() (gas: 549009)
+[PASS] test_redeem_payerIsERC1271Wallet_ownerSignature_succeeds() (gas: 554928)
+[PASS] test_redeem_payerIsERC1271Wallet_wrongSigner_reverts() (gas: 440647)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 2.63ms (1.99ms CPU time)
+
+Ran 5 tests for test/AttackReview.t.sol:AttackReviewTest
+[PASS] test_H1_challengeWindowPaysPendingVoucherBeforeClose() (gas: 554195)
+[PASS] test_H2_staleQuoteCannotReRegister() (gas: 169959)
+[PASS] test_L2_permitFrontrunFallsThrough() (gas: 246031)
+[PASS] test_M1_responseHashReplayABA_reverts() (gas: 792421)
+[PASS] test_M1b_sameReceiptPaidOnTwoChannels_reverts() (gas: 688372)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 4.31ms (3.69ms CPU time)
+
+Ran 44 tests for test/ChironGateCrossChannel.t.sol:CrossChannelTest
+[PASS] test_X_oneReceiptCannotPayTwoChannelsOfSamePayer() (gas: 461394)
+[PASS] test_ackBindsTotalClaimed() (gas: 251786)
+[PASS] test_ackByPayerInsteadOfAuthorizer_reverts() (gas: 253703)
+[PASS] test_ackByProvider_reverts() (gas: 253439)
+[PASS] test_allZeroAcceptedSet_reverts() (gas: 221540)
+[PASS] test_claimAfterFinalizedWithdraw_revertsAndKeepsReceipt() (gas: 282050)
+[PASS] test_claimDuringWithdrawWindow_capsWithdraw() (gas: 366360)
+[PASS] test_constructor_rejectsNonContracts() (gas: 133203)
+[PASS] test_crossChannelIsolation() (gas: 528436)
+[PASS] test_differentSets_isolated() (gas: 451880)
+[PASS] test_expiredKey_reverts() (gas: 263130)
+[PASS] test_foreignPendingClaim_notForwardedAndCannotGrief() (gas: 466612)
+[PASS] test_foreignReceiptWithPayerAck_reverts() (gas: 248960)
+[PASS] test_forwardShort_reverts() (gas: 975325)
+[PASS] test_gateDigestMatchesIndependentCallAck() (gas: 8313)
+[PASS] test_honestClaim_paysProviderExactDelta() (gas: 463570)
+[PASS] test_payerAuthorizerZero_payerSignsAckAndVoucher() (gas: 362576)
+[PASS] test_payerAuthorizerZero_wrongSigner_reverts() (gas: 250606)
+[PASS] test_payerWithdrawAfterDelay_stillWorks() (gas: 367565)
+[PASS] test_payoutIsGate_reverts() (gas: 357548)
+[PASS] test_pinPreimageMismatch_reverts() (gas: 243838)
+[PASS] test_pinSaltMatchesIndependentEncoding() (gas: 9957)
+[PASS] test_receiptForDifferentRequest_reverts() (gas: 251636)
+[PASS] test_receiptForDifferentResponse_reverts() (gas: 251592)
+[PASS] test_receiptNotOk_reverts() (gas: 231877)
+[PASS] test_receiptReplay_reverts() (gas: 394009)
+[PASS] test_receiverAuthorizerNotGate_rejected() (gas: 247066)
+[PASS] test_receiverNotGate_rejected() (gas: 245976)
+[PASS] test_reentrantToken_blocked() (gas: 1852658)
+[PASS] test_requestedIdNotPinned_reverts() (gas: 250994)
+[PASS] test_requestedModelSwap_reverts() (gas: 251858)
+[PASS] test_servedLabelInLastSlot_pays() (gas: 362122)
+[PASS] test_servedLabelNotInSet_reverts() (gas: 255344)
+[PASS] test_servedModelSwap_reverts() (gas: 255313)
+[PASS] test_settleShort_reverts() (gas: 968464)
+[PASS] test_staleVoucher_reverts() (gas: 419147)
+[PASS] test_tinfoilServedLabel_pays() (gas: 362888)
+[PASS] test_unregisteredKey_reverts() (gas: 259299)
+[PASS] test_voucherCeilingAboveClaim_paysClaimedTotal() (gas: 371742)
+[PASS] test_wrongMeasurement_reverts() (gas: 258748)
+[PASS] test_x402SignatureRoutesCannotBypassGate() (gas: 143623)
+[PASS] test_zeroEntryNeverMatches() (gas: 231399)
+[PASS] test_zeroModelPin_reverts() (gas: 221284)
+[PASS] test_zeroPayoutPin_reverts() (gas: 239691)
+Suite result: ok. 44 passed; 0 failed; 0 skipped; finished in 39.52ms (37.89ms CPU time)
+
+Ran 1 test for test/AgentAccountInvariant.t.sol:AgentHandlerSmokeTest
+[PASS] test_handler_executeRecordsSpend() (gas: 4020924)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 3.37ms (820.75µs CPU time)
+
+Ran 47 tests for test/ChironGateReview.t.sol:ChironGateReviewTest
+[PASS] test_R1_payerCannotBurnSignedAckViaThrowawayChannel() (gas: 995140)
+[PASS] test_R1b_exposureIsOneCall() (gas: 1185821)
+[PASS] test_R3_control_payerExitsWhileGateFrozen() (gas: 655052)
+[PASS] test_ackBindsTotalClaimed() (gas: 251819)
+[PASS] test_ackByPayerInsteadOfAuthorizer_reverts() (gas: 253714)
+[PASS] test_ackByProvider_reverts() (gas: 253472)
+[PASS] test_allZeroAcceptedSet_reverts() (gas: 221573)
+[PASS] test_claimAfterFinalizedWithdraw_revertsAndKeepsReceipt() (gas: 282123)
+[PASS] test_claimDuringWithdrawWindow_capsWithdraw() (gas: 366393)
+[PASS] test_constructor_rejectsNonContracts() (gas: 133181)
+[PASS] test_crossChannelIsolation() (gas: 528439)
+[PASS] test_differentSets_isolated() (gas: 451957)
+[PASS] test_expiredKey_reverts() (gas: 263163)
+[PASS] test_fixKeepsSameChannelReplayBlocked() (gas: 395327)
+[PASS] test_foreignPendingClaim_notForwardedAndCannotGrief() (gas: 466645)
+[PASS] test_foreignReceiptWithPayerAck_reverts() (gas: 248993)
+[PASS] test_forwardShort_reverts() (gas: 975358)
+[PASS] test_gateDigestMatchesIndependentCallAck() (gas: 8313)
+[PASS] test_honestClaim_paysProviderExactDelta() (gas: 463613)
+[PASS] test_payerAuthorizerZero_payerSignsAckAndVoucher() (gas: 362609)
+[PASS] test_payerAuthorizerZero_wrongSigner_reverts() (gas: 250705)
+[PASS] test_payerWithdrawAfterDelay_stillWorks() (gas: 367598)
+[PASS] test_payoutIsGate_reverts() (gas: 357559)
+[PASS] test_pinPreimageMismatch_reverts() (gas: 243871)
+[PASS] test_pinSaltMatchesIndependentEncoding() (gas: 9957)
+[PASS] test_receiptForDifferentRequest_reverts() (gas: 251669)
+[PASS] test_receiptForDifferentResponse_reverts() (gas: 251625)
+[PASS] test_receiptNotOk_reverts() (gas: 231888)
+[PASS] test_receiptReplay_reverts() (gas: 394107)
+[PASS] test_receiverAuthorizerNotGate_rejected() (gas: 247165)
+[PASS] test_receiverNotGate_rejected() (gas: 246009)
+[PASS] test_reentrantToken_blocked() (gas: 1852691)
+[PASS] test_requestedIdNotPinned_reverts() (gas: 251027)
+[PASS] test_requestedModelSwap_reverts() (gas: 251891)
+[PASS] test_servedLabelInLastSlot_pays() (gas: 362155)
+[PASS] test_servedLabelNotInSet_reverts() (gas: 255355)
+[PASS] test_servedModelSwap_reverts() (gas: 255324)
+[PASS] test_settleShort_reverts() (gas: 968475)
+[PASS] test_staleVoucher_reverts() (gas: 419279)
+[PASS] test_tinfoilServedLabel_pays() (gas: 362921)
+[PASS] test_unregisteredKey_reverts() (gas: 259332)
+[PASS] test_voucherCeilingAboveClaim_paysClaimedTotal() (gas: 371841)
+[PASS] test_wrongMeasurement_reverts() (gas: 258759)
+[PASS] test_x402SignatureRoutesCannotBypassGate() (gas: 143623)
+[PASS] test_zeroEntryNeverMatches() (gas: 231432)
+[PASS] test_zeroModelPin_reverts() (gas: 221295)
+[PASS] test_zeroPayoutPin_reverts() (gas: 239702)
+Suite result: ok. 47 passed; 0 failed; 0 skipped; finished in 37.83ms (36.15ms CPU time)
+
+Ran 5 tests for test/ReReview.t.sol:ReReviewTest
+[PASS] test_RR1_modelPinnedChannel_legacyRedeemMustRevert() (gas: 447257)
+[PASS] test_RR2_zeroRefBlockHash_quoteStockpiledForAYear_mustNotRegister() (gas: 2402698)
+[PASS] test_RR3_sameReceiptPaysTwiceWithDifferentRequestHash_mustRevert() (gas: 554681)
+[PASS] test_RR4_erc1271AgentRotatesOwner_voidsUnredeemedVouchers() (gas: 645332)
+[PASS] test_RR4b_eoaAgentGainsCodeAfterSigning_providerMustStillBePaid() (gas: 749366)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 3.70ms (2.97ms CPU time)
+
+Ran 4 tests for test/ReReview2.t.sol:ReReview2Test
+[PASS] test_F1_delegatedAtOpen_delegateWithout1271_providerMustBePaid() (gas: 648194)
+[PASS] test_F1_delegatedAtOpen_revokesDelegation_providerMustStillBePaid() (gas: 697166)
+[PASS] test_F2_contractOpenedFromConstructor_providerMustBePaid() (gas: 741081)
+[PASS] test_fixGuard_contractAgent_strangerEcdsaStillRejected() (gas: 626494)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 3.97ms (3.28ms CPU time)
+
+Ran 1 test for test/AgentAccountInvariant.t.sol:AgentAccountInvariantTest
+[PASS] invariant_agentCannotDrain() (runs: 48, calls: 1920, reverts: 0)
+
+╭--------------+-----------------------+-------+---------+----------╮
+| Contract     | Selector              | Calls | Reverts | Discards |
++===================================================================+
+| AgentHandler | agentExecute          | 331   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | agentPropose          | 309   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | agentSigns1271        | 321   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | agentTriesOwnerPowers | 332   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | ownerSetLimits        | 320   | 0       | 0        |
+|--------------+-----------------------+-------+---------+----------|
+| AgentHandler | ownerTogglePause      | 307   | 0       | 0        |
+╰--------------+-----------------------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 945.75ms (939.73ms CPU time)
+
+Ran 13 tests for test/AssayRealUSDGFork.t.sol:AssayRealUSDGForkTest
+[PASS] test_demo_L_providerDelaysCloseWithStaggeredRedeems() (gas: 818486)
+[PASS] test_demo_M1_unfreezeRestoresRefund() (gas: 310046)
+[PASS] test_demo_M2_wipeBurnsEscrow() (gas: 316773)
+[PASS] test_demo_frozenProvider_cannotRedeem_agentRefunded() (gas: 497850)
+[PASS] test_fact_permitDomain() (gas: 19928)
+[PASS] test_fork_openChannelWithPermit_realUSDG() (gas: 262406)
+[PASS] test_fork_permitFrontrun_stillOpens() (gas: 272324)
+[PASS] test_fork_permitValueMustEqualAmount() (gas: 81911)
+[PASS] test_fork_threeRedeems_payProviderExactDelta() (gas: 818976)
+[PASS] test_fork_wrongPermitDomain_surfacesAsBadParams() (gas: 80022)
+[PASS] test_issuerRisk_frozenAgentRefundStuck() (gas: 314541)
+[PASS] test_issuerRisk_frozenAssayStrandsAllChannels() (gas: 497319)
+[PASS] test_issuerRisk_pauseDuringChallengeWindowVoidsProviderVoucher() (gas: 467094)
+Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 1.13s (18.61ms CPU time)
+
+Ran 5 tests for test/AgentAccountWindow.t.sol:AgentAccountWindowTest
+[PASS] testFuzz_window_matchesReferenceModel(uint256) (runs: 256, μ: 3784217, ~: 3725257)
+[PASS] test_window_approvedTradesNotRecorded() (gas: 832665)
+[PASS] test_window_hour24Boundary() (gas: 881434)
+[PASS] test_window_readsAllTwentyFiveBuckets() (gas: 3595189)
+[PASS] test_window_slotReuseResets() (gas: 778722)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 2.05s (2.06s CPU time)
+
+Ran 7 tests for test/ChironGateFork.t.sol:ChironGateForkTest
+[PASS] test_forkClaim_afterLiveExpiry_reverts() (gas: 145429)
+[PASS] test_forkClaim_fixtureKeyNotRegisteredLive_reverts() (gas: 143710)
+[PASS] test_forkClaim_modelSwapVector_reverts() (gas: 135630)
+[PASS] test_forkClaim_paysAgainstLiveRegistry() (gas: 247989)
+[PASS] test_forkClaim_wrongMeasurement_reverts() (gas: 143523)
+[PASS] test_liveRegistry_holdsPhalaKey() (gas: 13913)
+[PASS] test_liveVerifier_fixtureVectors() (gas: 32390)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 6.05s (5.69s CPU time)
+
+Ran 4 tests for test/AgentAccountRHCFork.t.sol:AgentAccountRHCForkTest
+[PASS] test_fork_deployScript_readBack() (gas: 22330356)
+[PASS] test_fork_poolManagerIsCanonicalBuild() (gas: 22376517)
+[PASS] test_fork_stockPaused_revertsTrade_otherTokenWithdrawWorks() (gas: 23008527)
+[PASS] test_fork_swapTSLA_throughCanonicalPoolManager() (gas: 22893268)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 16.92s (64.59s CPU time)
+
+Ran 2 tests for test/AssayFuzz.t.sol:AssayFuzzTest
+[PASS] testFuzz_redeem_cumulativeNeverExceedsDeposit(uint128,uint8,uint256) (runs: 256, μ: 1104407, ~: 907153)
+[PASS] testFuzz_redeem_singleVoucherCannotExceedDeposit(uint128,uint256) (runs: 256, μ: 431225, ~: 431116)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 17.39s (17.74s CPU time)
+
+Ran 1 test for test/AssayInvariant.t.sol:AssayInvariantTest
+[PASS] invariant_escrowEqualsSumOfDepositMinusPaid() (runs: 256, calls: 128000, reverts: 3195)
+
+╭--------------+----------+-------+---------+----------╮
+| Contract     | Selector | Calls | Reverts | Discards |
++======================================================+
+| AssayHandler | close    | 42628 | 0       | 0        |
+|--------------+----------+-------+---------+----------|
+| AssayHandler | open     | 42810 | 0       | 0        |
+|--------------+----------+-------+---------+----------|
+| AssayHandler | redeem   | 42562 | 3195    | 0        |
+╰--------------+----------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 137.73s (137.73s CPU time)
+
+Ran 21 test suites in 137.74s (182.48s CPU time): 314 tests passed, 0 failed, 0 skipped (314 total tests)
+# make exit=0

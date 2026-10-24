@@ -40,10 +40,26 @@ export function filterAllowedConnectors<T extends Connectable>(connectors: reado
 
 export const shortAddr = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
 
+const codeOf = (e: unknown): number | undefined => {
+  for (let x = e as { code?: unknown; cause?: unknown } | undefined, i = 0; x && i < 5; x = x.cause as typeof x, i++) {
+    if (typeof x.code === 'number') return x.code;
+  }
+  return undefined;
+};
+
+/** What to tell the person when a wallet connection does not complete, by EIP-1193 error code. */
+export function connectHint(e: unknown, wallet: string): string {
+  const code = codeOf(e);
+  if (code === 4001) return `${wallet} did not approve. Open ${wallet}, unlock it if it is locked, approve the connection, then try again.`;
+  if (code === -32002) return `A connection request is already waiting in ${wallet}. Open ${wallet} to approve it.`;
+  return `${wallet} did not connect. Open ${wallet}, check it is unlocked, then try again.`;
+}
+
 export function Wallet() {
   const conn = useConnection();
   const connectors = useConnectors();
-  const { mutate: connect, isPending, error: connectError } = useConnect();
+  const { mutateAsync: connectAsync, isPending } = useConnect();
+  const [hint, setHint] = useState('');
   const { mutate: disconnect } = useDisconnect();
   const { mutate: switchChain } = useSwitchChain();
   const [open, setOpen] = useState(false);
@@ -51,6 +67,25 @@ export function Wallet() {
   const target = chainForPath(useLocation().pathname);
 
   const allowed = filterAllowedConnectors(connectors);
+
+  // A locked Rabby answers wallet_requestPermissions with 4001 and no popup; eth_requestAccounts
+  // raises its unlock prompt, so one retry through it, then a message that says what to do.
+  async function connectTo(c: (typeof allowed)[number]) {
+    setHint('');
+    const label = walletLabel(rdnsOf(c) as string);
+    try {
+      await connectAsync({ connector: c });
+    } catch (e) {
+      if (codeOf(e) !== 4001) return setHint(connectHint(e, label));
+      try {
+        const provider = (await c.getProvider()) as { request: (a: { method: string }) => Promise<unknown> };
+        await provider.request({ method: 'eth_requestAccounts' });
+        await connectAsync({ connector: c });
+      } catch (e2) {
+        setHint(connectHint(e2, label));
+      }
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -87,12 +122,12 @@ export function Wallet() {
               </div>
             ) : (
               allowed.map((c) => (
-                <button key={c.uid} className="wallet-item" role="menuitem" disabled={isPending} onClick={() => connect({ connector: c })}>
+                <button key={c.uid} className="wallet-item" role="menuitem" disabled={isPending} onClick={() => connectTo(c)}>
                   {walletLabel(rdnsOf(c) as string)}
                 </button>
               ))
             )}
-            {connectError && <p className="wallet-err" role="alert">Connection failed. Try again.</p>}
+            {hint && <p className="wallet-err" role="alert">{hint}</p>}
           </div>
         )}
       </div>

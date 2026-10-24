@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signet: trading agents with a provable record and a private strategy</title>
+<meta name="description" content="Signet on Robinhood Chain: every trade receipt names the exact code and model that made it, and followers let only that code trade their Stock Tokens.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Hallmark · macrostructure: Workbench (gate log) · tone: technical · anchor hue: amber 80
+ * theme: web/DESIGN.md gate-log tokens, no catalog rotation · nav: none, keyboard rail · footer: none
+ * Design contract: one idea per slide, headline is the takeaway, evidence sits in a log panel on the right.
+ * Fonts: Archivo (display 600 at 96% width, body 400) + IBM Plex Mono (hashes, labels), Google Fonts link above.
+ * Palette: graphite surfaces, amber = verified, red = refusal only. Spacing 4/8. Radius 6. */
+:root {
+  --color-bg: #121315;
+  --color-panel: #17191c;
+  --color-raise: #1d2024;
+  --color-line: #26292e;
+  --color-ink: #e9e7e2;
+  --color-soft: #b5b3ad;
+  --color-mute: #8d9097;
+  --color-amber: #f2b134;
+  --color-amber-hover: #f7be4f;
+  --color-amber-ink: #1a1405;
+  --color-red: #ef5a4c;
+  --color-amber-wash: rgba(242, 177, 52, 0.1);
+  --color-amber-edge: rgba(242, 177, 52, 0.4);
+  --color-red-wash: rgba(239, 90, 76, 0.1);
+  --color-red-edge: rgba(239, 90, 76, 0.45);
+  --color-glow: rgba(242, 177, 52, 0.07);
+  --color-rail: rgba(18, 19, 21, 0.82);
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --radius: 6px;
+  --text-base: 16px;
+  --text-lead: clamp(17px, 1.5vw, 21px);
+  --text-h2: clamp(30px, 4.4vw, 60px);
+  --text-h1: clamp(34px, 4.6vw, 64px);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 360ms;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; overflow-x: clip; background: var(--color-bg); color: var(--color-ink); }
+html { scroll-behavior: smooth; scroll-snap-type: y proximity; }
+body {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  background-image: radial-gradient(900px 500px at 88% -6%, var(--color-glow), transparent 70%);
+  background-attachment: fixed;
+}
+a { color: var(--color-ink); text-decoration-color: var(--color-mute); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--color-amber); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--color-amber); outline-offset: 3px; border-radius: 3px; }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+
+.slide {
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-2xl);
+  align-items: center;
+  padding: var(--space-2xl) clamp(24px, 6vw, 96px) var(--space-2xl) clamp(24px, 9vw, 150px);
+  border-bottom: 1px solid var(--color-line);
+}
+.slide.wide { grid-template-columns: minmax(0, 1fr); }
+.slide > .foot { grid-column: 1 / -1; margin: 0; }
+h1, h2 {
+  margin: 0;
+  font-weight: 600;
+  font-stretch: 96%;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  font-style: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+h1 { font-size: var(--text-h1); }
+h2 { font-size: var(--text-h2); }
+.lead { margin: var(--space-lg) 0 0; max-width: 34em; color: var(--color-soft); font-size: var(--text-lead); }
+.lead b { color: var(--color-ink); font-weight: 500; }
+.red { color: var(--color-red); }
+.src { margin: var(--space-lg) 0 0; max-width: 52em; color: var(--color-mute); font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; }
+.src a { color: var(--color-soft); }
+
+.rail {
+  position: fixed; top: 0; left: 0; bottom: 0; width: clamp(24px, 4.4vw, 64px);
+  border-right: 1px solid var(--color-line);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: var(--space-lg) 0; z-index: 5; background: var(--color-rail); backdrop-filter: blur(6px);
+}
+.rail .mark { writing-mode: vertical-rl; transform: rotate(180deg); font-stretch: 115%; font-weight: 600; letter-spacing: 0.32em; font-size: 12px; color: var(--color-soft); }
+.rail .pos { font-family: var(--font-mono); font-size: 11px; color: var(--color-mute); writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.1em; }
+.rail .pos b { color: var(--color-amber); font-weight: 500; }
+
+.panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.panel-head {
+  display: flex; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap;
+  padding: 12px 18px; border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-mute);
+}
+.row {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 0 14px;
+  padding: 16px 18px; border-bottom: 1px solid var(--color-line);
+}
+.row:last-child { border-bottom: 0; }
+.row .what { margin: 6px 0 0; color: var(--color-soft); font-size: 15px; }
+.dot { width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: var(--color-amber); box-shadow: 0 0 0 4px var(--color-amber-wash); }
+.dot.ring { background: transparent; border: 2px solid var(--color-red); box-shadow: 0 0 0 4px var(--color-red-wash); }
+.dot.idle { background: var(--color-mute); box-shadow: none; }
+.row h3 { margin: 0; font-size: 17px; font-weight: 500; letter-spacing: -0.01em; display: flex; gap: var(--space-sm); align-items: baseline; flex-wrap: wrap; }
+.tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; border: 1px solid var(--color-line); color: var(--color-soft); }
+.tag.ok { color: var(--color-amber); border-color: var(--color-amber-edge); }
+.tag.no { color: var(--color-red); border-color: var(--color-red-edge); }
+dl.kv { margin: 10px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; font-size: 14px; }
+dl.kv dt { color: var(--color-mute); font-family: var(--font-mono); font-size: 11.5px; padding-top: 2px; }
+dl.kv dd { margin: 0; color: var(--color-ink); min-width: 0; overflow-wrap: anywhere; }
+dl.kv dd.mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+.hash-big { font-family: var(--font-mono); font-size: clamp(15px, 1.7vw, 22px); line-height: 1.5; color: var(--color-ink); overflow-wrap: anywhere; margin: 14px 0 4px; }
+.hash-big i { font-style: normal; color: var(--color-amber); }
+.actions { display: flex; gap: var(--space-md); flex-wrap: wrap; margin-top: var(--space-xl); }
+.btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: var(--radius); font-weight: 500; text-decoration: none; white-space: nowrap; border: 1px solid var(--color-line); color: var(--color-ink); transition: background var(--dur) var(--ease-out), transform 120ms var(--ease-out); }
+.btn.primary { background: var(--color-amber); border-color: var(--color-amber); color: var(--color-amber-ink); }
+.btn:hover { background: var(--color-raise); }
+.btn.primary:hover { background: var(--color-amber-hover); }
+.btn:active { transform: translateY(1px); }
+
+blockquote { margin: 0; padding: 0 0 0 var(--space-lg); border-left: 2px solid var(--color-amber); }
+blockquote p { margin: 0; font-size: clamp(19px, 2vw, 27px); line-height: 1.4; letter-spacing: -0.01em; }
+blockquote cite { display: block; margin-top: var(--space-md); font-style: normal; font-family: var(--font-mono); font-size: 12px; color: var(--color-mute); }
+blockquote.small { border-left-color: var(--color-line); margin-top: var(--space-xl); }
+blockquote.small p { font-size: clamp(16px, 1.4vw, 19px); color: var(--color-soft); }
+blockquote.below { margin-top: var(--space-xl); }
+.zero { font-stretch: 110%; font-weight: 600; letter-spacing: -0.05em; line-height: 0.9; font-size: clamp(88px, 15vw, 210px); margin: 0; }
+.zero span { color: var(--color-mute); }
+
+.flow { list-style: none; margin: var(--space-xl) 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--color-line); border-radius: var(--radius); background: var(--color-panel); }
+.flow li { padding: 20px 18px 22px; border-right: 1px solid var(--color-line); position: relative; min-width: 0; }
+.flow li:last-child { border-right: 0; background: var(--color-amber-wash); }
+.flow li::after { content: ""; position: absolute; top: 26px; right: -6px; width: 11px; height: 11px; background: var(--color-panel); border-top: 1px solid var(--color-mute); border-right: 1px solid var(--color-mute); transform: rotate(45deg); z-index: 1; }
+.flow li:last-child::after { display: none; }
+.flow h3 { margin: 0 0 8px; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.flow p { margin: 0; color: var(--color-soft); font-size: 14px; }
+.flow .tagline { color: var(--color-amber); font-family: var(--font-mono); font-size: 12px; display: block; margin-bottom: 10px; }
+
+.steps { list-style: none; margin: 0; padding: 0; }
+.steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 0 14px; padding: 16px 18px; border-bottom: 1px solid var(--color-line); }
+.steps li:last-child { border-bottom: 0; }
+.steps h3 { margin: 0; font-size: 17px; font-weight: 500; }
+.steps p { margin: 4px 0 0; color: var(--color-soft); font-size: 14.5px; }
+.steps code { color: var(--color-amber); }
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-family: var(--font-mono); font-weight: 400; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-mute); padding: 12px 18px; border-bottom: 1px solid var(--color-line); }
+td { padding: 14px 18px; border-bottom: 1px solid var(--color-line); vertical-align: top; font-size: 14.5px; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { color: var(--color-ink); font-weight: 500; }
+td.num { font-family: var(--font-mono); font-size: 13px; color: var(--color-amber); font-variant-numeric: tabular-nums; }
+td .s { display: block; color: var(--color-mute); font-family: var(--font-mono); font-size: 11px; margin-top: 3px; font-weight: 400; }
+
+.targets { list-style: none; margin: 0; padding: 0; }
+.targets li { display: grid; grid-template-columns: minmax(0, 16ch) minmax(0, 1fr); gap: 4px 18px; padding: 14px 18px; border-bottom: 1px solid var(--color-line); }
+.targets li:last-child { border-bottom: 0; }
+.targets b { font-weight: 500; overflow-wrap: anywhere; }
+.targets span { color: var(--color-soft); font-size: 14.5px; }
+.close { margin: var(--space-xl) 0 0; font-size: clamp(20px, 2.2vw, 30px); letter-spacing: -0.02em; font-stretch: 96%; font-weight: 500; }
+.close em { font-style: normal; color: var(--color-amber); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .slide .panel, .slide h1, .slide h2, .flow { opacity: 0; transform: translateY(10px); transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out); }
+  .slide.in .panel, .slide.in h1, .slide.in h2, .slide.in .flow { opacity: 1; transform: none; }
+  .slide.in .panel { transition-delay: 90ms; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+@media (max-width: 960px) {
+  .slide { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); padding: var(--space-xl) 20px var(--space-xl) 52px; align-items: start; }
+  .flow { grid-template-columns: minmax(0, 1fr); }
+  .flow li { border-right: 0; border-bottom: 1px solid var(--color-line); }
+  .flow li:last-child { border-bottom: 0; }
+  .flow li::after { display: none; }
+  .targets li { grid-template-columns: minmax(0, 1fr); }
+  dl.kv { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  dl.kv dd { margin-bottom: 8px; }
+  .btn { white-space: normal; }
+  .rail { width: 32px; }
+  table, tbody, tr, td { display: block; }
+  thead { display: none; }
+  tr { border-bottom: 1px solid var(--color-line); padding: 6px 0; }
+  tr:last-child { border-bottom: 0; }
+  td { border-bottom: 0; padding: 8px 18px 0; overflow-wrap: anywhere; }
+  td.num { padding-top: 2px; padding-bottom: 8px; }
+}
+@media print {
+  .rail { display: none; }
+  .slide { break-after: page; min-height: 0; height: 100vh; }
+  .slide .panel, .slide h1, .slide h2, .flow { opacity: 1 !important; transform: none !important; }
+}
+</style>
+</head>
+<body>
+
+<nav class="rail" aria-label="Deck position">
+  <span class="mark">SIGNET</span>
+  <span class="pos" id="pos" aria-live="polite"><b>1</b> / 10</span>
+</nav>
+
+<main id="deck">
+
+<section class="slide" aria-labelledby="s1">
+  <div>
+    <h1 id="s1">A trading agent's record belongs to its code.</h1>
+    <p class="lead"><b>Signet</b> puts AI trading agents on Robinhood Chain whose track record is provable and whose strategy stays private. Every trade's receipt names the exact code and model that made it. Followers let that code, and only that code, trade their Stock Tokens.</p>
+    <div class="actions">
+      <a class="btn primary" href="https://chiron-receipts.vercel.app">Open the app</a>
+      <a class="btn" href="https://github.com/pranjalcodesinw3/chiron">Read the repo</a>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span>TradeExecuted</span><span>Robinhood Chain testnet, 46630</span></div>
+    <div class="row">
+      <span class="dot" aria-hidden="true"></span>
+      <div>
+        <h3>The code behind this trade <span class="tag ok">attested</span></h3>
+        <p class="hash-big"><i>0xeb2d9462</i>332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396<i>829</i></p>
+        <dl class="kv">
+          <dt>emitted by</dt><dd class="mono">AgentAccount 0x9c69...Aaa6D</dd>
+          <dt>block</dt><dd class="mono">127,188,951</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <p class="src foot">Measurement read from the <code>TradeExecuted</code> log of <a href="https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03">tx 0x0023f359...3b03</a> with <code>cast receipt</code>, 2026-10-24.</p>
+</section>
+
+<section class="slide" aria-labelledby="s2">
+  <div>
+    <h2 id="s2">Zero of 22 viral AI-bot PnL posts could be checked.</h2>
+    <p class="lead">Followers cannot tell which code is behind a record, and creators cannot publish the strategy to prove it without giving it away.</p>
+    <blockquote class="small">
+      <p>Until an agent can prove its track record without human intervention, it's just a cool demo.</p>
+      <cite>@AndresLeo383120, 522 followers, 2026-07-14</cite>
+    </blockquote>
+  </div>
+  <div>
+    <p class="zero" aria-label="0 of 22">0<span>/22</span></p>
+    <blockquote class="below">
+      <p>I vetted 22 viral "my AI trading bot made 200x" posts. Posts that showed a verifiable 10x+ return: 0. Posts that gave a wallet address you could check: 0.</p>
+      <cite><a href="https://x.com/Meta_ZET/status/2110788179754094667">@Meta_ZET</a>, 7,320 followers, 2026-10-15</cite>
+    </blockquote>
+  </div>
+  <p class="src foot">Both posts re-read through api.fxtwitter.com on 2026-10-24; text is verbatim. Follower counts are fxtwitter's at that read.</p>
+</section>
+
+<section class="slide" aria-labelledby="s3">
+  <div>
+    <h2 id="s3">Limits cap the loss. Nothing says whose code is trading.</h2>
+    <p class="lead">Over <b>150,000 customers</b> have opened agentic trading accounts at Robinhood, and agents use its tools almost <b>30 million times a day</b>. The account is the safety net. The identity of the agent is the open question.</p>
+    <p class="src">Robinhood newsroom, HOOD Summit, <a href="https://robinhood.com/us/en/newsroom/hood-summit-2026/">2026-09-29</a>.</p>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span>Robinhood Agents</span><span>what the account answers</span></div>
+    <div class="row">
+      <span class="dot" aria-hidden="true"></span>
+      <div><h3>How much can it lose <span class="tag ok">answered</span></h3><p class="what">Limits you set. Trade approvals on by default.</p></div>
+    </div>
+    <div class="row">
+      <span class="dot idle" aria-hidden="true"></span>
+      <div><h3>Which code is trading <span class="tag">open</span></h3><p class="what">"Robinhood does not control, supervise, monitor, recommend, or audit agents."</p></div>
+    </div>
+    <div class="row">
+      <span class="dot idle" aria-hidden="true"></span>
+      <div><h3>Did that code earn the record <span class="tag">open</span></h3><p class="what">A screenshot or a wallet link shows a balance. It does not show who made it.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide wide" aria-labelledby="s4">
+  <div>
+    <h2 id="s4">The chain records which code traded.</h2>
+    <p class="lead">The strategy stays in the enclave. What reaches the chain is the code's measurement, the model's hash and a hash of each request and response.</p>
+  </div>
+  <ol class="flow">
+    <li><span class="tagline">enclave</span><h3>Intel TDX CVM</h3><p>The agent generates its trading key here. Prompts and strategy never leave.</p></li>
+    <li><span class="tagline">quote</span><h3>Attestation</h3><p>Commits to the key and to a nonce from the last 256 L2 blocks. It cannot be banked in advance.</p></li>
+    <li><span class="tagline">Stylus Verifier</span><h3>Intel's root</h3><p>Walks the certificate chain, rejects debug mode, returns a measurement over nine TD fields.</p></li>
+    <li><span class="tagline">AgentAccount</span><h3>Follower approves</h3><p>Stores the key only if the follower approved that exact measurement.</p></li>
+    <li><span class="tagline">TradeExecuted</span><h3>Receipt names it</h3><p>Measurement, served model hash, request hash, response hash, amounts.</p></li>
+  </ol>
+  <p class="src">Contracts on chain 46630: Stylus <code>Verifier</code> <a href="https://explorer.testnet.chain.robinhood.com/address/0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c">0x3c19...AF8c</a>, <code>ReceiptVerifier</code> <a href="https://explorer.testnet.chain.robinhood.com/address/0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380">0x9AF7...2380</a>, and <code>AgentAccount</code> in <code>contracts/src/</code>.</p>
+</section>
+
+<section class="slide" aria-labelledby="s5">
+  <div>
+    <h2 id="s5">The attested trade names its code and its model.</h2>
+    <p class="lead">The agent bought TSLA with 1 Paxos USDG. The event records the workload that made the trade. Any agent can recheck it: <code>verify_receipt</code> on the hosted MCP server answers <b>verified: true</b> with seven checks, and <b>false</b> against any other model hash.</p>
+    <div class="actions">
+      <a class="btn primary" href="https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03">Open the transaction</a>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span>TradeExecuted, tradeId 3</span><span>block 127,188,951</span></div>
+    <div class="row">
+      <span class="dot" aria-hidden="true"></span>
+      <div>
+        <h3>Bought TSLA <span class="tag ok">executed</span></h3>
+        <dl class="kv">
+          <dt>agentMeasurement</dt><dd class="mono">0xeb2d9462332712d80fc18b2a8c07124096b55c3f94a8c8de6ff34692e9396829</dd>
+          <dt>servedModelHash</dt><dd class="mono">0xc8536dbf086093b9b12c84bc9c4448f0c36c74d9b4a65cda6667d9d99f78df59</dd>
+          <dt>amountIn</dt><dd>1.000000 USDG (Paxos)</dd>
+          <dt>amountOut</dt><dd>0.003910026278631909 TSLA</dd>
+          <dt>gas</dt><dd class="mono">504,449</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <p class="src foot">Fields decoded from the log data with <code>cast receipt</code> and the event definition in <code>contracts/src/AgentAccount.sol</code>, 2026-10-24. MCP result: "Agents can check Chiron themselves" in <a href="../docs/ENGINEERING.md">docs/ENGINEERING.md</a>.</p>
+</section>
+
+<section class="slide" aria-labelledby="s6">
+  <div>
+    <h2 id="s6">A different workload is refused on chain.</h2>
+    <p class="lead">A genuine Intel TDX quote from another workload, Phala's inference gateway, was submitted to <code>registerAgent</code>. The hardware is real and the code is not the one the owner approved. A new measurement is a new agent with an empty record.</p>
+    <div class="actions">
+      <a class="btn primary" href="https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8">Open the refusal</a>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span>registerAgent</span><span>block 127,632,496</span></div>
+    <div class="row">
+      <span class="dot ring" aria-hidden="true"></span>
+      <div>
+        <h3>Refused <span class="tag no">reverted</span></h3>
+        <dl class="kv">
+          <dt>error</dt><dd class="mono red">MeasurementNotApproved(0xfd34caab...0149)</dd>
+          <dt>checked first</dt><dd>The full quote, by the Stylus Verifier</dd>
+          <dt>gas spent</dt><dd class="mono">2,349,054</dd>
+          <dt>agent()</dt><dd>unchanged</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <p class="src foot">Status failed and gas from <code>cast receipt</code> on 2026-10-24; decoded error and read-back in <a href="../docs/ENGINEERING.md">docs/ENGINEERING.md</a>, "Refusals anyone can replay".</p>
+</section>
+
+<section class="slide" aria-labelledby="s7">
+  <div>
+    <h2 id="s7">Followers approve one hash. Limits sit underneath.</h2>
+    <p class="lead">Following is a call on the follower's own account. Funds never leave it, and the account, not the agent, calls the Uniswap v4 PoolManager.</p>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span>Follower's account</span><span>enforced in the swap transaction</span></div>
+    <ol class="steps">
+      <li><span class="dot" aria-hidden="true"></span><div><h3>Approve a measurement</h3><p><code>setMeasurement(hash, true)</code>. The agent is admitted only against a fresh quote that carries it.</p></div></li>
+      <li><span class="dot" aria-hidden="true"></span><div><h3>Set the caps</h3><p><code>setLimits</code>: per-trade, rolling 24 hours, and an approval threshold. Bigger trades wait for the owner.</p></div></li>
+      <li><span class="dot" aria-hidden="true"></span><div><h3>Settle by balance delta</h3><p>The swap reverts unless the account spent no more than <code>amountIn</code> and received at least <code>minOut</code>.</p></div></li>
+      <li><span class="dot ring" aria-hidden="true"></span><div><h3>Unapprove and the agent is out</h3><p>Same transaction, <a href="https://explorer.testnet.chain.robinhood.com/tx/0x0b34701eaee5f698b39988a13810e835abee437363093ebc8949ae89bc258382"><code>AgentRevoked</code></a>. The next trade reverts <code>NotAgent</code>.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<section class="slide" aria-labelledby="s8">
+  <div>
+    <h2 id="s8">Robinhood Chain and Stylus make the check affordable.</h2>
+    <p class="lead">The assets are Robinhood's own Stock Tokens. The venue is the canonical Uniswap v4. The heavy part, an Intel certificate chain in P-256, runs in Rust on Stylus inside the same transaction that admits the key.</p>
+  </div>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Fact</th><th>Figure</th></tr></thead>
+      <tbody>
+        <tr><td>Verifier on a fresh Phala TDX quote<span class="s">cast estimate, chain 46630, docs/ENGINEERING.md</span></td><td class="num">2,371,819 gas</td></tr>
+        <tr><td>Uniswap v4 PoolManager<span class="s">runtime code hash equal on testnet and mainnet</span></td><td class="num">0x8366...0951</td></tr>
+        <tr><td>Stock Token<span class="s">Robinhood official testnet TSLA</span></td><td class="num">0xC9f9...d4E</td></tr>
+        <tr><td>Forge suites on a clean clone<span class="s">docs/test-logs, commit bac4c37</span></td><td class="num">314 passed, 0 failed</td></tr>
+        <tr><td>Mutation run on AgentAccount<span class="s">docs/security/agent-account-mutations.md</span></td><td class="num">109 of 110 killed</td></tr>
+        <tr><td>Corporate-action guard<span class="s">ERC-8056, refuses trades around a split</span></td><td class="num">CorporateActionPending</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="slide" aria-labelledby="s9">
+  <div>
+    <h2 id="s9">Creators earn on new profit. Followers pay for an admitted agent.</h2>
+    <p class="lead">Public-PnL venues already hold the audience, and none of them can say which code trades. Hyperliquid lists <b>9,478 vaults</b> with <b>$405,600,393</b> of summed TVL, and a vault leader can swap the bot without the record showing it.</p>
+    <p class="src">Hyperliquid <code>stats-data.hyperliquid.xyz/Mainnet/vaults</code>, read 2026-10-24.</p>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span>Revenue</span><span>settles as a transfer the follower signs</span></div>
+    <div class="row">
+      <span class="dot" aria-hidden="true"></span>
+      <div><h3>Performance fee</h3><p class="what">A share of profit above the follower's high-water mark, so the creator is paid only for new profit. Signet takes a share of the fee.</p></div>
+    </div>
+    <div class="row">
+      <span class="dot" aria-hidden="true"></span>
+      <div><h3>Follower subscription</h3><p class="what">A flat monthly fee for an admitted agent. Signet takes a share of the fee.</p></div>
+    </div>
+    <div class="row">
+      <span class="dot idle" aria-hidden="true"></span>
+      <div><h3>Enforced by the account</h3><p class="what">The code that may trade, the model it may use and the limits it may not pass.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" aria-labelledby="s10">
+  <div>
+    <h2 id="s10">The ask: introductions to the builders already trading Stock Tokens.</h2>
+    <p class="lead">They run bots on Robinhood Chain today and publish returns nobody can verify. Their next record can be a measurement.</p>
+    <p class="close">A record you can verify. A strategy <em>you keep</em>.</p>
+    <div class="actions">
+      <a class="btn primary" href="https://chiron-receipts.vercel.app">chiron-receipts.vercel.app</a>
+      <a class="btn" href="https://github.com/pranjalcodesinw3/chiron">github.com/pranjalcodesinw3/chiron</a>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span>First creators to approach</span><span>read 2026-10-24</span></div>
+    <ul class="targets">
+      <li><b><a href="https://x.com/Arcana_Arena">@Arcana_Arena</a></b><span>Agent competition on chain 4663: 51 agents, 40 creators, 680 settled trades at block 95,182,673</span></li>
+      <li><b><a href="https://x.com/HarmonicAgents">@HarmonicAgents</a></b><span>Autonomous agent, 2,502 followers, posts Stock Token pool volume</span></li>
+      <li><b><a href="https://github.com/Meridian402/meridian">Meridian402</a></b><span>Market-making agent in tokenized stocks on Uniswap v4</span></li>
+      <li><b><a href="https://x.com/DeployFinance">@DeployFinance</a></b><span>$100,000 agent wallet, 70 days, 7,285 followers</span></li>
+      <li><b><a href="https://x.com/GrowiHF">@GrowiHF</a></b><span>Hyperliquid vault, +$2,939,277 all-time PnL, strategy undisclosed</span></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var pos = document.getElementById('pos');
+  var current = 0;
+  function show(i) { pos.innerHTML = '<b>' + (i + 1) + '</b> / ' + slides.length; }
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          if (e.intersectionRatio > 0.5) { current = slides.indexOf(e.target); show(current); }
+        }
+      });
+    }, { threshold: [0.15, 0.55] });
+    slides.forEach(function (s) { io.observe(s); });
+  } else {
+    slides.forEach(function (s) { s.classList.add('in'); });
+  }
+  slides[0].classList.add('in');
+  setTimeout(function () { slides.forEach(function (s) { s.classList.add('in'); }); }, 1800);
+  function go(i) {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    slides[current].scrollIntoView({ block: 'start' });
+    show(current);
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'ArrowDown' || k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); go(current + 1); }
+    else if (k === 'ArrowUp' || k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); go(current - 1); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(slides.length - 1); }
+  });
+  show(0);
+})();
+</script>
+</body>
+</html>

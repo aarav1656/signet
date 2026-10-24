@@ -10,7 +10,9 @@
     "ReceiptVerifier": "0x9AF7D9C3B27c4A8a11Fb879041B931C38B712380",
     "TSLA": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
     "TestUSDG": "0x3500DaF0ADcE615A0bEF108FF0751ABb34b1FfCC",
-    "Verifier": "0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c"
+    "Verifier": "0x3c19C10E5C9a82D01ED79E5c6026D73B9b2CAF8c",
+    "AgentAccountFactoryUSDG": "0xB9F7eB234C2F562475668c1Dc9b6850f235373c3",
+    "AgentAccountFactoryGuarded": "0x14103f1928AB34b45Cc376fF56fb59d798Deed03"
   },
   "deployer": "0x2aD12a72362704367e99a344cFf5affDDF7f5DEF",
   "inferenceChannelId": 0,
@@ -354,5 +356,132 @@
         "block": 127188951
       }
     ]
+  },
+  "refusalDemo": [
+    {
+      "step": "stolen signer: registerAgent with a real Phala gateway TDX quote over this account attestNonce, reverted MeasurementNotApproved(0xfd34caab...0149)",
+      "hash": "0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8",
+      "block": 127632496
+    },
+    {
+      "step": "Assay channel 1 openChannel pinned to phala/qwen3.8-27b-uncensored",
+      "hash": "0x7770a689e6c7445d43b64cbcabb665e4924b62412562bf6b9274fed61818a9f2",
+      "block": 127634074
+    },
+    {
+      "step": "Assay redeemWithReceipt on channel 1 with the first trade real Phala receipt (served llama3-3-70b), reverted ModelMismatch, paid 0",
+      "hash": "0xfe0f13f09e8dc00f99ad8d94024352a127f21150a9340497d3288aec96818eab",
+      "block": 127634120
+    },
+    {
+      "step": "USDG Assay redeemWithReceipt on channel 0 (permit-opened, pinned to phala/qwen3.8-27b-uncensored) with the first trade real Phala receipt and a 1 USDG voucher, reverted ModelMismatch, paid 0",
+      "hash": "0x9f2bd92252dce7827bebac226e269f46956e4d5cc368eb3f6dc7e8253eca8bdb",
+      "block": 127658321
+    }
+  ],
+  "agentCvmBoot3": {
+    "startedAt": "2026-10-02T14:03:15Z",
+    "agent": "0x00e052627F691ca075BCd0dbc7220B5708551579",
+    "measurement": "0x0793ff52158fe39bc866db8fbf1f828906fd5f7ab628007586b5fea5ef9431b0",
+    "setMeasurement": "0x2186a1c6fe7e3b2257a991e4e6ad6c59a24ecc4b03786b26d7309b79942f93f7",
+    "registerAgent": "0x470b7b86b5b55b1fc29c0369acdbc2cdc0bb0bf21d34b5a982e3ffd03867029e",
+    "keeperRenewal": "0xbb5b3f0236640f4fca532fe793e1dd205281def2ee19c39b4c6bef842e74f119"
+  },
+  "usdgAssay": {
+    "address": "0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d",
+    "usdg": "0x7E955252E15c84f5768B83c41a71F9eba181802F",
+    "deployTx": "0xb26c84951b40601c9392a2e0e6ad3c451b7a4443ba1a307df5461b065a8aadcd",
+    "sourceVerified": "Blockscout, Pass - Verified",
+    "register": "0xf82fbe2ff2ca2307ab5e37c9aacabc592a2c0e0a96568b2386b49323170bfec9",
+    "registerReceiptKey": "0x24c1c46d3f60a9704d31ee78201b8eefbf8b385c6192e319469d5193f2c40716",
+    "openChannelWithPermit": {
+      "hash": "0xb8ea952fca22696105f5a0bdf65a416d92cbe52c1615639957e84edb0cb06e47",
+      "block": 127639515,
+      "channelId": 0,
+      "amount": "1000000",
+      "permitNonce": "0 -> 1",
+      "pinnedModel": "phala/qwen3.8-27b-uncensored"
+    }
+  },
+  "agentCvmBoot4": {
+    "updatedAt": "2026-10-02T14:30Z",
+    "change": "sealed CONTROL_TOKEN replaced via phala deploy --cvm-id, same compose and image",
+    "agent": "0xc662FFE967a845dCB96b75333b6C5853355f93E6",
+    "measurement": "0xe1a2b8938825d678136ad8a4841e6f0f97a3e2c91c330cb85364de26c40ab6d0",
+    "setMeasurement": "0x3ef0c65562fb503b68b72fc226fb89fa49c1ebfc207d69368a174fd630807450",
+    "registerAgent": "0xa45b46c61c579c083eea5a5b044f343ad847b64ddfdae356758b6e9ac1b89798"
+  },
+  "operatorCvm": {
+    "url": "https://e39de5552f988e69e573236137089c81cfbe21d9-8080.dstack-pha-prod5.phala.network",
+    "image": "ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f1867126d58ee3e99cf1fef4fc8d253c68dbe5bed41db6eb3f33aa5a201463",
+    "agent": "0x71f15e33d967F9b0d573Cb03CfE3e7fdBDFd3461",
+    "measurement": "0x993bd67c8e9de5d37d9af6ef41c5c5fdb53b113b8a2b666827e0e619f4978e9a",
+    "accounts": [
+      {
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+        "setMeasurement": "0x04ec2e370aa393624ed55c0b0b6679f5a4b8c69063af5af62676536ea242396a",
+        "registerAgent": "0x2889f10bf20edff1fa512f52b99d3eb76ac903becdc9410c70a13e11abded196",
+        "keeperRenewal": "0x20209f03a0232b7db7406b69ab68c265340e0d316688ad71aea29089768f5555"
+      },
+      {
+        "account": "0xE1d7939105cF8B3670d6b4a0E15546C036e6c34c",
+        "createAccount": "0xbb77ffc9a2e5f5cda88e9176a0417758da30c9b8dd8e918dee15cb3d5824dae5",
+        "setMeasurement": "0x12b819825766c94efb8f78c7637f56e535c5d68244df1b6c5a9294f51071003f",
+        "registerAgent": "0xdb52757ab39240be57a4aebd3980a57d4bb8c4d8601722e2774f32ab8f87f04e",
+        "revokeOnThisAccountOnly": "0x1d34d37a52a7e099a9741ffa2ff04fbd0e09e9dabefb5731a0f93cee635b8008",
+        "reapprove": "0x47eb49a788edcd1ec319fb5dd0457809c7dae3ac492262669527205ac9acc17e",
+        "readmit": "0x8737f5cb2d091b154af0a722ebd1dc2bea1c891cbdeb9730ae1afffbd9487806",
+        "keeperRenewal": "0xb6e4dc44288956d22d443ff137326932b1093e484a7e6bc8bc57f59dbc90aa4e"
+      },
+      {
+        "account": "0x06AAadCc83873775D8A72F42B912f57ab3dc2506",
+        "registerAgent": "0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d"
+      },
+      {
+        "account": "0xFaaAa4d1ee944d317b10233505D8c57425C53b55",
+        "registerAgent": "0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a"
+      },
+      {
+        "account": "0x5492A8e671D37e5785020c02b83cA5603be8D5D7",
+        "origin": "created by the wallet click-through 2026-10-02 from factory v3",
+        "setModelQwen": "0xc8ec39310084aaff6771091f102a4adfedd77360afebbcca019b35231aa0fc05",
+        "setMeasurement": "0x09df1cc341102366a61c3442f7357a8376b7215e0b4f0eb36e21ad6cb5670386",
+        "registerAgent": "0x4afb0cf96fc6270d838b451987a6a646b3a4d72f6d2945f3db525bc4894115f6"
+      }
+    ]
+  },
+  "usdgAccount": {
+    "factory": "0xB9F7eB234C2F562475668c1Dc9b6850f235373c3",
+    "factoryDeployTx": "0x156a77dd47ce853f566b680eb9a62e7cf73a330916013c738d20cc2e6c2302bd",
+    "account": "0x06AAadCc83873775D8A72F42B912f57ab3dc2506",
+    "createAccount": "0x3e84210cd9afd753028a35e8d84aa2330c12e7e8b3e5808e07dd5ca99071d82d",
+    "setModelQwen": "0xdfd4c7e3e3f4fb9f2e60fb7587fb6e3a66c41ed0b5636f4a0cf4de626f389440",
+    "setLimitsUSDG": "0x3a3afc9c20c94677f2f065044ffa6c0eb321accaf01e1adaa824504cd4aaccb4",
+    "setLimitsTSLA": "0x141e4dd7d2ab81b4d5ee179987e150a75ee6ea3c256fd5a31cc47b8ca4600ee8",
+    "setPool": "0x2f712b9d3b777257526f9ed31b0f151a3fed1ec50851cbc9546d3cfc8de10add",
+    "setMeasurement": "0x98559ec52bdb87e9e65689c2ffadbe5306e6edef1c1aeeef93acff2ae5840624",
+    "registerAgent": "0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d",
+    "depositUSDG": "0x31f90cd2d83ff5112a80a785bc2e68d7821f7dc64e8a16d54a2db39dbcd3c720",
+    "openInferenceChannel": "0xed6e42b7840a47e76e548980b8e62026b3e75c6622443069bdf055a3829a1d32",
+    "inferenceChannel": {
+      "assay": "0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d",
+      "id": 1,
+      "deposit": "1000000",
+      "pin": "phala/qwen3.8-27b-uncensored"
+    }
+  },
+  "guardedAccount": {
+    "factory": "0x14103f1928AB34b45Cc376fF56fb59d798Deed03",
+    "factoryDeployTx": "0xd958d6434a4c1aa23ff0370f65a5d55b5a10707ba5c79774a955bdf854ccc681",
+    "guard": "ERC-8056 corporate-action guard: agent execute/propose refuse a token with newUIMultiplier != uiMultiplier or within CORPORATE_ACTION_COOLDOWN (86400) of effectiveAt",
+    "account": "0xFaaAa4d1ee944d317b10233505D8c57425C53b55",
+    "createAccount": "0x47076397ffb90ba98bbbb34248c1b3aa91241aa69ba23017ce05b1e62d380e62",
+    "setModelQwen": "0x90f97f85014577e41eafc2c1bfc3df19dc38ce9daade27e85a18196e9b408b80",
+    "setLimitsUSDG": "0x094fa1720391a5e19b0e0cc4804374a8af94b5c2c8638c4c1f1b43cbccaefffd",
+    "setLimitsTSLA": "0x0b10068fa1dc24883dc42c38a61e025793baabd9fcc7e563d313c6fd227fdc21",
+    "setPool": "0xe392657e16d83bff7538eb4ba3e59f8e026d82fe2480e4d2be6694251205dfcc",
+    "setMeasurement": "0x2ed88066856d6e66d201d95c6a81946be226d478e56de6e35e32b8dbbf2d5e7b",
+    "registerAgent": "0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a",
+    "depositUSDG": "0xa1787366d080b3223cf59d329f6bff2b2d519f741c61aec82979029f1bae3e58"
   }
 }

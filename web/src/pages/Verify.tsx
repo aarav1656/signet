@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { decodeFunctionResult, encodeFunctionData, isAddress, isAddressEqual, type Hex } from 'viem';
 import { usePublicClient } from 'wagmi';
-import { ASSAY, assayChain, explorer } from '../chain';
+import { ASSAY, assayChain, assayNet, explorer, REGISTER_TX } from '../chain';
 import { assayAbi } from '../abi/Assay.generated';
 import {
   APPROVED_MEASUREMENTS,
-  REGISTER_TX,
   VERIFIER_ADDRESS,
 } from '../lib/addresses.generated';
 import { short } from '../lib/format';
@@ -89,7 +88,7 @@ function asciiString(hex: string): string | null {
  * strings (VERIFIER_HELP above). Both nextRegisterNonce (read here) and register (simulated
  * below) can revert this way. */
 const ASSAY_ERROR_HELP: Record<string, string> = {
-  StaleRefBlock: "The refBlock this nonce or registration used fell outside Arbitrum's 256-block window (about 66 seconds). Read a fresh nextRegisterNonce and register immediately, or run the agent CLI (cd agent && npm run register), which does all three steps inside that window.",
+  StaleRefBlock: `The refBlock this nonce or registration used fell outside the chain's 256-block window (${assayNet.refWindow} on ${assayChain.name}).`+" Read a fresh nextRegisterNonce and register immediately, or run the agent CLI (cd agent && npm run register), which does all three steps inside that window.",
   QuoteAlreadyUsed: 'This exact quote was already submitted to register. Fetch a fresh quote with the current nonce.',
   MeasurementNotApproved: 'The measurement this quote attests to is not on the allowlist.',
 };
@@ -246,7 +245,7 @@ export function Verify() {
 
   async function simulateRegister() {
     if (!client || !parsed?.quoteHex || !chain.address) {
-      setRegisterReport('Connect a wallet on Arbitrum Sepolia to simulate.');
+      setRegisterReport(`Connect a wallet on ${assayChain.name} to simulate.`);
       setRegisterBad(true);
       return;
     }
@@ -292,7 +291,7 @@ export function Verify() {
     <main>
       <TitleBlock
         cells={[
-          { label: 'Network', value: 'Arbitrum Sepolia, live' },
+          { label: 'Network', value: `${assayChain.name}, live` },
           { label: 'Registering', value: providerOk ? <HexValue value={effectiveProvider} /> : 'choose in step 1', lead: true },
           ...(contractNonce && nonceSnap.data
             ? [
@@ -394,8 +393,8 @@ export function Verify() {
                 </div>
                 {pinned && (
                   <p className="note warn">
-                    Pinned to block {pinned.refBlock.toLocaleString('en-US')}. Arbitrum answers for that block hash only for
-                    the next 256 blocks, about 66 seconds on Arbitrum Sepolia, so the register transaction has to land
+                    Pinned to block {pinned.refBlock.toLocaleString('en-US')}. The chain answers for that block hash only for
+                    the next 256 blocks, {assayNet.refWindow} on {assayChain.name}, so the register transaction has to land
                     inside that window. The agent CLI does all three steps in one run: <Code>npm run register</Code>.
                   </p>
                 )}
