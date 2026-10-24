@@ -1,7 +1,7 @@
 import { parseEventLogs, type Address, type Hex, type PublicClient } from 'viem';
 import { accountAbi, factoryAbi } from '../../abi/AgentAccount.generated';
 import { assayAbi } from '../../abi/Assay.generated';
-import { DEMO_ACCOUNT, LEGACY_ACCOUNT, PAXOS_USDG, RHC_VERIFIER, TSLA, USDG_ASSAY } from '../../lib/rhc.generated';
+import { DEMO_ACCOUNT, PAXOS_USDG, RHC_VERIFIER, TSLA, USDG_ASSAY } from '../../lib/rhc.generated';
 
 /// Every transaction the tour reads. Each hash is also in contracts/deployments/46630.json (tour.test.ts
 /// checks that), and every row resolves only when the chain's receipt matches `expect`.
@@ -15,10 +15,9 @@ export const TX = {
   wrongModel: '0x9f2bd92252dce7827bebac226e269f46956e4d5cc368eb3f6dc7e8253eca8bdb',
 } as const satisfies Record<string, Hex>;
 
-/// Accounts the operator agent serves, all from the factories in 46630.json.
+/// Accounts the first operator agent serves, all from the factories in 46630.json. The first account runs the Signet demo CVM now, so it is not in this list.
 export const OPERATOR_ACCOUNTS: readonly Address[] = [
   DEMO_ACCOUNT,
-  LEGACY_ACCOUNT,
   '0xE1d7939105cF8B3670d6b4a0E15546C036e6c34c',
   '0x06AAadCc83873775D8A72F42B912f57ab3dc2506',
   '0x5492A8e671D37e5785020c02b83cA5603be8D5D7',

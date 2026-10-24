@@ -412,6 +412,56 @@
     "registerAgent": "0xa45b46c61c579c083eea5a5b044f343ad847b64ddfdae356758b6e9ac1b89798"
   },
   "operatorCvm": {
+    "url": "https://e45234c10954cbcf891ef414999e89a4b98dd090-8080.dstack-pha-prod5.phala.network",
+    "image": "ttl.sh/signet-agent-24d5f1ca3575@sha256:d453c4c02f7028b7664494e152cc0d3e70f63e005a292cec555effac3d223055",
+    "agent": "0x0205ECff6816271FD8500e45065D6E284C7131e9",
+    "measurement": "0x69f33c1d9eb7b80eeac3869f52c56653dba6a7656148975e41aaaa2be133c97f",
+    "composeHash": "9f997c38f9754576002490da0740372e9510adca80d1719082d3bb8e31572606",
+    "strategySha256": "3723fda711fc57e5aa5f2399f74f37a3dba2629cd6a75d4917b8bb8c13e0db26",
+    "record": "agent-cvm/deployments/2026-10-24.json",
+    "accounts": [
+      {
+        "account": "0x9c69A43F16E994Ce45e9EE896E2D01369b0Aaa6D",
+        "setMeasurement": "0x749003ce338eed7782f37dad1ad6528f9cebf74ff80a0c15da8a47c7e6717b8b",
+        "registerAgent": "0x5fdc4acb64d8f1dddc9042c9101c652f87f7483cc1163d0c878b431c44ce965c"
+      }
+    ]
+  },
+  "usdgAccount": {
+    "factory": "0xB9F7eB234C2F562475668c1Dc9b6850f235373c3",
+    "factoryDeployTx": "0x156a77dd47ce853f566b680eb9a62e7cf73a330916013c738d20cc2e6c2302bd",
+    "account": "0x06AAadCc83873775D8A72F42B912f57ab3dc2506",
+    "createAccount": "0x3e84210cd9afd753028a35e8d84aa2330c12e7e8b3e5808e07dd5ca99071d82d",
+    "setModelQwen": "0xdfd4c7e3e3f4fb9f2e60fb7587fb6e3a66c41ed0b5636f4a0cf4de626f389440",
+    "setLimitsUSDG": "0x3a3afc9c20c94677f2f065044ffa6c0eb321accaf01e1adaa824504cd4aaccb4",
+    "setLimitsTSLA": "0x141e4dd7d2ab81b4d5ee179987e150a75ee6ea3c256fd5a31cc47b8ca4600ee8",
+    "setPool": "0x2f712b9d3b777257526f9ed31b0f151a3fed1ec50851cbc9546d3cfc8de10add",
+    "setMeasurement": "0x98559ec52bdb87e9e65689c2ffadbe5306e6edef1c1aeeef93acff2ae5840624",
+    "registerAgent": "0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d",
+    "depositUSDG": "0x31f90cd2d83ff5112a80a785bc2e68d7821f7dc64e8a16d54a2db39dbcd3c720",
+    "openInferenceChannel": "0xed6e42b7840a47e76e548980b8e62026b3e75c6622443069bdf055a3829a1d32",
+    "inferenceChannel": {
+      "assay": "0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d",
+      "id": 1,
+      "deposit": "1000000",
+      "pin": "phala/qwen3.8-27b-uncensored"
+    }
+  },
+  "guardedAccount": {
+    "factory": "0x14103f1928AB34b45Cc376fF56fb59d798Deed03",
+    "factoryDeployTx": "0xd958d6434a4c1aa23ff0370f65a5d55b5a10707ba5c79774a955bdf854ccc681",
+    "guard": "ERC-8056 corporate-action guard: agent execute/propose refuse a token with newUIMultiplier != uiMultiplier or within CORPORATE_ACTION_COOLDOWN (86400) of effectiveAt",
+    "account": "0xFaaAa4d1ee944d317b10233505D8c57425C53b55",
+    "createAccount": "0x47076397ffb90ba98bbbb34248c1b3aa91241aa69ba23017ce05b1e62d380e62",
+    "setModelQwen": "0x90f97f85014577e41eafc2c1bfc3df19dc38ce9daade27e85a18196e9b408b80",
+    "setLimitsUSDG": "0x094fa1720391a5e19b0e0cc4804374a8af94b5c2c8638c4c1f1b43cbccaefffd",
+    "setLimitsTSLA": "0x0b10068fa1dc24883dc42c38a61e025793baabd9fcc7e563d313c6fd227fdc21",
+    "setPool": "0xe392657e16d83bff7538eb4ba3e59f8e026d82fe2480e4d2be6694251205dfcc",
+    "setMeasurement": "0x2ed88066856d6e66d201d95c6a81946be226d478e56de6e35e32b8dbbf2d5e7b",
+    "registerAgent": "0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a",
+    "depositUSDG": "0xa1787366d080b3223cf59d329f6bff2b2d519f741c61aec82979029f1bae3e58"
+  },
+  "previousOperatorCvm": {
     "url": "https://e39de5552f988e69e573236137089c81cfbe21d9-8080.dstack-pha-prod5.phala.network",
     "image": "ttl.sh/chiron-agent-5ee4c1c6b5d1@sha256:01f1867126d58ee3e99cf1fef4fc8d253c68dbe5bed41db6eb3f33aa5a201463",
     "agent": "0x71f15e33d967F9b0d573Cb03CfE3e7fdBDFd3461",
@@ -449,39 +499,5 @@
         "registerAgent": "0x4afb0cf96fc6270d838b451987a6a646b3a4d72f6d2945f3db525bc4894115f6"
       }
     ]
-  },
-  "usdgAccount": {
-    "factory": "0xB9F7eB234C2F562475668c1Dc9b6850f235373c3",
-    "factoryDeployTx": "0x156a77dd47ce853f566b680eb9a62e7cf73a330916013c738d20cc2e6c2302bd",
-    "account": "0x06AAadCc83873775D8A72F42B912f57ab3dc2506",
-    "createAccount": "0x3e84210cd9afd753028a35e8d84aa2330c12e7e8b3e5808e07dd5ca99071d82d",
-    "setModelQwen": "0xdfd4c7e3e3f4fb9f2e60fb7587fb6e3a66c41ed0b5636f4a0cf4de626f389440",
-    "setLimitsUSDG": "0x3a3afc9c20c94677f2f065044ffa6c0eb321accaf01e1adaa824504cd4aaccb4",
-    "setLimitsTSLA": "0x141e4dd7d2ab81b4d5ee179987e150a75ee6ea3c256fd5a31cc47b8ca4600ee8",
-    "setPool": "0x2f712b9d3b777257526f9ed31b0f151a3fed1ec50851cbc9546d3cfc8de10add",
-    "setMeasurement": "0x98559ec52bdb87e9e65689c2ffadbe5306e6edef1c1aeeef93acff2ae5840624",
-    "registerAgent": "0xd345d42f33bd3b01319d8b89851c3822fb3ea730482dcd7f0090419d9b16c53d",
-    "depositUSDG": "0x31f90cd2d83ff5112a80a785bc2e68d7821f7dc64e8a16d54a2db39dbcd3c720",
-    "openInferenceChannel": "0xed6e42b7840a47e76e548980b8e62026b3e75c6622443069bdf055a3829a1d32",
-    "inferenceChannel": {
-      "assay": "0xcF4a98E21D4180b32B9726ef3d0A550A69973f9d",
-      "id": 1,
-      "deposit": "1000000",
-      "pin": "phala/qwen3.8-27b-uncensored"
-    }
-  },
-  "guardedAccount": {
-    "factory": "0x14103f1928AB34b45Cc376fF56fb59d798Deed03",
-    "factoryDeployTx": "0xd958d6434a4c1aa23ff0370f65a5d55b5a10707ba5c79774a955bdf854ccc681",
-    "guard": "ERC-8056 corporate-action guard: agent execute/propose refuse a token with newUIMultiplier != uiMultiplier or within CORPORATE_ACTION_COOLDOWN (86400) of effectiveAt",
-    "account": "0xFaaAa4d1ee944d317b10233505D8c57425C53b55",
-    "createAccount": "0x47076397ffb90ba98bbbb34248c1b3aa91241aa69ba23017ce05b1e62d380e62",
-    "setModelQwen": "0x90f97f85014577e41eafc2c1bfc3df19dc38ce9daade27e85a18196e9b408b80",
-    "setLimitsUSDG": "0x094fa1720391a5e19b0e0cc4804374a8af94b5c2c8638c4c1f1b43cbccaefffd",
-    "setLimitsTSLA": "0x0b10068fa1dc24883dc42c38a61e025793baabd9fcc7e563d313c6fd227fdc21",
-    "setPool": "0xe392657e16d83bff7538eb4ba3e59f8e026d82fe2480e4d2be6694251205dfcc",
-    "setMeasurement": "0x2ed88066856d6e66d201d95c6a81946be226d478e56de6e35e32b8dbbf2d5e7b",
-    "registerAgent": "0xec2e5abacab4f45a15176bed75480c6fae0e0b5c94858501f58714729b5f0d3a",
-    "depositUSDG": "0xa1787366d080b3223cf59d329f6bff2b2d519f741c61aec82979029f1bae3e58"
   }
 }

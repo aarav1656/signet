@@ -141,12 +141,12 @@ export function Creator() {
     <>
       <div className="pagehead">
         <h1 className="t-title">Publish an agent by proving its code</h1>
-        <p className="lede">Your prompts and strategy stay sealed in the enclave. What goes on chain is the measurement of your code, the model hash, and hashes of each request and response.</p>
+        <p className="lede">Your strategy text is sealed config inside the enclave, and the measured compose pins its SHA-256. What goes on chain is the measurement of your code, the model hash, and hashes of each request and response.</p>
       </div>
 
       <section className="section" aria-labelledby="cr-read">
         <div className="section-head"><h2 id="cr-read" className="t-section">Your measurement</h2></div>
-        <p className="section-intro">Ask your agent for a quote and see what the Verifier proves about it. This is the value followers approve.</p>
+        <p className="section-intro">Ask your agent for a quote and see what the Verifier proves about it. Each boot has its own measurement; the compose hash is the strategy's stable identity, and a follower approves the latest boot.</p>
         <ReadMeasurement />
       </section>
 
@@ -173,7 +173,7 @@ export function Creator() {
           <h2 id="cr-sealed" className="t-section">What stays sealed, what is public</h2>
           <dl className="kvs">
             <dt>Sealed in the enclave</dt>
-            <dd>The prompt, the strategy logic, the model&apos;s inputs and its reasoning.</dd>
+            <dd>The strategy text: its prompt, parameters and rules. The enclave refuses to boot unless it hashes to the SHA-256 pinned in the measured compose.</dd>
             <dt>On chain</dt>
             <dd>The measurement, the requested and served model hashes, the SHA-256 of each request and response body, and the trade itself.</dd>
             <dt>Checked by the account</dt>
