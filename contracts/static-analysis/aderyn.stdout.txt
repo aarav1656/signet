@@ -1,0 +1,35 @@
+
+-----------------------------------------------------------------------------------------------------------------------
+# Configuration
+-----------------------------------------------------------------------------------------------------------------------
+Root - /Users/kamal/Desktop/arbitrium/online-openhouse/chiron/.claude/worktrees/agent-a6821281a7cc6a072/contracts
+Source - /Users/kamal/Desktop/arbitrium/online-openhouse/chiron/.claude/worktrees/agent-a6821281a7cc6a072/contracts/src
+Remappings - [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "forge-std/=lib/forge-std/src/",
+    "test/vendor/x402/:@openzeppelin/contracts/=test/vendor/x402/lib/openzeppelin-contracts/contracts/",
+    "@uniswap/v4-core/=test/vendor/v4-core/",
+    "solmate/=test/vendor/v4-core/lib/solmate/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+]
+EVM version - prague
+-----------------------------------------------------------------------------------------------------------------------
+# Source Scope
+-----------------------------------------------------------------------------------------------------------------------
+Include Filepaths Containing - No specific criteria.
+Exclude Filepaths Containing - No specific criteria.
+Auto Excluding - No Files.
+-----------------------------------------------------------------------------------------------------------------------
+# Compiling Abstract Syntax Trees
+-----------------------------------------------------------------------------------------------------------------------
+Ingesting 8 compiled files [solc : v0.8.28]
+-----------------------------------------------------------------------------------------------------------------------
+# Scanning Contracts
+-----------------------------------------------------------------------------------------------------------------------
+Running 88 detectors
+Detectors run, printing report.
+Report printed to /tmp/aderyn.md
+
+Aderyn saved you hours of headaches.
+☕ Buy us a virtual coffee with a GitHub star:
+https://github.com/Cyfrin/aderyn
