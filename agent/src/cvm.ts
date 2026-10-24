@@ -11,6 +11,8 @@
 //                           with the nonce read from that account at head-1: exactly what its
 //                           AgentAccount.registerAgent expects. registerAgent is permissionless, so
 //                           the client or the operator submits it. One key, many client accounts.
+//                           eventLog is the RTMR event log: replaying it reproduces the quote's RTMR3
+//                           and shows compose-hash, so the pinned strategy digest can be checked.
 //
 // /info and /quote answer cross-origin, so a client's browser can fetch a quote for its own account.
 // ACCOUNT_ADDRESS, RHC_RPC_URL, PHALA_MODEL, PHALA_BASE_URL and STRATEGY_SHA256 come from the
@@ -32,8 +34,9 @@ function need(name: string): string {
   return v;
 }
 
-/// dstack guest agent: POST /GetQuote {report_data: hex} over its unix socket.
-export function getQuote(reportDataHex: Hex, socketPath = SOCKET): Promise<Hex> {
+/// dstack guest agent: POST /GetQuote {report_data: hex} over its unix socket. Returns the quote and
+/// the RTMR event log it was taken with, so a verifier can replay RTMR3 and read compose-hash.
+export function getQuote(reportDataHex: Hex, socketPath = SOCKET): Promise<{ quote: Hex; eventLog: string }> {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({ report_data: reportDataHex.slice(2).toLowerCase() });
     const req = request(
@@ -43,9 +46,9 @@ export function getQuote(reportDataHex: Hex, socketPath = SOCKET): Promise<Hex> 
         res.on('data', (c: Buffer) => chunks.push(c));
         res.on('end', () => {
           try {
-            const j = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { quote?: string; error?: string };
+            const j = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { quote?: string; event_log?: string; error?: string };
             if (res.statusCode !== 200 || !j.quote) throw new Error(`GetQuote HTTP ${res.statusCode}: ${j.error ?? 'no quote'}`);
-            resolve((j.quote.startsWith('0x') ? j.quote : `0x${j.quote}`) as Hex);
+            resolve({ quote: (j.quote.startsWith('0x') ? j.quote : `0x${j.quote}`) as Hex, eventLog: j.event_log ?? '' });
           } catch (e) {
             reject(e);
           }
@@ -103,8 +106,8 @@ async function main() {
         if (!target) return reply(res, 400, { error: 'account is not an address' }, true);
         const refBlock = (await publicClient.getBlockNumber()) - 1n;
         const nonce = (await publicClient.readContract({ address: target, abi: agentAccountAbi, functionName: 'attestNonce', args: [refBlock] })) as Hex;
-        const quote = await getQuote(agentReportData(agent.address, nonce));
-        return reply(res, 200, { agent: agent.address, account: target, refBlock, nonce, quote }, true);
+        const { quote, eventLog } = await getQuote(agentReportData(agent.address, nonce));
+        return reply(res, 200, { agent: agent.address, account: target, refBlock, nonce, quote, eventLog }, true);
       }
       return reply(res, 404, { error: 'not found' });
     } catch (e) {
