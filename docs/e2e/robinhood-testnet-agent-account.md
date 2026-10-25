@@ -54,7 +54,7 @@ CVM_URL=https://<app-id>-8080.<gateway> CVM_CONTROL_TOKEN=... OWNER_PRIVATE_KEY=
 QUOTE_TOKEN=0x7E955252E15c84f5768B83c41a71F9eba181802F ... npm run acct-trade   # Paxos USDG
 ```
 
-The hosted app at https://chiron-receipts.vercel.app reads the account from the chain: it shows the registered agent, the attested measurement, the model pin, one proposal, three executed trades and their model hashes.
+The hosted app at https://signet-agents.vercel.app reads the account from the chain: it shows the registered agent, the attested measurement, the model pin, one proposal, three executed trades and their model hashes.
 
 ## Revoke by measurement
 

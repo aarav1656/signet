@@ -5,12 +5,12 @@ The full engineering record behind Signet: contracts, the attested agent, live t
 | | |
 |---|---|
 | Network | Robinhood Chain testnet (46630); Assay billing also on Arbitrum Sepolia (421614) |
-| App | [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app): the first screen reads one admission and one refusal from the chain, then an eight-step lifecycle where each row resolves only when its receipt matches; no wallet needed |
+| App | [signet-agents.vercel.app](https://signet-agents.vercel.app): the first screen reads one admission and one refusal from the chain, then an eight-step lifecycle where each row resolves only when its receipt matches; no wallet needed |
 | Account the app opens on | [`0xFaaAa4d1ee944d317b10233505D8c57425C53b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55): Paxos USDG, ERC-8056 corporate-action guard, operator agent admitted |
 | Attested trade | [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03): the TDX-attested agent buys TSLA with 1 Paxos USDG, receipt-checked model hash in `TradeExecuted` |
 | Refusal | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8): a real TDX quote from a different workload, `registerAgent` reverts `MeasurementNotApproved` |
-| Agents | `claude mcp add --transport http chiron https://chiron-receipts.vercel.app/mcp` |
-| Repo | [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron) |
+| Agents | `claude mcp add --transport http chiron https://signet-agents.vercel.app/mcp` |
+| Repo | [github.com/aarav1656/signet](https://github.com/aarav1656/signet) |
 
 Named for the one trustworthy centaur: the attested agent among substitutes.
 
@@ -117,16 +117,16 @@ Read from the chain on this deployment:
 
 ## Agents can check Chiron themselves
 
-`mcp/` is a Model Context Protocol server, built on `@modelcontextprotocol/sdk` 1.31.0, that lets any agent verify a Chiron trade without trusting this page. It is hosted over Streamable HTTP at `https://chiron-receipts.vercel.app/mcp`, so connecting an agent is one line, with nothing to clone or install:
+`mcp/` is a Model Context Protocol server, built on `@modelcontextprotocol/sdk` 1.31.0, that lets any agent verify a Chiron trade without trusting this page. It is hosted over Streamable HTTP at `https://signet-agents.vercel.app/mcp`, so connecting an agent is one line, with nothing to clone or install:
 
 ```
-claude mcp add --transport http chiron https://chiron-receipts.vercel.app/mcp
+claude mcp add --transport http chiron https://signet-agents.vercel.app/mcp
 ```
 
 OpenCode takes the same URL as a remote server in `opencode.json`:
 
 ```
-{ "mcp": { "chiron": { "type": "remote", "url": "https://chiron-receipts.vercel.app/mcp" } } }
+{ "mcp": { "chiron": { "type": "remote", "url": "https://signet-agents.vercel.app/mcp" } } }
 ```
 
 Two agent frameworks were driven against the hosted endpoint, each asked to verify the first live trade: Claude Code (Haiku) and OpenCode (`muse-spark-1.3`) both called `verify_receipt` and answered `verified: true` with 7 checks; given a different expected model hash, both answered `verified: false` with `served_model_equals_expected` failing. To run it locally over stdio instead: `cd mcp && npm install && claude mcp add chiron npx tsx $(pwd)/src/server.ts`.
@@ -137,7 +137,7 @@ Three tools read Robinhood Chain testnet (46630) directly with viem:
 - `account_state(account)` returns the agent, measurement, expiry, caps and recent trades.
 - `explain_refusal(tx_hash)` decodes a reverted transaction's custom error (`NotAgent`, `ExceedsPerTradeCap`, `MeasurementNotApproved`) into plain words.
 
-`npm test` in `mcp/` checks the real first trade of the live account (`0xe5052266...ddfa2`) and returns `verified: true` with seven passing checks, and a different model hash turns the answer to `verified: false`; `test/http.test.ts` runs the same checks through an MCP client over HTTP, and `MCP_URL=https://chiron-receipts.vercel.app/mcp npm test` points it at the hosted endpoint. The gate log on the hosted app runs the same hashing in the browser and marks each trade green once its recomputed receipt hash matches the chain.
+`npm test` in `mcp/` checks the real first trade of the live account (`0xe5052266...ddfa2`) and returns `verified: true` with seven passing checks, and a different model hash turns the answer to `verified: false`; `test/http.test.ts` runs the same checks through an MCP client over HTTP, and `MCP_URL=https://signet-agents.vercel.app/mcp npm test` points it at the hosted endpoint. The gate log on the hosted app runs the same hashing in the browser and marks each trade green once its recomputed receipt hash matches the chain.
 
 ## The attested agent, live
 

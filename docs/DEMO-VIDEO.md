@@ -6,10 +6,10 @@ Total 90 seconds: problem 10, the proof 30, follow flow 30, why Robinhood Chain 
 
 Tool: Recordly (skill `recordly`) driving the live app over CDP for the cursor paths and auto-zoom, plus plain screen capture for the explorer tabs. Record in the `deepsurge` browser profile, one tab per screen, 1920x1080, light cursor smoothing, no webcam. Pre-open these tabs so no loading shows on camera:
 
-Tab A: https://chiron-receipts.vercel.app (the Signet leaderboard: one strategy row with its compose hash, two measurements, three trades and the return; the agent profile behind it holds the Follow panel)
+Tab A: https://signet-agents.vercel.app (the Signet leaderboard: one strategy row with its compose hash, two measurements, three trades and the return; the agent profile behind it holds the Follow panel)
 Tab B: https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03 (attested trade, Logs tab)
 Tab C: https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8 (refusal, revert reason)
-Tab D: https://chiron-receipts.vercel.app/verify
+Tab D: https://signet-agents.vercel.app/verify
 Tab E: contracts/src/AgentAccount.sol at registerAgent, in an editor (lines 261-281)
 
 Rules: record narration separately in the founder's voice (voiceb or live read), then lay it over the footage and trim each shot to its narration beat so there is no dead air. Footage must not be sped up where a hash or revert reason is being read. Do a dry run first and confirm every tab shows data, not a loading state. If the keeper has let the agent key lapse, the agent panel turns red: wait for re-admission (keeper checks every 30 minutes) before recording.
@@ -41,7 +41,7 @@ Shot 8 (1:15 to 1:25) Why Robinhood Chain. Screen: Tab D (/verify), then Tab A b
 Narration: "This needs Stock Tokens, canonical Uniswap v4, and Stylus for the heavy quote verification. Robinhood Chain has all three, and the account even pauses an agent during a Stock Token split."
 
 Shot 9 (1:25 to 1:30) Ask. Screen: Tab A top, URL bar visible.
-Narration: "Signet. A record you can verify, a strategy you keep. Try it at chiron-receipts dot vercel dot app."
+Narration: "Signet. A record you can verify, a strategy you keep. Try it at signet-agents dot vercel dot app."
 
 ## Pre-flight checks before recording
 

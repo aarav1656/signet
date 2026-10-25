@@ -75,7 +75,7 @@ export function FollowPanel({ strategy }: { strategy: Strategy }) {
     usdg: { decimals: 6, limits: limits.usdg }, tsla: { decimals: 18, limits: limits.tsla },
   };
   const steps = stateQ.data ? planFollow(stateQ.data.state, spec) : undefined;
-  const todo = steps ? pending(steps) : [];
+  const remaining = steps ? pending(steps) : [];
   const owns = !!stateQ.data && !!conn.address && stateQ.data.owner.toLowerCase() === conn.address.toLowerCase();
   const wrongChain = conn.isConnected && conn.chainId !== rhcChain.id;
   const limitError = !usdg.ok ? usdg.reason : !tsla.ok ? tsla.reason : undefined;
@@ -89,7 +89,7 @@ export function FollowPanel({ strategy }: { strategy: Strategy }) {
   async function follow() {
     if (!account || !client) return;
     setNote(undefined);
-    for (const step of todo) {
+    for (const step of remaining) {
       const id = step.id;
       setActive(id);
       if (id === 'admit') {
@@ -117,7 +117,7 @@ export function FollowPanel({ strategy }: { strategy: Strategy }) {
   }
 
   const stepMark = (s: Step): 'pass' | 'fail' | 'plain' => (s.done ? 'pass' : tx.state.phase === 'failed' && active === s.id ? 'fail' : 'plain');
-  const label = tx.state.phase === 'signing' ? 'Confirm in the wallet' : tx.state.phase === 'mining' ? 'Waiting for the receipt' : todo.length === 0 && steps ? 'Following' : `Follow this code${todo.length ? `, ${todo.length} ${todo.length === 1 ? 'signature' : 'signatures'}` : ''}`;
+  const label = tx.state.phase === 'signing' ? 'Confirm in the wallet' : tx.state.phase === 'mining' ? 'Waiting for the receipt' : remaining.length === 0 && steps ? 'Following' : `Follow this code${remaining.length ? `, ${remaining.length} ${remaining.length === 1 ? 'signature' : 'signatures'}` : ''}`;
 
   return (
     <section className="sg-follow-panel" id="follow" aria-labelledby="follow-h">
@@ -174,7 +174,7 @@ export function FollowPanel({ strategy }: { strategy: Strategy }) {
               <button
                 className="btn"
                 type="button"
-                disabled={!steps || !owns || tx.busy || (todo.length === 0 && !!steps) || (!wrongChain && !!limitError)}
+                disabled={!steps || !owns || tx.busy || (remaining.length === 0 && !!steps) || (!wrongChain && !!limitError)}
                 onClick={wrongChain ? () => switchChain({ chainId: rhcChain.id }) : follow}
               >
                 {wrongChain ? `Switch to ${rhcChain.name}` : label}

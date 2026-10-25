@@ -93,7 +93,7 @@ function Timeline({ strategy }: { strategy: Strategy }) {
           );
         })}
       </ol>
-      {q.isError && <p className="probe bad">The chain read failed ({String(q.error).slice(0, 120)}). The rows above come from the track record and are not verified until it succeeds.</p>}
+      {q.isError && <p className="probe bad">The chain read failed ({String(q.error).slice(0, 120)}). The rows above come from the track record, and the chain check turns green once the read succeeds.</p>}
     </section>
   );
 }

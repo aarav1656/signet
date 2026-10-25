@@ -62,11 +62,11 @@ Refusal of a different workload: 0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fd
 
 ## Demo link
 
-https://chiron-receipts.vercel.app
+https://signet-agents.vercel.app
 
 ## Repo link
 
-https://github.com/pranjalcodesinw3/chiron
+https://github.com/aarav1656/signet
 
 ## Video link
 

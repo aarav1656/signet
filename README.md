@@ -5,17 +5,18 @@
 | | |
 |---|---|
 | Network | Robinhood Chain testnet, chain 46630 |
-| App | [chiron-receipts.vercel.app](https://chiron-receipts.vercel.app): the leaderboard of attested agents, each row re-reading its trades from the chain and recomputing every receipt hash in the browser; no wallet needed |
+| App | [signet-agents.vercel.app](https://signet-agents.vercel.app): the leaderboard of attested agents, each row re-reading its trades from the chain and recomputing every receipt hash in the browser; no wallet needed |
 | Attested trade | [`0x0023f359...3b03`](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03), block 127,188,951: the TDX-attested agent buys TSLA with 1 Paxos USDG, and `TradeExecuted` records the agent's workload measurement and the model hash |
 | Refusal | [`0xf98156ad...fcc8`](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8), block 127,632,496: a genuine Intel TDX quote from a different workload reverts `MeasurementNotApproved` after 2,349,054 gas of onchain verification |
 | Follower account | [`0xFaaAa4d1...3b55`](https://explorer.testnet.chain.robinhood.com/address/0xFaaAa4d1ee944d317b10233505D8c57425C53b55): holds USDG, trades only through the canonical Uniswap v4 PoolManager, admits one agent key |
-| Agents | `claude mcp add --transport http signet https://chiron-receipts.vercel.app/mcp` |
-| Deck and canvases | [Signet-Deck.pdf](deck/Signet-Deck.pdf), [Product canvas](deck/canvas/Signet-Product-Canvas.pdf), [GTM canvas](deck/canvas/Signet-GTM-Canvas.pdf), [deck/index.html](deck/index.html) |
-| Repo | [github.com/pranjalcodesinw3/chiron](https://github.com/pranjalcodesinw3/chiron) |
+| Agents | `claude mcp add --transport http signet https://signet-agents.vercel.app/mcp` |
+| Demo video | [signet-agents.vercel.app/demo/Signet-Demo.mp4](https://signet-agents.vercel.app/demo/Signet-Demo.mp4), three minutes: the problem, how it works, the live trade and refusal, GTM |
+| Deck and canvases | [signet-agents.vercel.app/deck](https://signet-agents.vercel.app/deck): 18 slides with the Product and GTM canvases; files in [deck/](deck/), pitch script in [docs/PITCH-SCRIPT.md](docs/PITCH-SCRIPT.md) |
+| Repo | [github.com/aarav1656/signet](https://github.com/aarav1656/signet) |
 
 ## Verify it in 60 seconds
 
-1. **0 to 15 s.** Open the [app](https://chiron-receipts.vercel.app). Each agent on the leaderboard is a TDX workload measurement with its trades linked beside it, and its chain check turns green only when every receipt hash recomputed in your browser matches the chain.
+1. **0 to 15 s.** Open the [app](https://signet-agents.vercel.app). Each agent on the leaderboard is a TDX workload measurement with its trades linked beside it, and its chain check turns green only when every receipt hash recomputed in your browser matches the chain.
 2. **15 to 30 s.** Open the [attested trade](https://explorer.testnet.chain.robinhood.com/tx/0x0023f35941a1490017d220c94b41124f53b044b7416f59ea278208ee500e3b03), Logs tab. `TradeExecuted` carries `agentMeasurement` and `servedModelHash`. That pair names the workload the account admitted and the model behind the inference receipt the account verified.
 3. **30 to 45 s.** Open the [refusal](https://explorer.testnet.chain.robinhood.com/tx/0xf98156ad950c82abe4ce3ab0eac3da0ae860d1abd91fdb9eb545aa87e7e2fcc8). The status is failed and the error is `MeasurementNotApproved(0xfd34...0149)`. The hardware is genuine Intel TDX and the workload is not the one the account owner approved, so the chain turns it away.
 4. **45 to 60 s.** Run the MCP line from the table and ask your agent to call `verify_receipt` on the attested trade. It answers `verified: true` with seven checks. Give it a different expected model hash and it answers `verified: false`.
@@ -46,7 +47,7 @@ Robinhood Agents gives a customer limits and approvals and states that Robinhood
 ## How the proof is built
 
 1. The owner approves a workload measurement on their account (`setMeasurement`) and sets caps (`setLimits`), pools (`setPool`) and a model pin (`setModel`).
-2. Anyone submits `registerAgent(quote, refBlock)`. The nonce the quote must commit to is derived from the chain id, the account, the agent epoch and a block hash from the last 256 L2 blocks, so a quote cannot be banked in advance.
+2. Anyone submits `registerAgent(quote, refBlock)`. The nonce the quote must commit to is derived from the chain id, the account, the agent epoch and a block hash from the last 256 L2 blocks, so a quote cannot be banked in advance. Anyone can renew the live agent's key; while an admission is live, only the owner can replace it with a different key.
 3. The Stylus `Verifier` checks the PCK certificate chain, the quote-enclave report and the quote signature against Intel's root, rejects the TDX DEBUG attribute, and returns the agent address and a measurement over nine TD report fields. The account stores the agent only if that measurement is approved. A registration lasts 24 hours and a keeper renews it from a fresh quote.
 4. The agent calls `execute(trade, receipt)`. The account checks the caller, the caps, the pool and an inference receipt (an Ed25519-signed Phala gateway receipt verified by the Stylus `ReceiptVerifier`) whose served model is in the owner's accepted set, then swaps.
 5. `TradeExecuted` records `agentMeasurement`, `servedModelHash`, `requestHash`, `responseHash` and the trade amounts. The leaderboard and the MCP server read exactly these events.
@@ -67,7 +68,7 @@ The contract-level description, every live transaction with its read-back, gas f
 | `Verifier`, `ReceiptVerifier` | `verifier/`, `receipt-verifier/` | Stylus (Rust): the Intel TDX DCAP quote chain and the Ed25519 inference receipt, verified in the transaction that uses them |
 | Reference agent | `agent/`, `agent-cvm/` | A trading agent in a Phala Cloud TDX CVM: it generates its key in memory, serves quotes per account, runs the decision loop and signs its trades inside, and boots only on a strategy whose SHA-256 matches the measured compose |
 | Assay | `contracts/src/Assay.sol` | Pay-per-call USDG channel that settles inference only against a receipt naming the pinned model |
-| MCP server | `mcp/` | `verify_receipt`, `account_state`, `explain_refusal` over viem, and `get_track_record(measurement)`: every trade of one TDX workload with the Chainlink round that priced it, its PnL and return, attestations and refusals; hosted at `/mcp` |
+| MCP server | `mcp/` | `verify_receipt`, `account_state`, `explain_refusal` over viem, and `get_track_record(measurement)`: every trade of one TDX workload with the Chainlink round that priced it, its PnL and return, attestations and refusals; hosted at `/mcp` ([signet-mcp.vercel.app/api/mcp](https://signet-mcp.vercel.app/api/mcp)) |
 | Web app | `web/` | The Signet leaderboard, agent profile with receipt timeline, follow flow, creator page, and the account gate log |
 
 Deployed on Robinhood Chain testnet (46630):
@@ -106,7 +107,7 @@ cd web && npm install && npm run dev
 | `forge test -j 1` on the integrated tree (25 suites, fork tests against live testnet state included) | 351 passed, 0 failed, 0 skipped | `docs/test-logs/forge-test-signet-2026-10-24.log` |
 | Mutation runner, one `AgentAccount` guard removed or weakened at a time | 122 of 123 killed, the remaining mutant is behavior-equivalent and documented | `docs/security/agent-account-mutations.md` |
 | Stylus crates, `cargo test --release` | verifier 67 passed, receipt-verifier 18 passed | `verifier/`, `receipt-verifier/` |
-| Agent, MCP and web suites | agent 51 passed, mcp 22 passed, web 85 passed | `npm test` in each |
+| Agent, MCP and web suites | agent 51 passed, mcp 23 passed, web 85 passed | `npm test` in each |
 | Attested trade `0x0023f359...3b03` | status success, block 127,188,951, 504,449 gas | `cast receipt`, 2026-10-24 |
 | Refusal `0xf98156ad...fcc8` | status failed, block 127,632,496, 2,349,054 gas | `cast receipt`, 2026-10-24 |
 

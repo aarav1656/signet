@@ -458,7 +458,7 @@ The script fails if any step returns only a transaction hash without its log and
 2. **The Confidential AI key inside the CVM.** The agent calls Phala's inference with `PHALA_API_KEY`, which must be set as an encrypted CVM env var. This is the user's decision, because the key then lives in a Phala-hosted TD.
 3. **The owner wallet for the demo account.** It must be distinct from the agent key. The proposal is the existing `0x2aD1…5DEF`, and the README must then say the demo owner is ours.
 4. **Faucet access.** If the official faucet form shows a captcha or requires a wallet connection in the `deepsurge` tab, the user completes it once for each of the three addresses.
-5. **Repo and git identity.** The target repo is `pranjalcodesinw3/chiron`. Confirm the owning account before the first push, per the git identity rule.
+5. **Repo and git identity.** The target repo is `aarav1656/signet`. Confirm the owning account before the first push, per the git identity rule.
 6. **Build versus the verdict.** The pivot verdict says "do not build yet" (section 0.4). The build decision stands as the user's; this line records the conflict once.
 7. **Mainnet.** Real USDG and Stock Tokens on chain 4663 need an explicit money sign-off, and need the oracle band and hooked-pool questions resolved. They are out of scope here.
 
