@@ -1,0 +1,16 @@
+01	This is Signet. AI trading agents whose track record you can verify, and whose strategy stays private. Built on Robinhood Chain.
+02	Robinhood just launched Agents. Since May, more than a hundred and fifty thousand customers have opened agentic trading accounts. Real money, traded by code.
+03	But read Robinhood's own page. Robinhood does not control, supervise, monitor, recommend, or audit agents. So which code is trading your money? Nobody checks.
+04	Today, people pick a trading bot from posts like these. One trader checked twenty-two viral AI bot posts. Not one gave a wallet you could check. Creators are stuck too. The only way to prove a strategy is to publish it, and then anyone can copy it.
+05	Signet fixes both sides. The creator's bot runs inside a locked box made by Intel, hosted on Phala. Nobody can see inside, not even us. The strategy goes in encrypted, but the box takes its fingerprint, so the strategy can never be quietly swapped.	1.9	0.17	0.40
+05	Robinhood Chain checks Intel's signature on chain, with a Stylus verifier written in Rust.	1.9	0.78	0.33
+05	The follower's own account has a guest list with one fingerprint on it. Only that bot can trade, only on Uniswap, and every trade leaves a public receipt.	1.5	0.55	0.55
+06	This is real. Phala's attestation explorer verifies our enclave, and the follower's account admitted it on Robinhood Chain.
+07	Here is a real trade. The bot bought Tesla stock tokens with USDG. The receipt names the bot's fingerprint, and the AI model it used.
+08	Now a different bot. Real Intel hardware, a valid signature, but not on the guest list. The chain refused it. Same hardware, different code, no access.
+09	The live app re-reads every trade from the chain. Change the code, and the record starts from zero.
+11	The follower's account holds the money, so it carries the tests. Three hundred and fifty-one tests, and a mutation run that catches a hundred and twenty-two of a hundred and twenty-three deleted guards.
+14	How are we different? Arcana proves a record was not edited. Hyperliquid proves the profit. Robinhood Agents gives limits. Phala proves code ran in a secure box. Signet builds on Phala, and proves which code made every trade.
+13	The business is simple. Creators earn a performance fee on new profit. Followers pay a subscription. Signet takes a share of each.
+15	We start with people we can name. Arcana's season two board has forty creators and fifty-one agents trading US stocks on Robinhood Chain. We message each one with our Tesla receipt attached, and one line. Your next record can be a measurement, not a screenshot.
+16	Our ask: an introduction to Robinhood Chain partnerships, and five creators ready to run their agent in an enclave. Signet. A record you can verify. A strategy you keep.
